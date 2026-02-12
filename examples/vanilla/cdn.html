@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Codatum Embed — CDN Example</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 1rem; }
+      #status { margin-bottom: 1rem; padding: 0.5rem; background: #f0f0f0; border-radius: 4px; }
+      #status.error { background: #fee; color: #c00; }
+      #status.ready { background: #efe; color: #060; }
+      #dashboard { width: 100%; height: 600px; border: 1px solid #ccc; border-radius: 4px; }
+    </style>
+  </head>
+  <body>
+    <h1>Codatum Embed — CDN Example</h1>
+    <div id="status">Initializing…</div>
+    <div id="dashboard"></div>
+    <!-- Local build: run pnpm --filter @codatum/embed build first -->
+    <script src="../../packages/embed/dist/index.global.min.js"></script>
+    <!-- For CDN use: https://unpkg.com/@codatum/embed/dist/index.global.min.js -->
+    <script>
+      (function () {
+        var SERVER_URL = "http://localhost:3100";
+        var statusEl = document.getElementById("status");
+        var containerEl = document.getElementById("dashboard");
+
+        function setStatus(text, isError) {
+          if (statusEl) {
+            statusEl.textContent = text;
+            statusEl.className = isError ? "error" : "ready";
+          }
+        }
+
+        fetch(SERVER_URL + "/config")
+          .then(function (res) {
+            if (!res.ok) throw new Error("config failed: " + res.status);
+            return res.json();
+          })
+          .then(function (config) {
+            return window.CodatumEmbed.init({
+              container: containerEl,
+              embedUrl: config.embedUrl,
+              tokenProvider: function () {
+                return fetch(SERVER_URL + "/token", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ tokenUserId: "demo-user" }),
+                })
+                  .then(function (res) {
+                    if (!res.ok) return res.json().then(function (d) { throw new Error(d.message || "Token failed"); });
+                    return res.json();
+                  })
+                  .then(function (data) { return data.token; });
+              },
+              iframeOptions: { theme: "LIGHT", locale: "ja" },
+            });
+          })
+          .then(function (embed) {
+            setStatus("Ready");
+            embed.on("paramChanged", function (payload) { console.log("[paramChanged]", payload); });
+            embed.on("executeSqlsTriggered", function (payload) { console.log("[executeSqlsTriggered]", payload); });
+          })
+          .catch(function (err) {
+            setStatus(err && err.message ? err.message : "Embed initialization failed", true);
+            console.error(err);
+          });
+      })();
+    </script>
+  </body>
+</html>

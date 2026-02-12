@@ -90,7 +90,21 @@ codatum-embed-js/
 │   ├── embed/          # @codatum/embed (core SDK)
 │   ├── embed-vue/      # @codatum/embed-vue (future)
 │   └── embed-react/    # @codatum/embed-react (future)
+└── examples/
+    ├── server/         # Server-side token issuance examples
+    ├── vanilla/        # core examples
+    ├── vue/            # Vue examples
+    └── react/          # React examples
 ```
+
+## Using the examples
+
+The `examples/` directory contains runnable demos for the SDK. Each subfolder has its own setup and run instructions:
+
+- **[examples/server/README.md](examples/server/README.md)** — Hono server that issues signed-embed tokens. Many examples depend on this; run it first and configure `config.json` with your Codatum API credentials.
+- **[examples/vanilla/README.md](examples/vanilla/README.md)** — Minimal browser demo (ESM and CDN). Requires the examples server and a built `@codatum/embed` package.
+
+Run from the repo root with `pnpm --filter @examples/<name> dev` (e.g. `@examples/server`, `@examples/vanilla`). See each README for details.
 
 ## Working on a single package
 
