@@ -13,7 +13,7 @@ const containerEl = document.getElementById("dashboard");
 function setStatus(text: string, isError = false) {
   if (!statusEl) return;
   statusEl.textContent = text;
-  statusEl.className = isError ? "error" : "ready";
+  statusEl.className = `alert py-2 mb-3 ${isError ? "alert-danger" : "alert-success"}`;
 }
 
 async function run() {
@@ -51,7 +51,7 @@ async function run() {
         const data = (await res.json()) as { token: string };
         return data.token;
       },
-      iframeOptions: { theme: "LIGHT", locale: "ja" },
+      iframeOptions: { theme: "LIGHT", locale: "en" },
       // You can pass initial param values and display options via clientSideOptions:
       // clientSideOptions: {
       //   displayOptions: { sqlDisplay: "RESULT_ONLY", expandParamsFormByDefault: false },
