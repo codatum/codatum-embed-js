@@ -51,6 +51,7 @@ export type EmbedEventMap = {
 export type CodatumEmbedErrorCode =
   | "CONTAINER_NOT_FOUND"
   | "INIT_TIMEOUT"
+  | "INVALID_OPTIONS"
   | "TOKEN_PROVIDER_FAILED";
 
 export class CodatumEmbedError extends Error {

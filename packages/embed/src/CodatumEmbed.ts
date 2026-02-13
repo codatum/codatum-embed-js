@@ -23,6 +23,9 @@ function resolveContainer(container: HTMLElement | string): HTMLElement | null {
   return container;
 }
 
+const EMBED_URL_REGEX =
+  /^https:\/\/app\.codatum\.com\/protected\/workspace\/[a-fA-F0-9]{24}\/notebook\/[a-fA-F0-9]{24}(\?.*)?$/;
+
 function buildIframeSrc(embedUrl: string, iframeOptions?: IframeOptions): string {
   const url = new URL(embedUrl);
   if (iframeOptions?.theme) {
@@ -282,7 +285,12 @@ export async function init(options: CodatumEmbedOptions): Promise<ICodatumEmbedI
   if (!container) {
     throw new CodatumEmbedError("CONTAINER_NOT_FOUND", "Container element not found");
   }
-
+  if (!EMBED_URL_REGEX.test(options.embedUrl)) {
+    throw new CodatumEmbedError(
+      "INVALID_OPTIONS",
+      "embedUrl must match https://app.codatum.com/protected/workspace/{workspaceId}/notebook/{notebookId}",
+    );
+  }
   const embedUrl = options.embedUrl;
   const expectedOrigin = new URL(embedUrl).origin;
   const iframeOptions = options.iframeOptions;

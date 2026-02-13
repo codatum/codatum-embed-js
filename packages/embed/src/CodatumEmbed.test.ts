@@ -2,6 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { init } from "./CodatumEmbed";
 import { CodatumEmbedError } from "./types";
 
+const WORKSPACE_ID = "a".repeat(24);
+const NOTEBOOK_ID = "b".repeat(24);
+const VALID_EMBED_URL = `https://app.codatum.com/protected/workspace/${WORKSPACE_ID}/notebook/${NOTEBOOK_ID}`;
+const EMBED_ORIGIN = "https://app.codatum.com";
+
 function getContainer(): HTMLElement {
   const el = document.getElementById("container");
   if (!el) throw new Error("Test setup: #container not found");
@@ -17,11 +22,24 @@ describe("init", () => {
     document.body.innerHTML = "";
   });
 
+  it("throws INVALID_OPTIONS when embedUrl does not match protected/workspace/{id}/notebook/{id}", async () => {
+    await expect(
+      init({
+        container: "#container",
+        embedUrl: "https://app.codatum.com/embed",
+        tokenProvider: () => Promise.resolve("token"),
+      }),
+    ).rejects.toMatchObject({
+      code: "INVALID_OPTIONS",
+      message: expect.stringContaining("embedUrl must match"),
+    });
+  });
+
   it("throws CONTAINER_NOT_FOUND when selector does not match", async () => {
     await expect(
       init({
         container: "#nonexistent",
-        embedUrl: "https://app.codatum.com/embed",
+        embedUrl: VALID_EMBED_URL,
         tokenProvider: () => Promise.resolve("token"),
       }),
     ).rejects.toMatchObject({
@@ -34,7 +52,7 @@ describe("init", () => {
     await expect(
       init({
         container: "#nonexistent",
-        embedUrl: "https://app.codatum.com/embed",
+        embedUrl: VALID_EMBED_URL,
         tokenProvider: () => Promise.resolve("token"),
       }),
     ).rejects.toBeInstanceOf(CodatumEmbedError);
@@ -45,7 +63,7 @@ describe("init", () => {
     const container = getContainer();
     const initPromise = init({
       container,
-      embedUrl: "https://app.codatum.com/embed",
+      embedUrl: VALID_EMBED_URL,
       tokenProvider: () => Promise.resolve("token"),
       tokenOptions: { initTimeout: 5000 },
     });
@@ -65,16 +83,15 @@ describe("init", () => {
   it("resolves when READY_FOR_TOKEN is dispatched and tokenProvider succeeds", async () => {
     const container = getContainer();
     const tokenProvider = vi.fn().mockResolvedValue("my-token");
-    const embedUrl = "https://app.codatum.com/embed";
     const initPromise = init({
       container,
-      embedUrl,
+      embedUrl: VALID_EMBED_URL,
       tokenProvider,
     });
 
     const iframe = container.querySelector("iframe");
     expect(iframe).toBeTruthy();
-    expect(iframe?.src).toContain("https://app.codatum.com/embed");
+    expect(iframe?.src).toContain(VALID_EMBED_URL);
 
     const postMessageSpy = vi.spyOn(
       (iframe as HTMLIFrameElement).contentWindow as Window,
@@ -84,7 +101,7 @@ describe("init", () => {
     window.dispatchEvent(
       new MessageEvent("message", {
         data: { type: "READY_FOR_TOKEN" },
-        origin: "https://app.codatum.com",
+        origin: EMBED_ORIGIN,
         source: (iframe as HTMLIFrameElement).contentWindow,
       }),
     );
@@ -96,7 +113,7 @@ describe("init", () => {
         type: "SET_TOKEN",
         token: "my-token",
       }),
-      "https://app.codatum.com",
+      EMBED_ORIGIN,
     );
     expect(instance.status).toBe("ready");
     expect(instance.iframe).toBe(iframe);
@@ -110,14 +127,14 @@ describe("init", () => {
     const tokenProvider = vi.fn().mockRejectedValue(new Error("network error"));
     const initPromise = init({
       container,
-      embedUrl: "https://app.codatum.com/embed",
+      embedUrl: VALID_EMBED_URL,
       tokenProvider,
     });
 
     window.dispatchEvent(
       new MessageEvent("message", {
         data: { type: "READY_FOR_TOKEN" },
-        origin: "https://app.codatum.com",
+        origin: EMBED_ORIGIN,
         source: container.querySelector("iframe")?.contentWindow ?? null,
       }),
     );
@@ -133,8 +150,8 @@ describe("instance", () => {
   let container: HTMLElement;
   let iframe: HTMLIFrameElement;
   let instance: Awaited<ReturnType<typeof init>>;
-  const embedUrl = "https://app.codatum.com/embed";
-  const origin = "https://app.codatum.com";
+  const embedUrl = VALID_EMBED_URL;
+  const origin = EMBED_ORIGIN;
 
   beforeEach(async () => {
     document.body.innerHTML = '<div id="container"></div>';
