@@ -6,9 +6,14 @@ import type {
   CodatumEmbedInstance as ICodatumEmbedInstance,
 } from "./types";
 import { CodatumEmbedError, type TokenOptions } from "./types";
-import { buildIframeSrc, deepClone, getIframeClassName, isValidEmbedUrl } from "./utils";
+import {
+  buildIframeSrc,
+  deepClone,
+  getIframeClassName,
+  getTokenTtlMs,
+  isValidEmbedUrl,
+} from "./utils";
 
-const DEFAULT_EXPIRES_IN = 3600;
 const DEFAULT_REFRESH_BUFFER = 300;
 const DEFAULT_RETRY_COUNT = 2;
 const DEFAULT_INIT_TIMEOUT = 30000;
@@ -18,13 +23,11 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
   private readonly iframeEl: HTMLIFrameElement;
   private readonly options: CodatumEmbedOptions;
   private readonly expectedOrigin: string;
-  private readonly expiresIn: number;
   private readonly refreshBuffer: number;
   private readonly retryCount: number;
   private readonly onRefreshed?: TokenOptions["onRefreshed"];
   private readonly onRefreshError?: TokenOptions["onRefreshError"];
 
-  private currentToken: string | null = null;
   private _status: EmbedStatus = "initializing";
   private initTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private refreshTimerId: ReturnType<typeof setTimeout> | null = null;
@@ -49,7 +52,6 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
     this.expectedOrigin = new URL(options.embedUrl).origin;
 
     const tokenOptions = options.tokenOptions ?? {};
-    this.expiresIn = (tokenOptions.expiresIn ?? DEFAULT_EXPIRES_IN) * 1000;
     this.refreshBuffer = (tokenOptions.refreshBuffer ?? DEFAULT_REFRESH_BUFFER) * 1000;
     this.retryCount = tokenOptions.retryCount ?? DEFAULT_RETRY_COUNT;
     this.onRefreshed = tokenOptions.onRefreshed;
@@ -92,7 +94,7 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
     return this._status;
   }
 
-  get isDestroyed(): boolean {
+  private get isDestroyed(): boolean {
     return this._status === "destroyed";
   }
 
@@ -113,36 +115,44 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
   private sendSetToken(token: string): void {
     const win = this.iframeEl.contentWindow;
     if (!win || this.isDestroyed) return;
-    this.currentToken = token;
     win.postMessage(
       {
         type: "SET_TOKEN",
-        token: this.currentToken,
+        token,
         ...this.options.clientSideOptions,
       },
       this.expectedOrigin,
     );
   }
 
-  /** Calls tokenProvider and retries with exponential backoff up to retryCount on failure */
+  /** Calls tokenProvider and retries with exponential backoff up to retryCount on failure. On success, schedules the next token refresh. */
   private fetchTokenWithRetry(attempt = 0, delayMs = 1000): Promise<string> {
-    return this.options.tokenProvider().catch((err: unknown) => {
-      if (this.isDestroyed) return Promise.reject(err);
-      if (attempt < this.retryCount) {
-        return new Promise<string>((resolve, reject) => {
-          setTimeout(() => {
-            this.fetchTokenWithRetry(attempt + 1, delayMs * 2).then(resolve, reject);
-          }, delayMs);
-        });
-      }
-      return Promise.reject(err);
-    });
+    return this.options
+      .tokenProvider()
+      .catch((err: unknown) => {
+        if (this.isDestroyed) return Promise.reject(err);
+        if (attempt < this.retryCount) {
+          return new Promise<string>((resolve, reject) => {
+            setTimeout(() => {
+              this.fetchTokenWithRetry(attempt + 1, delayMs * 2).then(resolve, reject);
+            }, delayMs);
+          });
+        }
+        return Promise.reject(err);
+      })
+      .then((token) => {
+        const ttlMs = getTokenTtlMs(token);
+        if (ttlMs && ttlMs > 0) {
+          this.scheduleRefresh(ttlMs);
+        }
+        return token;
+      });
   }
 
-  private scheduleRefresh(): void {
-    this.clearRefreshTimer();
+  private scheduleRefresh(ttlMs: number): void {
     if (this.isDestroyed) return;
-    const delay = Math.max(0, this.expiresIn - this.refreshBuffer);
+    this.clearRefreshTimer();
+    const delay = Math.max(0, ttlMs - this.refreshBuffer);
     this.refreshTimerId = setTimeout(() => {
       this.refreshTimerId = null;
       this.runRefreshWithRetry();
@@ -156,12 +166,10 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
         if (this.isDestroyed) return;
         this.sendSetToken(token);
         this.onRefreshed?.();
-        this.scheduleRefresh();
       })
       .catch((err) => {
         if (this.isDestroyed) return;
         this.onRefreshError?.(err instanceof Error ? err : new Error(String(err)));
-        this.scheduleRefresh();
       });
   }
 
@@ -199,7 +207,6 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
         this._status = "ready";
         this.clearInitTimeout();
         this.sendSetToken(token);
-        this.scheduleRefresh();
         this.resolveInit(this);
       })
       .catch((err) => {
@@ -228,18 +235,14 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
         if (clientSideOptions) {
           this.options.clientSideOptions = clientSideOptions;
         }
-        this.clearRefreshTimer();
         this.sendSetToken(token);
-        this.scheduleRefresh();
       },
       (err) => {
         if (this.isDestroyed) return;
         if (myId !== this.reloadId) return;
-        this.rejectInit(
-          new CodatumEmbedError(
-            "TOKEN_PROVIDER_FAILED",
-            err instanceof Error ? err.message : String(err),
-          ),
+        throw new CodatumEmbedError(
+          "TOKEN_PROVIDER_FAILED",
+          err instanceof Error ? err.message : String(err),
         );
       },
     );

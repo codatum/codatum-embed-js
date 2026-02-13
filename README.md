@@ -37,11 +37,15 @@ embed.destroy();
 
 ## API overview
 
-### `CodatumEmbed.init(options): Promise<CodatumEmbedInstance>`
+### Initialization
+
+**`CodatumEmbed.init(options: CodatumEmbedOptions): Promise<CodatumEmbedInstance>`**
 
 Creates the iframe, waits for the embed to be ready, gets a token from `tokenProvider`, and sends it. Throws `CodatumEmbedError` on failure.
 
-| Option | Required | Description |
+#### `CodatumEmbedOptions` definition
+
+| Property | Required | Description |
 |--------|----------|-------------|
 | `container` | Yes | `HTMLElement` or CSS selector where the iframe is inserted |
 | `embedUrl` | Yes | Signed embed URL from Codatum |
@@ -67,7 +71,6 @@ Controls token lifetime, refresh behavior, and init timeout.
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `expiresIn` | `number` | `3600` | Expected token TTL in seconds; used to schedule auto-refresh |
 | `refreshBuffer` | `number` | `300` | Seconds before expiry to trigger refresh (e.g. 300 = refresh 5 min before) |
 | `retryCount` | `number` | `2` | Number of retries on token fetch failure; `0` = no retry |
 | `initTimeout` | `number` | `30000` | Max wait in ms for embed "ready"; `0` = no timeout |
@@ -183,7 +186,6 @@ const embed = await CodatumEmbed.init({
     return (await res.json()).token;
   },
   tokenOptions: {
-    expiresIn: 3600,
     refreshBuffer: 300,
     onRefreshError: () => { window.location.href = '/login'; },
   },

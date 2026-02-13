@@ -26,7 +26,6 @@ export interface IframeOptions {
 }
 
 export interface TokenOptions {
-  expiresIn?: number;
   refreshBuffer?: number;
   retryCount?: number; // if 0, no retry
   initTimeout?: number; // milliseconds; if 0, no timeout
