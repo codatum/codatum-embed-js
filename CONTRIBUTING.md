@@ -104,7 +104,9 @@ The `examples/` directory contains runnable demos for the SDK. Each subfolder ha
 - **[examples/server/README.md](examples/server/README.md)** — Hono server that issues signed-embed tokens. Many examples depend on this; run it first and configure `config.json` with your Codatum API credentials.
 - **[examples/vanilla/README.md](examples/vanilla/README.md)** — Minimal browser demo (ESM and CDN). Requires the examples server and a built `@codatum/embed` package.
 
-Run from the repo root with `pnpm --filter @examples/<name> dev` (e.g. `@examples/server`, `@examples/vanilla`). See each README for details.
+From the repo root:
+
+- **`pnpm dev`** — Runs `dev` in all workspaces (packages + examples) via `turbo run dev`. Dependencies are built first (`dependsOn: ["^build"]`), then package watch builds and example servers start (server 3100, vanilla 5173, vue 5174). See each example README for URLs and setup.
 
 ## Working on a single package
 
