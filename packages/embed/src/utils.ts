@@ -30,3 +30,9 @@ export const buildIframeSrc = (embedUrl: string, iframeOptions?: IframeOptions):
   }
   return url.toString();
 };
+
+const BASE_IFRAME_CLASS = "codatum-embed-iframe";
+
+export const getIframeClassName = (iframeOptions?: IframeOptions): string => {
+  return BASE_IFRAME_CLASS + (iframeOptions?.className ? ` ${iframeOptions.className}` : "");
+};

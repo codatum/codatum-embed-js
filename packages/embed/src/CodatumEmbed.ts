@@ -4,17 +4,14 @@ import type {
   EmbedEventMap,
   EmbedStatus,
   CodatumEmbedInstance as ICodatumEmbedInstance,
-  IframeOptions,
 } from "./types";
 import { CodatumEmbedError } from "./types";
-import { buildIframeSrc, deepClone, isValidEmbedUrl } from "./utils";
+import { buildIframeSrc, deepClone, getIframeClassName, isValidEmbedUrl } from "./utils";
 
 const DEFAULT_EXPIRES_IN = 3600;
 const DEFAULT_REFRESH_BUFFER = 300;
 const DEFAULT_RETRY_COUNT = 2;
 const DEFAULT_INIT_TIMEOUT = 30000;
-const IFRAME_CLASS_PREFIX = "codatum-embed-iframe";
-
 type MessageType = "READY_FOR_TOKEN" | "PARAM_CHANGED" | "EXECUTE_SQLS_TRIGGERED";
 
 export class CodatumEmbedInstance implements ICodatumEmbedInstance {
@@ -277,11 +274,9 @@ export async function init(options: CodatumEmbedOptions): Promise<ICodatumEmbedI
   const embedUrl = options.embedUrl;
   const iframeOptions = options.iframeOptions;
 
-  const src = buildIframeSrc(embedUrl, iframeOptions);
   const iframe = document.createElement("iframe");
-  iframe.src = src;
-  iframe.className =
-    IFRAME_CLASS_PREFIX + (iframeOptions?.className ? ` ${iframeOptions.className}` : "");
+  iframe.src = buildIframeSrc(embedUrl, iframeOptions);
+  iframe.className = getIframeClassName(iframeOptions);
   iframe.setAttribute("allow", "fullscreen; clipboard-write");
   Object.assign(iframe.style, {
     width: "100%",
