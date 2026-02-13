@@ -7,6 +7,7 @@ import type {
   IframeOptions,
 } from "./types";
 import { CodatumEmbedError } from "./types";
+import { buildIframeSrc, deepClone, isValidEmbedUrl } from "./utils";
 
 const DEFAULT_EXPIRES_IN = 3600;
 const DEFAULT_REFRESH_BUFFER = 300;
@@ -15,27 +16,6 @@ const DEFAULT_INIT_TIMEOUT = 30000;
 const IFRAME_CLASS_PREFIX = "codatum-embed-iframe";
 
 type MessageType = "READY_FOR_TOKEN" | "PARAM_CHANGED" | "EXECUTE_SQLS_TRIGGERED";
-
-function resolveContainer(container: HTMLElement | string): HTMLElement | null {
-  if (typeof container === "string") {
-    return document.querySelector(container);
-  }
-  return container;
-}
-
-const EMBED_URL_REGEX =
-  /^https:\/\/app\.codatum\.com\/protected\/workspace\/[a-fA-F0-9]{24}\/notebook\/[a-fA-F0-9]{24}(\?.*)?$/;
-
-function buildIframeSrc(embedUrl: string, iframeOptions?: IframeOptions): string {
-  const url = new URL(embedUrl);
-  if (iframeOptions?.theme) {
-    url.searchParams.set("theme", iframeOptions.theme);
-  }
-  if (iframeOptions?.locale) {
-    url.searchParams.set("locale", iframeOptions.locale);
-  }
-  return url.toString();
-}
 
 export class CodatumEmbedInstance implements ICodatumEmbedInstance {
   private readonly iframeEl: HTMLIFrameElement;
@@ -47,7 +27,6 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
   private readonly onRefreshed?: () => void;
   private readonly onRefreshError?: (error: Error) => void;
 
-  private currentClientSideOptions: ClientSideOptions | undefined;
   private currentToken: string | null = null;
   private _status: EmbedStatus = "initializing";
   private initTimeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -67,16 +46,10 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
 
   private readonly boundHandleMessage = (event: MessageEvent) => this.handleMessage(event);
 
-  constructor(
-    iframe: HTMLIFrameElement,
-    options: CodatumEmbedOptions,
-    expectedOrigin: string,
-    initTimeoutMs: number,
-  ) {
+  constructor(iframe: HTMLIFrameElement, options: CodatumEmbedOptions) {
     this.iframeEl = iframe;
     this.options = options;
-    this.expectedOrigin = expectedOrigin;
-    this.currentClientSideOptions = options.clientSideOptions;
+    this.expectedOrigin = new URL(options.embedUrl).origin;
 
     const tokenOptions = options.tokenOptions ?? {};
     this.expiresIn = (tokenOptions.expiresIn ?? DEFAULT_EXPIRES_IN) * 1000;
@@ -84,6 +57,8 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
     this.retryCount = tokenOptions.retryCount ?? DEFAULT_RETRY_COUNT;
     this.onRefreshed = tokenOptions.onRefreshed;
     this.onRefreshError = tokenOptions.onRefreshError;
+
+    const initTimeoutMs = tokenOptions.initTimeout ?? DEFAULT_INIT_TIMEOUT;
 
     this.initPromise = new Promise<ICodatumEmbedInstance>((resolve, reject) => {
       this.resolveInit = resolve;
@@ -141,7 +116,7 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
       {
         type: "SET_TOKEN",
         token: this.currentToken,
-        ...this.currentClientSideOptions,
+        ...this.options.clientSideOptions,
       },
       this.expectedOrigin,
     );
@@ -232,11 +207,14 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
   }
 
   reload(clientSideOptions?: ClientSideOptions): Promise<void> {
+    clientSideOptions = deepClone(clientSideOptions);
+
     if (this._status === "destroyed") {
+      // ignore if already destroyed
       return Promise.resolve();
     }
-    if (clientSideOptions !== undefined) {
-      this.currentClientSideOptions = clientSideOptions;
+    if (clientSideOptions) {
+      this.options.clientSideOptions = clientSideOptions;
     }
     this.reloadId += 1;
     const myId = this.reloadId;
@@ -281,21 +259,23 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
 }
 
 export async function init(options: CodatumEmbedOptions): Promise<ICodatumEmbedInstance> {
-  const container = resolveContainer(options.container);
+  options = deepClone(options);
+
+  const container =
+    typeof options.container === "string"
+      ? document.querySelector(options.container)
+      : options.container;
   if (!container) {
     throw new CodatumEmbedError("CONTAINER_NOT_FOUND", "Container element not found");
   }
-  if (!EMBED_URL_REGEX.test(options.embedUrl)) {
+  if (!isValidEmbedUrl(options.embedUrl)) {
     throw new CodatumEmbedError(
       "INVALID_OPTIONS",
       "embedUrl must match https://app.codatum.com/protected/workspace/{workspaceId}/notebook/{notebookId}",
     );
   }
   const embedUrl = options.embedUrl;
-  const expectedOrigin = new URL(embedUrl).origin;
   const iframeOptions = options.iframeOptions;
-  const tokenOptions = options.tokenOptions ?? {};
-  const initTimeoutMs = tokenOptions.initTimeout ?? DEFAULT_INIT_TIMEOUT;
 
   const src = buildIframeSrc(embedUrl, iframeOptions);
   const iframe = document.createElement("iframe");
@@ -312,6 +292,6 @@ export async function init(options: CodatumEmbedOptions): Promise<ICodatumEmbedI
 
   container.appendChild(iframe);
 
-  const instance = new CodatumEmbedInstance(iframe, options, expectedOrigin, initTimeoutMs);
+  const instance = new CodatumEmbedInstance(iframe, options);
   return instance.getInitPromise();
 }

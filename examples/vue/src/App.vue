@@ -61,10 +61,16 @@ function onEmbedError(err: Error) {
       <CodatumEmbed
         :embed-url="embedUrl"
         :token-provider="tokenProvider"
-        :iframe-options="{ theme: 'LIGHT', locale: 'en' }"
+        :iframe-options="{
+          theme: 'LIGHT',
+          locale: 'en',
+          className: 'vue-example-iframe',
+        }"
         @ready="onReady"
         @param-changed="(e) => console.log('[paramChanged]', e)"
-        @execute-sqls-triggered="(e) => console.log('[executeSqlsTriggered]', e)"
+        @execute-sqls-triggered="
+          (e) => console.log('[executeSqlsTriggered]', e)
+        "
         @error="onEmbedError"
       />
     </div>
