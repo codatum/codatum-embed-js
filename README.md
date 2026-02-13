@@ -303,7 +303,6 @@ const [salesDashboard, supportDashboard] = await Promise.all([
 
 - Browsers: ES2017+ (Chrome 63+, Firefox 57+, Safari 12+, iOS Safari 12+)
 - Module formats: ESM, CJS, IIFE (see CDN)
-- No polyfills shipped; the SDK uses only `postMessage`, `addEventListener`, `Promise`, `setTimeout`, `URL`, and `document.querySelector`
 
 ## Contributing
 
