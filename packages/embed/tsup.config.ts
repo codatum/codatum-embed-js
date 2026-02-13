@@ -6,7 +6,7 @@ export default defineConfig({
   target: "es2017",
   dts: true,
   sourcemap: true,
-  clean: true,
+  clean: false,
   minify: false,
   globalName: "CodatumEmbed",
   outExtension({ format }) {

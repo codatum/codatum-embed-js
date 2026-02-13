@@ -16,6 +16,7 @@ export type {
   CodatumEmbedOptions,
   DecodedParams,
   EmbedEventMap,
+  EmbedStatus,
   EncodedParam,
   IframeOptions,
   ParamEncodeOptions,

@@ -4,6 +4,7 @@
   "packageManager": "pnpm@10.17.0",
   "scripts": {
     "build": "turbo run build",
+    "dev": "turbo run dev",
     "test": "turbo run test",
     "lint": "biome lint .",
     "lint:fix": "biome lint . --write",

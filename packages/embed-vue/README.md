@@ -1,0 +1,58 @@
+# @codatum/embed-vue
+
+Vue 3 integration for Codatum Signed Embed. Wraps [@codatum/embed](https://github.com/codatum/codatum-embed-js/tree/main/packages/embed) and provides a single component.
+
+## Installation
+
+```bash
+pnpm add @codatum/embed-vue
+```
+
+## Usage
+
+```vue
+<script setup lang="ts">
+import { CodatumEmbed } from "@codatum/embed-vue";
+
+const embedUrl = "https://app.codatum.com/embed/...";
+async function tokenProvider() {
+  const res = await fetch("/api/embed-token", { method: "POST" });
+  const { token } = await res.json();
+  return token;
+}
+</script>
+
+<template>
+  <CodatumEmbed
+    :embed-url="embedUrl"
+    :token-provider="tokenProvider"
+    :iframe-options="{ theme: 'LIGHT', locale: 'ja' }"
+    @ready="console.log('Embed ready')"
+    @param-changed="(e) => console.log('Params', e.params)"
+    @execute-sqls-triggered="(e) => console.log('Execute', e.params)"
+    @error="(e) => console.error(e)"
+  />
+</template>
+```
+
+Calling `reload` from the parent:
+
+```vue
+<CodatumEmbed ref="embedRef" ... />
+
+<script setup>
+const embedRef = ref(null);
+// embedRef.value?.instance?.reload({ params: [...] })
+</script>
+```
+
+## API
+
+- **CodatumEmbed**  
+  - Props: `embedUrl`, `tokenProvider`, `iframeOptions?`, `tokenOptions?`, `clientSideOptions?`  
+  - Events: `ready`, `paramChanged`, `executeSqlsTriggered`, `error`  
+  - Expose: `instance`, `status`, `error`, `isReady`
+
+Types such as `CodatumEmbedInstance`, `ClientSideOptions`, `IframeOptions`, and `TokenOptions` are re-exported from `@codatum/embed`.
+
+Need a custom container or more control? Use [@codatum/embed](https://github.com/codatum/codatum-embed-js/tree/main/packages/embed) directly (e.g. call `init` in `onMounted` and `destroy` in `onUnmounted`).
