@@ -66,6 +66,7 @@ function onEmbedError(err: Error) {
           locale: 'en',
           className: 'vue-example-iframe',
         }"
+        :token-options="{}"
         @ready="onReady"
         @param-changed="(e) => console.log('[paramChanged]', e)"
         @execute-sqls-triggered="

@@ -41,14 +41,55 @@ embed.destroy();
 
 Creates the iframe, waits for the embed to be ready, gets a token from `tokenProvider`, and sends it. Throws `CodatumEmbedError` on failure.
 
-| Option | Description |
-|--------|-------------|
-| `container` | `HTMLElement` or CSS selector where the iframe is inserted |
-| `embedUrl` | Signed embed URL from Codatum |
-| `tokenProvider` | `() => Promise<string>`. Called on init, on auto-refresh, and when `reload()` is used |
-| `iframeOptions` | Optional: `theme` ('LIGHT' \| 'DARK'), `locale`, `className`, `style` |
-| `tokenOptions` | Optional: `expiresIn`, `refreshBuffer`, `retryCount`, `initTimeout`, `onRefreshed`, `onRefreshError` |
-| `clientSideOptions` | Optional: `displayOptions` (e.g. `sqlDisplay`, `hideParamsForm`), `params` (see ParamHelper) |
+| Option | Required | Description |
+|--------|----------|-------------|
+| `container` | Yes | `HTMLElement` or CSS selector where the iframe is inserted |
+| `embedUrl` | Yes | Signed embed URL from Codatum |
+| `tokenProvider` | Yes | `() => Promise<string>`. Called on init, on auto-refresh, and when `reload()` is used |
+| `iframeOptions` | No | See [iframeOptions](#iframeoptions) below |
+| `tokenOptions` | No | See [tokenOptions](#tokenoptions) below |
+| `clientSideOptions` | No | See [clientSideOptions](#clientsideoptions) below |
+
+#### iframeOptions
+
+Options applied to the iframe element and passed to the embed via URL/search params.
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `theme` | `'LIGHT'` \| `'DARK'` | Browser's system theme | UI theme of the embedded notebook |
+| `locale` | `string` | Browser's locale | Locale code (e.g. `'en'`, `'ja'`) for the embed UI |
+| `className` | `string` | - | CSS class name(s) applied to the iframe element |
+| `style` | `object` | `{width: '100%', height: '100%', border: 'none'}` | Inline styles for the iframe; overrides the default styles |
+
+#### tokenOptions
+
+Controls token lifetime, refresh behavior, and init timeout.
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `expiresIn` | `number` | `3600` | Expected token TTL in seconds; used to schedule auto-refresh |
+| `refreshBuffer` | `number` | `300` | Seconds before expiry to trigger refresh (e.g. 300 = refresh 5 min before) |
+| `retryCount` | `number` | `2` | Number of retries on token fetch failure; `0` = no retry |
+| `initTimeout` | `number` | `30000` | Max wait in ms for embed "ready"; `0` = no timeout |
+| `onRefreshed` | `() => void` | `undefined` | Callback when token is successfully refreshed |
+| `onRefreshError` | `(error: Error) => void` | `undefined` | Callback when refresh or token fetch fails |
+
+#### clientSideOptions
+
+Sent to the embed with the token (SET_TOKEN message). Can be updated via `reload(clientSideOptions)`.
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `displayOptions` | `object` | See [displayOptions](#displayoptions) below |
+| `params` | `EncodedParam[]` | Initial/override parameter values; use ParamHelper `encode()` to build |
+
+##### displayOptions
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `sqlDisplay` | `'SHOW'` \| `'RESULT_ONLY'` \| `'HIDE'` | `'SHOW'` | Whether to show SQL editor, results only, or hide |
+| `hideParamsForm` | `boolean` | `false` | Hide the parameter form in the embed (e.g. when your app owns the filters) |
+| `expandParamsFormByDefault` | `boolean` | `false` | Whether the parameter form is expanded by default |
 
 ### Instance methods
 
@@ -68,6 +109,7 @@ All errors are thrown/rejected as `CodatumEmbedError` with `code`:
 | Code | When |
 |------|------|
 | `CONTAINER_NOT_FOUND` | Container element not found at init |
+| `INVALID_OPTIONS` | `init`, `reload` options are invalid |
 | `INIT_TIMEOUT` | Ready not received within `tokenOptions.initTimeout` |
 | `TOKEN_PROVIDER_FAILED` | `tokenProvider` threw (init or reload) |
 

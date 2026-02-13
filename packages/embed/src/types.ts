@@ -28,8 +28,8 @@ export interface IframeOptions {
 export interface TokenOptions {
   expiresIn?: number;
   refreshBuffer?: number;
-  retryCount?: number;
-  initTimeout?: number;
+  retryCount?: number; // if 0, no retry
+  initTimeout?: number; // milliseconds; if 0, no timeout
   onRefreshed?: () => void;
   onRefreshError?: (error: Error) => void;
 }

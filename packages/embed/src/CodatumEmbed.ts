@@ -5,7 +5,7 @@ import type {
   EmbedStatus,
   CodatumEmbedInstance as ICodatumEmbedInstance,
 } from "./types";
-import { CodatumEmbedError } from "./types";
+import { CodatumEmbedError, type TokenOptions } from "./types";
 import { buildIframeSrc, deepClone, getIframeClassName, isValidEmbedUrl } from "./utils";
 
 const DEFAULT_EXPIRES_IN = 3600;
@@ -21,8 +21,8 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
   private readonly expiresIn: number;
   private readonly refreshBuffer: number;
   private readonly retryCount: number;
-  private readonly onRefreshed?: () => void;
-  private readonly onRefreshError?: (error: Error) => void;
+  private readonly onRefreshed?: TokenOptions["onRefreshed"];
+  private readonly onRefreshError?: TokenOptions["onRefreshError"];
 
   private currentToken: string | null = null;
   private _status: EmbedStatus = "initializing";
@@ -85,11 +85,15 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
   }
 
   get iframe(): HTMLIFrameElement | null {
-    return this._status === "destroyed" ? null : this.iframeEl;
+    return this.isDestroyed ? null : this.iframeEl;
   }
 
   get status(): EmbedStatus {
     return this._status;
+  }
+
+  get isDestroyed(): boolean {
+    return this._status === "destroyed";
   }
 
   private clearInitTimeout(): void {
@@ -106,9 +110,10 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
     }
   }
 
-  private sendSetToken(): void {
+  private sendSetToken(token: string): void {
     const win = this.iframeEl.contentWindow;
-    if (!win || this._status === "destroyed") return;
+    if (!win || this.isDestroyed) return;
+    this.currentToken = token;
     win.postMessage(
       {
         type: "SET_TOKEN",
@@ -119,37 +124,44 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
     );
   }
 
+  /** Calls tokenProvider and retries with exponential backoff up to retryCount on failure */
+  private fetchTokenWithRetry(attempt = 0, delayMs = 1000): Promise<string> {
+    return this.options.tokenProvider().catch((err: unknown) => {
+      if (this.isDestroyed) return Promise.reject(err);
+      if (attempt < this.retryCount) {
+        return new Promise<string>((resolve, reject) => {
+          setTimeout(() => {
+            this.fetchTokenWithRetry(attempt + 1, delayMs * 2).then(resolve, reject);
+          }, delayMs);
+        });
+      }
+      return Promise.reject(err);
+    });
+  }
+
   private scheduleRefresh(): void {
     this.clearRefreshTimer();
-    if (this._status === "destroyed") return;
+    if (this.isDestroyed) return;
     const delay = Math.max(0, this.expiresIn - this.refreshBuffer);
     this.refreshTimerId = setTimeout(() => {
       this.refreshTimerId = null;
-      this.runRefreshWithRetry(0, 1000);
+      this.runRefreshWithRetry();
     }, delay);
   }
 
-  private runRefreshWithRetry(attempt: number, delayMs: number): void {
-    if (this._status === "destroyed") return;
-    this.options
-      .tokenProvider()
+  private runRefreshWithRetry(): void {
+    if (this.isDestroyed) return;
+    this.fetchTokenWithRetry()
       .then((token) => {
-        if (this._status === "destroyed") return;
-        this.currentToken = token;
-        this.sendSetToken();
+        if (this.isDestroyed) return;
+        this.sendSetToken(token);
         this.onRefreshed?.();
         this.scheduleRefresh();
       })
       .catch((err) => {
-        if (attempt < this.retryCount) {
-          this.refreshTimerId = setTimeout(() => {
-            this.refreshTimerId = null;
-            this.runRefreshWithRetry(attempt + 1, delayMs * 2);
-          }, delayMs);
-        } else {
-          this.onRefreshError?.(err instanceof Error ? err : new Error(String(err)));
-          this.scheduleRefresh();
-        }
+        if (this.isDestroyed) return;
+        this.onRefreshError?.(err instanceof Error ? err : new Error(String(err)));
+        this.scheduleRefresh();
       });
   }
 
@@ -181,18 +193,17 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
   private onReadyForToken(): void {
     if (this.readyForTokenHandled || this._status !== "initializing") return;
     this.readyForTokenHandled = true;
-    this.options
-      .tokenProvider()
+    this.fetchTokenWithRetry()
       .then((token) => {
-        if (this._status === "destroyed") return;
-        this.currentToken = token;
+        if (this.isDestroyed) return;
         this._status = "ready";
         this.clearInitTimeout();
-        this.sendSetToken();
+        this.sendSetToken(token);
         this.scheduleRefresh();
         this.resolveInit(this);
       })
       .catch((err) => {
+        if (this.isDestroyed) return;
         this.clearInitTimeout();
         this.rejectInit(
           new CodatumEmbedError(
@@ -206,8 +217,7 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
   reload(clientSideOptions?: ClientSideOptions): Promise<void> {
     clientSideOptions = deepClone(clientSideOptions);
 
-    if (this._status === "destroyed") {
-      // ignore if already destroyed
+    if (this.isDestroyed) {
       return Promise.resolve();
     }
     if (clientSideOptions) {
@@ -215,27 +225,29 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
     }
     this.reloadId += 1;
     const myId = this.reloadId;
-    return this.options.tokenProvider().then(
+    return this.fetchTokenWithRetry().then(
       (token) => {
-        if (this._status === "destroyed") return;
+        if (this.isDestroyed) return;
         if (myId !== this.reloadId) return;
-        this.currentToken = token;
         this.clearRefreshTimer();
-        this.sendSetToken();
+        this.sendSetToken(token);
         this.scheduleRefresh();
       },
-      (err) =>
-        Promise.reject(
+      (err) => {
+        if (this.isDestroyed) return;
+        if (myId !== this.reloadId) return;
+        this.rejectInit(
           new CodatumEmbedError(
             "TOKEN_PROVIDER_FAILED",
             err instanceof Error ? err.message : String(err),
           ),
-        ),
+        );
+      },
     );
   }
 
   on<K extends keyof EmbedEventMap>(event: K, handler: EmbedEventMap[K]): void {
-    if (this._status === "destroyed") return;
+    if (this.isDestroyed) return;
     (this.eventHandlers[event] as EmbedEventMap[K][]).push(handler);
   }
 
@@ -246,7 +258,7 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
   }
 
   destroy(): void {
-    if (this._status === "destroyed") return;
+    if (this.isDestroyed) return;
     this._status = "destroyed";
     this.clearInitTimeout();
     this.clearRefreshTimer();
