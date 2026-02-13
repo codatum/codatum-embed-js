@@ -28,8 +28,8 @@ export interface IframeOptions {
 export interface TokenOptions {
   expiresIn?: number;
   refreshBuffer?: number;
-  retryCount?: number;
-  initTimeout?: number;
+  retryCount?: number; // if 0, no retry
+  initTimeout?: number; // milliseconds; if 0, no timeout
   onRefreshed?: () => void;
   onRefreshError?: (error: Error) => void;
 }
@@ -51,6 +51,7 @@ export type EmbedEventMap = {
 export type CodatumEmbedErrorCode =
   | "CONTAINER_NOT_FOUND"
   | "INIT_TIMEOUT"
+  | "INVALID_OPTIONS"
   | "TOKEN_PROVIDER_FAILED";
 
 export class CodatumEmbedError extends Error {

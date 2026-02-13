@@ -46,25 +46,48 @@ function onEmbedError(err: Error) {
   statusMessage.value = err.message;
   statusError.value = true;
 }
+
+const embedRef = ref<InstanceType<typeof CodatumEmbed> | null>(null);
+const reloadEmbed = () => {
+  embedRef.value?.instance?.reload();
+};
 </script>
 
 <template>
   <div class="container">
     <h1 class="h5 mb-3">Codatum Embed — Vue Example</h1>
+    <div class="mb-3">
+      <button
+        type="button"
+        @click="reloadEmbed"
+        class="btn btn-outline-secondary"
+      >
+        reload()
+      </button>
+    </div>
     <div
       class="alert py-2 mb-3"
       :class="statusError ? 'alert-danger' : 'alert-success'"
     >
       {{ statusMessage }}
     </div>
-    <div v-if="embedUrl" class="border bg-white" style="height: 600px">
+    <div v-if="embedUrl" class="border bg-white">
       <CodatumEmbed
+        ref="embedRef"
         :embed-url="embedUrl"
         :token-provider="tokenProvider"
-        :iframe-options="{ theme: 'LIGHT', locale: 'en' }"
+        :iframe-options="{
+          theme: 'LIGHT',
+          locale: 'en',
+          className: 'vue-example-iframe',
+          style: { height: '600px' },
+        }"
+        :token-options="{}"
         @ready="onReady"
         @param-changed="(e) => console.log('[paramChanged]', e)"
-        @execute-sqls-triggered="(e) => console.log('[executeSqlsTriggered]', e)"
+        @execute-sqls-triggered="
+          (e) => console.log('[executeSqlsTriggered]', e)
+        "
         @error="onEmbedError"
       />
     </div>

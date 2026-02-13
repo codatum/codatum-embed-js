@@ -8,7 +8,6 @@ import type {
   TokenOptions,
 } from "@codatum/embed";
 import { onUnmounted, ref, watch } from "vue";
-import { useAttrs } from "vue";
 
 const props = withDefaults(
   defineProps<{
@@ -98,25 +97,14 @@ defineExpose({
   error,
   isReady,
 });
-
-const attrs = useAttrs();
-const containerStyle = {
-  width: "100%",
-  height: "100%",
-  minHeight: "300px",
-  ...(typeof attrs.style === "object" &&
-  attrs.style &&
-  !Array.isArray(attrs.style)
-    ? attrs.style
-    : {}),
-};
 </script>
 
 <template>
-  <div
-    ref="containerRef"
-    class="codatum-embed-vue-container"
-    :class="attrs.class"
-    :style="containerStyle"
-  />
+  <div ref="containerRef" class="codatum-embed-vue-container" />
 </template>
+
+<style scoped>
+.codatum-embed-vue-container {
+  display: contents;
+}
+</style>
