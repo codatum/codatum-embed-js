@@ -216,12 +216,8 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
 
   reload(clientSideOptions?: ClientSideOptions): Promise<void> {
     clientSideOptions = deepClone(clientSideOptions);
-
     if (this.isDestroyed) {
       return Promise.resolve();
-    }
-    if (clientSideOptions) {
-      this.options.clientSideOptions = clientSideOptions;
     }
     this.reloadId += 1;
     const myId = this.reloadId;
@@ -229,6 +225,9 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
       (token) => {
         if (this.isDestroyed) return;
         if (myId !== this.reloadId) return;
+        if (clientSideOptions) {
+          this.options.clientSideOptions = clientSideOptions;
+        }
         this.clearRefreshTimer();
         this.sendSetToken(token);
         this.scheduleRefresh();
