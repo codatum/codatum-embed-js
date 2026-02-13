@@ -71,7 +71,7 @@ Controls token lifetime, refresh behavior, and init timeout.
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `refreshBuffer` | `number` | `300` | Seconds before expiry to trigger refresh (e.g. 300 = refresh 5 min before) |
+| `refreshBuffer` | `number` | `60` | Seconds before expiry to trigger refresh |
 | `retryCount` | `number` | `2` | Number of retries on token fetch failure; `0` = no retry |
 | `initTimeout` | `number` | `30000` | Max wait in ms for embed "ready"; `0` = no timeout |
 | `onRefreshed` | `() => void` | `undefined` | Callback when token is successfully refreshed |

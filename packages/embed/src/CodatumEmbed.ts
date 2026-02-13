@@ -14,9 +14,12 @@ import {
   isValidEmbedUrl,
 } from "./utils";
 
-const DEFAULT_REFRESH_BUFFER = 300;
+const DEFAULT_REFRESH_BUFFER = 60;
 const DEFAULT_RETRY_COUNT = 2;
 const DEFAULT_INIT_TIMEOUT = 30000;
+
+const MIN_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 min; avoid refreshing too frequently
+
 type MessageType = "READY_FOR_TOKEN" | "PARAM_CHANGED" | "EXECUTE_SQLS_TRIGGERED";
 
 export class CodatumEmbedInstance implements ICodatumEmbedInstance {
@@ -152,11 +155,21 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
   private scheduleRefresh(ttlMs: number): void {
     if (this.isDestroyed) return;
     this.clearRefreshTimer();
-    const delay = Math.max(0, ttlMs - this.refreshBuffer);
+    if (ttlMs < this.refreshBuffer) {
+      console.warn("Token TTL is less than refresh buffer, skipping refresh");
+      return;
+    }
+    if (ttlMs - this.refreshBuffer < MIN_REFRESH_INTERVAL) {
+      // safe guard
+      console.warn(
+        "Too frequent refresh, skipping refresh. Please increase refreshBuffer or token TTL.",
+      );
+      return;
+    }
     this.refreshTimerId = setTimeout(() => {
       this.refreshTimerId = null;
       this.runRefreshWithRetry();
-    }, delay);
+    }, ttlMs - this.refreshBuffer);
   }
 
   private runRefreshWithRetry(): void {
