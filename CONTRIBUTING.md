@@ -88,13 +88,11 @@ codatum-embed-js/
 ├── tsconfig.base.json
 ├── packages/
 │   ├── embed/          # @codatum/embed (core SDK)
-│   ├── embed-vue/      # @codatum/embed-vue (future)
-│   └── embed-react/    # @codatum/embed-react (future)
+│   └── embed-vue/      # @codatum/embed-vue (Vue 3 integration)
 └── examples/
-    ├── server/         # Server-side token issuance examples
-    ├── vanilla/        # core examples
-    ├── vue/            # Vue examples
-    └── react/          # React examples
+    ├── server/         # Server-side token issuance (Hono)
+    ├── vanilla/        # Vanilla ESM / CDN examples
+    └── vue/            # Vue 3 example (@codatum/embed-vue)
 ```
 
 ## Using the examples
@@ -103,10 +101,28 @@ The `examples/` directory contains runnable demos for the SDK. Each subfolder ha
 
 - **[examples/server/README.md](examples/server/README.md)** — Hono server that issues signed-embed tokens. Many examples depend on this; run it first and configure `config.json` with your Codatum API credentials.
 - **[examples/vanilla/README.md](examples/vanilla/README.md)** — Minimal browser demo (ESM and CDN). Requires the examples server and a built `@codatum/embed` package.
+- **[examples/vue/README.md](examples/vue/README.md)** — Vue 3 demo using `@codatum/embed-vue`. Requires the examples server and built `@codatum/embed` and `@codatum/embed-vue` packages.
 
-From the repo root:
+### Development (dev) workflow
 
-- **`pnpm dev`** — Runs `dev` in all workspaces (packages + examples) via `turbo run dev`. Dependencies are built first (`dependsOn: ["^build"]`), then package watch builds and example servers start (server 3100, vanilla 5173, vue 5174). See each example README for URLs and setup.
+From the **repository root**, run:
+
+```bash
+pnpm dev
+```
+
+This uses Turborepo to start all dev tasks in parallel:
+
+| Target              | Port  | URL / note |
+|---------------------|-------|------------|
+| **examples/server** | 3100  | `http://localhost:3100` — token API (`/config`, `/token`). Requires `examples/server/config.json` (copy from `config.example.json`) for real token issuance. |
+| **examples/vanilla**| 5173  | `http://localhost:5173` — index lists [ESM](http://localhost:5173/esm.html) and [CDN](http://localhost:5173/cdn.html) examples. |
+| **examples/vue**    | 5174  | `http://localhost:5174` — Vue 3 example. |
+| **packages/embed**  | —     | Watch build (no HTTP server). |
+| **packages/embed-vue** | —  | Watch build (no HTTP server). |
+
+- The `dev` task in `turbo.json` is marked **`persistent: true`** so that long-running processes (Vite dev servers, watch scripts) are not closed by Turbo after startup.
+- Dependencies are built first (`dependsOn: ["^build"]`); then all dev tasks run. To run a single example, use e.g. `pnpm --filter @examples/vue dev` from the root.
 
 ## Working on a single package
 

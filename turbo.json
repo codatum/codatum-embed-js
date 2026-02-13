@@ -20,9 +20,10 @@
       "cache": false
     },
     "dev": {
-      "dependsOn": ["build", "^build"],
+      "dependsOn": ["^build"],
       "outputs": [],
-      "cache": false
+      "cache": false,
+      "persistent": true
     }
   },
   "globalDependencies": [
