@@ -5,10 +5,6 @@ export interface EncodedParam {
   is_hidden?: boolean;
 }
 
-/**
- * Client-side options included in Codatum's SET_TOKEN message.
- * @see https://docs.codatum.jp/sharing/signed-embed/integration
- */
 export interface ClientSideOptions {
   displayOptions?: {
     sqlDisplay?: "SHOW" | "RESULT_ONLY" | "HIDE";
@@ -42,9 +38,29 @@ export interface CodatumEmbedOptions {
   clientSideOptions?: ClientSideOptions;
 }
 
+export const EmbedMessageTypes = {
+  READY_FOR_TOKEN: "READY_FOR_TOKEN",
+  PARAM_CHANGED: "PARAM_CHANGED",
+  EXECUTE_SQLS_TRIGGERED: "EXECUTE_SQLS_TRIGGERED",
+} as const;
+
+type ReadyForTokenMessage = {
+  type: typeof EmbedMessageTypes.READY_FOR_TOKEN;
+};
+type ParamChangedMessage = {
+  type: typeof EmbedMessageTypes.PARAM_CHANGED;
+  params: EncodedParam[];
+};
+type ExecuteSqlsTriggeredMessage = {
+  type: typeof EmbedMessageTypes.EXECUTE_SQLS_TRIGGERED;
+  params: EncodedParam[];
+};
+
+export type EmbedMessage = ReadyForTokenMessage | ParamChangedMessage | ExecuteSqlsTriggeredMessage;
+
 export type EmbedEventMap = {
-  paramChanged: (payload: { params: EncodedParam[] }) => void;
-  executeSqlsTriggered: (payload: { params: EncodedParam[] }) => void;
+  paramChanged: (payload: Omit<ParamChangedMessage, "type">) => void;
+  executeSqlsTriggered: (payload: Omit<ExecuteSqlsTriggeredMessage, "type">) => void;
 };
 
 export type CodatumEmbedErrorCode =

@@ -2,6 +2,7 @@ import type {
   ClientSideOptions,
   CodatumEmbedOptions,
   EmbedEventMap,
+  EmbedMessage,
   EmbedStatus,
   CodatumEmbedInstance as ICodatumEmbedInstance,
 } from "./types";
@@ -19,8 +20,6 @@ const DEFAULT_RETRY_COUNT = 2;
 const DEFAULT_INIT_TIMEOUT = 30000;
 
 const MIN_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 min; avoid refreshing too frequently
-
-type MessageType = "READY_FOR_TOKEN" | "PARAM_CHANGED" | "EXECUTE_SQLS_TRIGGERED";
 
 export class CodatumEmbedInstance implements ICodatumEmbedInstance {
   private readonly iframeEl: HTMLIFrameElement;
@@ -190,11 +189,11 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
     if (event.source !== this.iframeEl.contentWindow || event.origin !== this.expectedOrigin) {
       return;
     }
-    const data = event.data;
+    const data = event.data as EmbedMessage;
     if (!data || typeof data !== "object" || typeof data.type !== "string") {
       return;
     }
-    switch (data.type as MessageType) {
+    switch (data.type) {
       case "READY_FOR_TOKEN":
         this.onReadyForToken();
         break;
