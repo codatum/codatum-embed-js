@@ -2,38 +2,34 @@ import type {
   DecodedParams,
   EncodedParam,
   ParamMapper as IParamMapper,
-  ParamEncodeOptions,
+  ParamMapDef,
 } from "./types";
 
-export class ParamMapper<T extends Record<string, string>> implements IParamMapper<T> {
+/** Special value for resetting to default */
+export const RESET_TO_DEFAULT = "_RESET_TO_DEFAULT_" as const;
+
+export class ParamMapper<T extends Record<string, ParamMapDef>> implements IParamMapper<T> {
   private readonly paramDefs: T;
   private readonly aliasByParamId: Map<string, keyof T & string>;
 
   constructor(paramDefs: T) {
     this.paramDefs = paramDefs;
     this.aliasByParamId = new Map();
-    for (const [alias, paramId] of Object.entries(paramDefs)) {
-      this.aliasByParamId.set(paramId, alias as keyof T & string);
+    for (const [alias, def] of Object.entries(paramDefs)) {
+      this.aliasByParamId.set(def.paramId, alias as keyof T & string);
     }
   }
 
-  encode(
-    values: { [K in keyof T]: unknown },
-    options?: ParamEncodeOptions<keyof T & string>,
-  ): EncodedParam[] {
-    const hiddenSet = new Set(options?.hidden ?? []);
+  encode(values: DecodedParams<T>): EncodedParam[] {
     const result: EncodedParam[] = [];
-
     for (const key of Object.keys(this.paramDefs) as (keyof T & string)[]) {
-      if (!(key in values)) {
-        throw new Error(`ParamMapper.encode: missing value for parameter "${String(key)}"`);
-      }
-      const paramId = this.paramDefs[key];
+      const paramId = this.paramDefs[key].paramId;
       const raw = values[key];
+      if (raw == null) continue;
       result.push({
         param_id: paramId,
-        param_value: JSON.stringify(raw),
-        is_hidden: hiddenSet.has(key) ? true : undefined,
+        param_value: raw === RESET_TO_DEFAULT ? RESET_TO_DEFAULT : JSON.stringify(raw),
+        is_hidden: this.paramDefs[key].isHidden ? true : undefined,
       });
     }
     return result;
@@ -54,6 +50,8 @@ export class ParamMapper<T extends Record<string, string>> implements IParamMapp
   }
 }
 
-export function createParamMapper<T extends Record<string, string>>(paramDefs: T): ParamMapper<T> {
+export function createParamMapper<T extends Record<string, ParamMapDef>>(
+  paramDefs: T,
+): ParamMapper<T> {
   return new ParamMapper(paramDefs);
 }

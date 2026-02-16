@@ -107,15 +107,15 @@ All errors are thrown/rejected as `CodatumEmbedError` with `code`:
 
 ## ParamMapper
 
-Use `CodatumEmbed.createParamMapper(paramDefs)` to map alias names to Codatum `param_id`s (from the admin UI). Use `encode()` to build params to return from `tokenProvider`; use `decode()` for event payloads.
+Use `CodatumEmbed.createParamMapper(paramDefs)` to map alias names to Codatum `param_id`s (from the admin UI). Each entry is `{ paramId: string }` for extensibility. Use `encode()` to build params to return from `tokenProvider`; use `decode()` for event payloads.
 
 ```ts
 import { CodatumEmbed } from '@codatum/embed';
 
 const paramMapper = CodatumEmbed.createParamMapper({
-  store_id: '67a1b2c3d4e5f6a7b8c9d0e1',
-  date_range: '67a1b2c3d4e5f6a7b8c9d0e2',
-  product_category: '67a1b2c3d4e5f6a7b8c9d0e3',
+  store_id: { paramId: '67a1b2c3d4e5f6a7b8c9d0e1' },
+  date_range: { paramId: '67a1b2c3d4e5f6a7b8c9d0e2' },
+  product_category: { paramId: '67a1b2c3d4e5f6a7b8c9d0e3' },
 });
 
 const embed = await CodatumEmbed.init({
@@ -132,7 +132,6 @@ const embed = await CodatumEmbed.init({
           date_range: ['2025-01-01', '2025-01-31'],
           product_category: [],
         },
-        { hidden: ['store_id'] },
       ),
     };
   },
@@ -147,7 +146,7 @@ embed.on('paramChanged', (payload) => {
 await embed.reload();
 ```
 
-- **`encode(values, options?)`** — Alias + values → `EncodedParam[]`. `options.hidden` marks params as hidden. All keys in `paramDefs` must be provided.
+- **`encode(values)`** — Alias + values → `EncodedParam[]`. All keys in `paramDefs` must be provided.
 - **`decode(params)`** — `EncodedParam[]` → alias + parsed values. Unknown `param_id`s are ignored.
 
 ## Usage examples
@@ -156,9 +155,9 @@ await embed.reload();
 
 ```ts
 const paramMapper = CodatumEmbed.createParamMapper({
-  date_range: '67a1b2c3d4e5f6a7b8c9d0e1',
-  product_category: '67a1b2c3d4e5f6a7b8c9d0e2',
-  store_id: '67a1b2c3d4e5f6a7b8c9d0e3',
+  date_range: { paramId: '67a1b2c3d4e5f6a7b8c9d0e1' },
+  product_category: { paramId: '67a1b2c3d4e5f6a7b8c9d0e2' },
+  store_id: { paramId: '67a1b2c3d4e5f6a7b8c9d0e3' },
 });
 
 const embed = await CodatumEmbed.init({
@@ -200,9 +199,9 @@ let currentStoreId = 'store_001';
 let currentDateRange: [string, string] = ['2025-01-01', '2025-01-31'];
 
 const paramMapper = CodatumEmbed.createParamMapper({
-  store_id: '67a1b2c3d4e5f6a7b8c9d0e1',
-  date_range: '67a1b2c3d4e5f6a7b8c9d0e2',
-  product_category: '67a1b2c3d4e5f6a7b8c9d0e3',
+  store_id: { paramId: '67a1b2c3d4e5f6a7b8c9d0e1', isHidden: true },
+  date_range: { paramId: '67a1b2c3d4e5f6a7b8c9d0e2' },
+  product_category: { paramId: '67a1b2c3d4e5f6a7b8c9d0e3' },
 });
 
 const embed = await CodatumEmbed.init({
@@ -217,7 +216,6 @@ const embed = await CodatumEmbed.init({
       token: data.token,
       params: paramMapper.encode(
         { store_id: currentStoreId, date_range: currentDateRange, product_category: [] },
-        { hidden: ['store_id'] },
       ),
     };
   },
@@ -235,9 +233,9 @@ async function onFilterChange(storeId: string, dateRange: [string, string]) {
 ```ts
 let currentStoreId = 'store_001';
 const paramMapper = CodatumEmbed.createParamMapper({
-  store_id: '67a1b2c3d4e5f6a7b8c9d0e1',
-  date_range: '67a1b2c3d4e5f6a7b8c9d0e2',
-  product_category: '67a1b2c3d4e5f6a7b8c9d0e3',
+  store_id: { paramId: '67a1b2c3d4e5f6a7b8c9d0e1', isHidden: true },
+  date_range: { paramId: '67a1b2c3d4e5f6a7b8c9d0e2' },
+  product_category: { paramId: '67a1b2c3d4e5f6a7b8c9d0e3' },
 });
 let latestValues = paramMapper.decode([]);
 
