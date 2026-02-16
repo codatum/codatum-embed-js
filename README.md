@@ -105,14 +105,14 @@ All errors are thrown/rejected as `CodatumEmbedError` with `code`:
 | `INIT_TIMEOUT` | Ready not received within `tokenOptions.initTimeout` |
 | `SESSION_PROVIDER_FAILED` | `tokenProvider` threw (init or reload) |
 
-## ParamHelper
+## ParamMapper
 
-Use `CodatumEmbed.createParamHelper(paramDefs)` to map alias names to Codatum `param_id`s (from the admin UI). Use `encode()` to build params to return from `tokenProvider`; use `decode()` for event payloads.
+Use `CodatumEmbed.createParamMapper(paramDefs)` to map alias names to Codatum `param_id`s (from the admin UI). Use `encode()` to build params to return from `tokenProvider`; use `decode()` for event payloads.
 
 ```ts
 import { CodatumEmbed } from '@codatum/embed';
 
-const paramHelper = CodatumEmbed.createParamHelper({
+const paramMapper = CodatumEmbed.createParamMapper({
   store_id: '67a1b2c3d4e5f6a7b8c9d0e1',
   date_range: '67a1b2c3d4e5f6a7b8c9d0e2',
   product_category: '67a1b2c3d4e5f6a7b8c9d0e3',
@@ -126,7 +126,7 @@ const embed = await CodatumEmbed.init({
     const data = await res.json();
     return {
       token: data.token,
-      params: paramHelper.encode(
+      params: paramMapper.encode(
         {
           store_id: 'store_001',
           date_range: ['2025-01-01', '2025-01-31'],
@@ -139,7 +139,7 @@ const embed = await CodatumEmbed.init({
 });
 
 embed.on('paramChanged', (payload) => {
-  const values = paramHelper.decode(payload.params);
+  const values = paramMapper.decode(payload.params);
   // { store_id, date_range, product_category }
 });
 
@@ -155,7 +155,7 @@ await embed.reload();
 ### Basic (params form in embed)
 
 ```ts
-const paramHelper = CodatumEmbed.createParamHelper({
+const paramMapper = CodatumEmbed.createParamMapper({
   date_range: '67a1b2c3d4e5f6a7b8c9d0e1',
   product_category: '67a1b2c3d4e5f6a7b8c9d0e2',
   store_id: '67a1b2c3d4e5f6a7b8c9d0e3',
@@ -174,7 +174,7 @@ const embed = await CodatumEmbed.init({
     const data = await res.json();
     return {
       token: data.token,
-      params: paramHelper.encode({
+      params: paramMapper.encode({
         date_range: '_RESET_TO_DEFAULT_',
         product_category: [],
         store_id: currentUser.defaultStoreId,
@@ -188,7 +188,7 @@ const embed = await CodatumEmbed.init({
 });
 
 embed.on('paramChanged', (payload) => {
-  const values = paramHelper.decode(payload.params);
+  const values = paramMapper.decode(payload.params);
   console.log('Changed:', values);
 });
 ```
@@ -198,6 +198,12 @@ embed.on('paramChanged', (payload) => {
 ```ts
 let currentStoreId = 'store_001';
 let currentDateRange: [string, string] = ['2025-01-01', '2025-01-31'];
+
+const paramMapper = CodatumEmbed.createParamMapper({
+  store_id: '67a1b2c3d4e5f6a7b8c9d0e1',
+  date_range: '67a1b2c3d4e5f6a7b8c9d0e2',
+  product_category: '67a1b2c3d4e5f6a7b8c9d0e3',
+});
 
 const embed = await CodatumEmbed.init({
   container: '#dashboard',
@@ -209,7 +215,7 @@ const embed = await CodatumEmbed.init({
     const data = await res.json();
     return {
       token: data.token,
-      params: paramHelper.encode(
+      params: paramMapper.encode(
         { store_id: currentStoreId, date_range: currentDateRange, product_category: [] },
         { hidden: ['store_id'] },
       ),
@@ -228,7 +234,12 @@ async function onFilterChange(storeId: string, dateRange: [string, string]) {
 
 ```ts
 let currentStoreId = 'store_001';
-let latestValues = paramHelper.decode([]);
+const paramMapper = CodatumEmbed.createParamMapper({
+  store_id: '67a1b2c3d4e5f6a7b8c9d0e1',
+  date_range: '67a1b2c3d4e5f6a7b8c9d0e2',
+  product_category: '67a1b2c3d4e5f6a7b8c9d0e3',
+});
+let latestValues = paramMapper.decode([]);
 
 const embed = await CodatumEmbed.init({
   container: '#dashboard',
@@ -241,7 +252,7 @@ const embed = await CodatumEmbed.init({
     const data = await res.json();
     return {
       token: data.token,
-      params: paramHelper.encode({
+      params: paramMapper.encode({
         date_range: '_RESET_TO_DEFAULT_',
         product_category: [],
         store_id: currentStoreId,
@@ -250,7 +261,7 @@ const embed = await CodatumEmbed.init({
   },
 });
 
-embed.on('paramChanged', (payload) => { latestValues = paramHelper.decode(payload.params); });
+embed.on('paramChanged', (payload) => { latestValues = paramMapper.decode(payload.params); });
 
 async function onStoreSwitch(storeId: string) {
   currentStoreId = storeId;

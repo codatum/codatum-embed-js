@@ -80,7 +80,7 @@ export class CodatumEmbedError extends Error {
   }
 }
 
-/** Parameter shape used by ParamHelper (before encode / after decode) */
+/** Parameter shape used by ParamMapper (before encode / after decode) */
 export type DecodedParams<T extends Record<string, string>> = {
   [K in keyof T]: unknown;
 };
@@ -89,7 +89,7 @@ export interface ParamEncodeOptions<K extends string> {
   hidden?: K[];
 }
 
-export interface ParamHelper<T extends Record<string, string>> {
+export interface ParamMapper<T extends Record<string, string>> {
   encode(
     values: { [K in keyof T]: unknown },
     options?: ParamEncodeOptions<keyof T & string>,

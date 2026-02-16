@@ -1,11 +1,11 @@
 import type {
   DecodedParams,
   EncodedParam,
-  ParamHelper as IParamHelper,
+  ParamMapper as IParamMapper,
   ParamEncodeOptions,
 } from "./types";
 
-export class ParamHelper<T extends Record<string, string>> implements IParamHelper<T> {
+export class ParamMapper<T extends Record<string, string>> implements IParamMapper<T> {
   private readonly paramDefs: T;
   private readonly aliasByParamId: Map<string, keyof T & string>;
 
@@ -26,7 +26,7 @@ export class ParamHelper<T extends Record<string, string>> implements IParamHelp
 
     for (const key of Object.keys(this.paramDefs) as (keyof T & string)[]) {
       if (!(key in values)) {
-        throw new Error(`ParamHelper.encode: missing value for parameter "${String(key)}"`);
+        throw new Error(`ParamMapper.encode: missing value for parameter "${String(key)}"`);
       }
       const paramId = this.paramDefs[key];
       const raw = values[key];
@@ -54,6 +54,6 @@ export class ParamHelper<T extends Record<string, string>> implements IParamHelp
   }
 }
 
-export function createParamHelper<T extends Record<string, string>>(paramDefs: T): ParamHelper<T> {
-  return new ParamHelper(paramDefs);
+export function createParamMapper<T extends Record<string, string>>(paramDefs: T): ParamMapper<T> {
+  return new ParamMapper(paramDefs);
 }
