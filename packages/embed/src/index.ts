@@ -22,8 +22,8 @@ export type {
   IframeOptions,
   ParamEncodeOptions,
   ParamHelper,
-  SessionProviderResult,
   TokenOptions,
+  TokenProviderResult,
 } from "./types";
 
 export { CodatumEmbedError } from "./types";

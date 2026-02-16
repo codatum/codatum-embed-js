@@ -12,7 +12,7 @@ export interface DisplayOptions {
 }
 
 /** Return type of tokenProvider. params are sent to the embed with SET_TOKEN. */
-export interface SessionProviderResult {
+export interface TokenProviderResult {
   token: string;
   params?: EncodedParam[];
 }
@@ -34,7 +34,7 @@ export interface TokenOptions {
 export interface CodatumEmbedOptions {
   container: HTMLElement | string;
   embedUrl: string;
-  tokenProvider: () => Promise<SessionProviderResult>;
+  tokenProvider: () => Promise<TokenProviderResult>;
   iframeOptions?: IframeOptions;
   tokenOptions?: TokenOptions;
   displayOptions?: DisplayOptions;

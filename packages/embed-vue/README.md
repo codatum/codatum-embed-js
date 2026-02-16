@@ -53,6 +53,6 @@ const embedRef = ref(null);
   - Events: `ready`, `paramChanged`, `executeSqlsTriggered`, `error`  
   - Expose: `instance`, `status`, `error`, `isReady`
 
-Types such as `CodatumEmbedInstance`, `DisplayOptions`, `IframeOptions`, `SessionProviderResult`, and `TokenOptions` are re-exported from `@codatum/embed`.
+Types such as `CodatumEmbedInstance`, `DisplayOptions`, `IframeOptions`, `TokenProviderResult`, and `TokenOptions` are re-exported from `@codatum/embed`.
 
 Need a custom container or more control? Use [@codatum/embed](https://github.com/codatum/codatum-embed-js/tree/main/packages/embed) directly (e.g. call `init` in `onMounted` and `destroy` in `onUnmounted`).

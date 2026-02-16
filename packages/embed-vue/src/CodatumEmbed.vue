@@ -5,7 +5,7 @@ import type {
   DisplayOptions,
   EncodedParam,
   IframeOptions,
-  SessionProviderResult,
+  TokenProviderResult,
   TokenOptions,
 } from "@codatum/embed";
 import { onUnmounted, ref, watch } from "vue";
@@ -13,7 +13,7 @@ import { onUnmounted, ref, watch } from "vue";
 const props = withDefaults(
   defineProps<{
     embedUrl: string;
-    tokenProvider: () => Promise<SessionProviderResult>;
+    tokenProvider: () => Promise<TokenProviderResult>;
     iframeOptions?: IframeOptions;
     tokenOptions?: TokenOptions;
     displayOptions?: DisplayOptions;
