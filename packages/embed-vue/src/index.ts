@@ -7,6 +7,6 @@ export type {
   EmbedStatus,
   EncodedParam,
   IframeOptions,
-  SessionProviderResult,
   TokenOptions,
+  TokenProviderResult,
 } from "@codatum/embed";

@@ -37,7 +37,7 @@
             return window.CodatumEmbed.init({
               container: containerEl,
               embedUrl: config.embedUrl,
-              sessionProvider: function () {
+              tokenProvider: function () {
                 return fetch(SERVER_URL + "/token", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },

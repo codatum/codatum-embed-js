@@ -1,14 +1,15 @@
 import { init } from "./CodatumEmbed";
-import { createParamHelper } from "./ParamHelper";
+import { createParamMapper, RESET_TO_DEFAULT } from "./ParamMapper";
 
 export const CodatumEmbed = {
   init,
-  createParamHelper,
+  createParamMapper,
+  RESET_TO_DEFAULT,
 };
 
 // FIXME
 export { init } from "./CodatumEmbed";
-export { createParamHelper } from "./ParamHelper";
+export { createParamMapper, RESET_TO_DEFAULT } from "./ParamMapper";
 
 export type {
   CodatumEmbedErrorCode,
@@ -20,10 +21,10 @@ export type {
   EmbedStatus,
   EncodedParam,
   IframeOptions,
-  ParamEncodeOptions,
-  ParamHelper,
-  SessionProviderResult,
+  ParamMapDef,
+  ParamMapper,
   TokenOptions,
+  TokenProviderResult,
 } from "./types";
 
 export { CodatumEmbedError } from "./types";

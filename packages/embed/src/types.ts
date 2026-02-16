@@ -11,8 +11,8 @@ export interface DisplayOptions {
   expandParamsFormByDefault?: boolean;
 }
 
-/** Return type of sessionProvider. params are sent to the embed with SET_TOKEN. */
-export interface SessionProviderResult {
+/** Return type of tokenProvider. params are sent to the embed with SET_TOKEN. */
+export interface TokenProviderResult {
   token: string;
   params?: EncodedParam[];
 }
@@ -28,14 +28,13 @@ export interface TokenOptions {
   refreshBuffer?: number;
   retryCount?: number; // if 0, no retry
   initTimeout?: number; // milliseconds; if 0, no timeout
-  onRefreshed?: () => void;
   onRefreshError?: (error: Error) => void;
 }
 
 export interface CodatumEmbedOptions {
   container: HTMLElement | string;
   embedUrl: string;
-  sessionProvider: () => Promise<SessionProviderResult>;
+  tokenProvider: () => Promise<TokenProviderResult>;
   iframeOptions?: IframeOptions;
   tokenOptions?: TokenOptions;
   displayOptions?: DisplayOptions;
@@ -70,7 +69,9 @@ export type CodatumEmbedErrorCode =
   | "CONTAINER_NOT_FOUND"
   | "INIT_TIMEOUT"
   | "INVALID_OPTIONS"
-  | "SESSION_PROVIDER_FAILED";
+  | "SESSION_PROVIDER_FAILED"
+  | "MISSING_REQUIRED_PARAM"
+  | "INVALID_PARAM_VALUE";
 
 export class CodatumEmbedError extends Error {
   code: CodatumEmbedErrorCode;
@@ -81,20 +82,16 @@ export class CodatumEmbedError extends Error {
   }
 }
 
-/** Parameter shape used by ParamHelper (before encode / after decode) */
-export type DecodedParams<T extends Record<string, string>> = {
-  [K in keyof T]: unknown;
+export type ParamMapDef = { paramId: string; hidden?: boolean; required?: boolean };
+
+export type DecodedParams<T extends Record<string, ParamMapDef>> = {
+  [K in keyof T as T[K] extends { required: true } ? K : never]: unknown;
+} & {
+  [K in keyof T as T[K] extends { required: true } ? never : K]?: unknown;
 };
 
-export interface ParamEncodeOptions<K extends string> {
-  hidden?: K[];
-}
-
-export interface ParamHelper<T extends Record<string, string>> {
-  encode(
-    values: { [K in keyof T]: unknown },
-    options?: ParamEncodeOptions<keyof T & string>,
-  ): EncodedParam[];
+export interface ParamMapper<T extends Record<string, ParamMapDef>> {
+  encode(values: DecodedParams<T>): EncodedParam[];
   decode(params: EncodedParam[]): Partial<DecodedParams<T>>;
 }
 

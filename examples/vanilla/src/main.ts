@@ -38,7 +38,7 @@ async function run() {
     const embed = await CodatumEmbed.init({
       container: containerEl,
       embedUrl,
-      sessionProvider: async () => {
+      tokenProvider: async () => {
         const res = await fetch(`${SERVER_URL}/token`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },

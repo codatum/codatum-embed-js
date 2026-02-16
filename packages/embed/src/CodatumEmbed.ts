@@ -27,7 +27,6 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
   private readonly expectedOrigin: string;
   private readonly refreshBuffer: number;
   private readonly retryCount: number;
-  private readonly onRefreshed?: TokenOptions["onRefreshed"];
   private readonly onRefreshError?: TokenOptions["onRefreshError"];
 
   private _status: EmbedStatus = "initializing";
@@ -56,7 +55,6 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
     const tokenOptions = options.tokenOptions ?? {};
     this.refreshBuffer = (tokenOptions.refreshBuffer ?? DEFAULT_REFRESH_BUFFER) * 1000;
     this.retryCount = tokenOptions.retryCount ?? DEFAULT_RETRY_COUNT;
-    this.onRefreshed = tokenOptions.onRefreshed;
     this.onRefreshError = tokenOptions.onRefreshError;
 
     const initTimeoutMs = tokenOptions.initTimeout ?? DEFAULT_INIT_TIMEOUT;
@@ -134,13 +132,13 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
     );
   }
 
-  /** Calls sessionProvider and retries with exponential backoff up to retryCount on failure. On success, schedules the next token refresh. */
+  /** Calls tokenProvider and retries with exponential backoff up to retryCount on failure. On success, schedules the next token refresh. */
   private fetchSessionWithRetry(
     attempt = 0,
     delayMs = 1000,
   ): Promise<{ token: string; params?: EncodedParam[] }> {
     return this.options
-      .sessionProvider()
+      .tokenProvider()
       .catch((err: unknown) => {
         if (this.isDestroyed) return Promise.reject(err);
         if (attempt < this.retryCount) {
@@ -154,7 +152,7 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
       })
       .then((session) => {
         const ttlMs = getTokenTtlMs(session.token);
-        if (ttlMs && ttlMs > 0) {
+        if (ttlMs !== null) {
           this.scheduleRefresh(ttlMs);
         }
         return session;
@@ -164,15 +162,9 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
   private scheduleRefresh(ttlMs: number): void {
     if (this.isDestroyed) return;
     this.clearRefreshTimer();
-    if (ttlMs < this.refreshBuffer) {
-      console.warn("Token TTL is less than refresh buffer, skipping refresh");
-      return;
-    }
+    // avoid refreshing infinitely
     if (ttlMs - this.refreshBuffer < MIN_REFRESH_INTERVAL) {
-      // safe guard
-      console.warn(
-        "Too frequent refresh, skipping refresh. Please increase refreshBuffer or token TTL.",
-      );
+      console.warn("Token TTL is too short. Auto-refresh is disabled.");
       return;
     }
     this.refreshTimerId = setTimeout(() => {
@@ -187,7 +179,6 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
       .then((session) => {
         if (this.isDestroyed) return;
         this.sendSetToken(session.token, session.params);
-        this.onRefreshed?.();
       })
       .catch((err) => {
         if (this.isDestroyed) return;
