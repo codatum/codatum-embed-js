@@ -36,3 +36,15 @@ const BASE_IFRAME_CLASS = "codatum-embed-iframe";
 export const getIframeClassName = (iframeOptions?: IframeOptions): string => {
   return BASE_IFRAME_CLASS + (iframeOptions?.className ? ` ${iframeOptions.className}` : "");
 };
+
+export const getTokenTtlMs = (token: string): number | null => {
+  try {
+    const base64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    const payload = JSON.parse(atob(base64));
+    return (payload.exp - payload.iat) * 1000;
+  } catch (error: unknown) {
+    // Unexpected behavior
+    console.error(`Failed to get token TTL from token: ${token}`, error);
+    return null;
+  }
+};
