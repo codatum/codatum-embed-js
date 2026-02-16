@@ -117,11 +117,15 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
   private sendSetToken(token: string): void {
     const win = this.iframeEl.contentWindow;
     if (!win || this.isDestroyed) return;
+    // remove un-serializable properties
+    const clientSideOptions = this.options.clientSideOptions
+      ? JSON.parse(JSON.stringify(this.options.clientSideOptions))
+      : undefined;
     win.postMessage(
       {
         type: "SET_TOKEN",
         token,
-        ...this.options.clientSideOptions,
+        ...clientSideOptions,
       },
       this.expectedOrigin,
     );

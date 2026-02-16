@@ -17,7 +17,7 @@ interface Config {
   params: {
     paramId: string;
     paramName: string;
-    paramValue: unknown;
+    defaultValue: unknown;
     isServerSide?: boolean;
   }[];
 }
@@ -49,12 +49,16 @@ app.use(
 app.get("/config", (c: Context) => {
   return c.json({
     embedUrl: config.embedUrl,
-    params: config,
+    params: config.params,
   });
 });
 
 interface TokenRequestBody {
   tokenUserId: string;
+  params?: {
+    paramId: string;
+    paramValue: unknown;
+  }[];
 }
 
 app.post("/token", async (c: Context) => {
@@ -64,7 +68,7 @@ app.post("/token", async (c: Context) => {
   } catch {
     return c.json({ message: "Invalid JSON body" }, 400);
   }
-  const { tokenUserId } = body;
+  const { tokenUserId, params } = body;
   if (!tokenUserId || typeof tokenUserId !== "string" || tokenUserId.trim() === "") {
     return c.json({ message: "tokenUserId is required" }, 400);
   }
@@ -75,14 +79,21 @@ app.post("/token", async (c: Context) => {
     integration_id: config.integrationId,
     page_id: config.pageId,
     token_user_id: tokenUserId.trim(),
-    params: config.params
-      .filter((p) => p.isServerSide)
-      .map((p) => {
-        return {
-          param_id: p.paramId,
-          param_value: JSON.stringify(p.paramValue),
-        };
-      }),
+    params: params
+      ? params.map((p) => {
+          return {
+            param_id: p.paramId,
+            param_value: JSON.stringify(p.paramValue),
+          };
+        })
+      : config.params
+          .filter((p) => p.isServerSide)
+          .map((p) => {
+            return {
+              param_id: p.paramId,
+              param_value: JSON.stringify(p.defaultValue),
+            };
+          }),
   };
 
   const res = await fetch(CODATUM_ISSUE_TOKEN_URL, {

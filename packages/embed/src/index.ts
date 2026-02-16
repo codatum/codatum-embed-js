@@ -6,6 +6,10 @@ export const CodatumEmbed = {
   createParamHelper,
 };
 
+// FIXME
+export { init } from "./CodatumEmbed";
+export { createParamHelper } from "./ParamHelper";
+
 export type {
   ClientSideOptions,
   CodatumEmbedErrorCode,
