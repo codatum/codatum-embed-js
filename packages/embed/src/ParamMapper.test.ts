@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { createParamMapper, ParamMapper, RESET_TO_DEFAULT } from "./ParamMapper";
 import type { EncodedParam } from "./types";
+import { CodatumEmbedError } from "./types";
 
 describe("createParamMapper", () => {
   const paramDefs = {
     store_id: { paramId: "67a1b2c3d4e5f6a7b8c9d0e1" },
     date_range: { paramId: "67a1b2c3d4e5f6a7b8c9d0e2" },
     product_category: { paramId: "67a1b2c3d4e5f6a7b8c9d0e3" },
-  };
+  } as const;
 
   it("returns an instance of ParamMapper", () => {
     const mapper = createParamMapper(paramDefs);
@@ -50,9 +51,9 @@ describe("createParamMapper", () => {
     });
   });
 
-  it("encode sets is_hidden when paramDef has isHidden: true", () => {
+  it("encode sets is_hidden when paramDef has hidden: true", () => {
     const defsWithHidden = {
-      store_id: { paramId: "67a1b2c3d4e5f6a7b8c9d0e1", isHidden: true },
+      store_id: { paramId: "67a1b2c3d4e5f6a7b8c9d0e1", hidden: true },
       date_range: { paramId: "67a1b2c3d4e5f6a7b8c9d0e2" },
     };
     const mapper = createParamMapper(defsWithHidden);
@@ -95,9 +96,16 @@ describe("createParamMapper", () => {
     expect(decoded).toEqual({ store_id: "x" });
   });
 
-  it("decode returns raw string when param_value is not valid JSON", () => {
+  it("decode throws CodatumEmbedError with INVALID_PARAM_VALUE when param_value is not valid JSON", () => {
     const mapper = createParamMapper({ id: { paramId: "id1" } });
-    const decoded = mapper.decode([{ param_id: "id1", param_value: "not-json" }]);
-    expect(decoded.id).toBe("not-json");
+    let err: unknown;
+    try {
+      mapper.decode([{ param_id: "id1", param_value: "not-json" }]);
+    } catch (e) {
+      err = e;
+    }
+    expect(err).toBeInstanceOf(CodatumEmbedError);
+    expect((err as CodatumEmbedError).code).toBe("INVALID_PARAM_VALUE");
+    expect((err as CodatumEmbedError).message).toContain("not-json");
   });
 });

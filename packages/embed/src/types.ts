@@ -69,7 +69,9 @@ export type CodatumEmbedErrorCode =
   | "CONTAINER_NOT_FOUND"
   | "INIT_TIMEOUT"
   | "INVALID_OPTIONS"
-  | "SESSION_PROVIDER_FAILED";
+  | "SESSION_PROVIDER_FAILED"
+  | "MISSING_REQUIRED_PARAM"
+  | "INVALID_PARAM_VALUE";
 
 export class CodatumEmbedError extends Error {
   code: CodatumEmbedErrorCode;
@@ -80,10 +82,12 @@ export class CodatumEmbedError extends Error {
   }
 }
 
-export type ParamMapDef = { paramId: string; isHidden?: boolean };
+export type ParamMapDef = { paramId: string; hidden?: boolean; required?: boolean };
 
 export type DecodedParams<T extends Record<string, ParamMapDef>> = {
-  [K in keyof T]: unknown;
+  [K in keyof T as T[K] extends { required: true } ? K : never]: unknown;
+} & {
+  [K in keyof T as T[K] extends { required: true } ? never : K]?: unknown;
 };
 
 export interface ParamMapper<T extends Record<string, ParamMapDef>> {
