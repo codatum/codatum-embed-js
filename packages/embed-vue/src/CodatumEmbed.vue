@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { CodatumEmbed as CodatumEmbedCore } from "@codatum/embed";
 import type {
-  ClientSideOptions,
   CodatumEmbedInstance,
+  DisplayOptions,
   EncodedParam,
   IframeOptions,
+  SessionProviderResult,
   TokenOptions,
 } from "@codatum/embed";
 import { onUnmounted, ref, watch } from "vue";
@@ -12,10 +13,10 @@ import { onUnmounted, ref, watch } from "vue";
 const props = withDefaults(
   defineProps<{
     embedUrl: string;
-    tokenProvider: () => Promise<string>;
+    sessionProvider: () => Promise<SessionProviderResult>;
     iframeOptions?: IframeOptions;
     tokenOptions?: TokenOptions;
-    clientSideOptions?: ClientSideOptions;
+    displayOptions?: DisplayOptions;
   }>(),
   {}
 );
@@ -43,10 +44,10 @@ stopWatch = watch(
     CodatumEmbedCore.init({
       container: el,
       embedUrl: props.embedUrl,
-      tokenProvider: props.tokenProvider,
+      sessionProvider: props.sessionProvider,
       iframeOptions: props.iframeOptions,
       tokenOptions: props.tokenOptions,
-      clientSideOptions: props.clientSideOptions,
+      displayOptions: props.displayOptions,
     })
       .then((emb: CodatumEmbedInstance) => {
         instance.value = emb;

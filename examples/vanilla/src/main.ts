@@ -38,7 +38,7 @@ async function run() {
     const embed = await CodatumEmbed.init({
       container: containerEl,
       embedUrl,
-      tokenProvider: async () => {
+      sessionProvider: async () => {
         const res = await fetch(`${SERVER_URL}/token`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -49,23 +49,12 @@ async function run() {
           throw new Error(data.message ?? "Token issuance failed");
         }
         const data = (await res.json()) as { token: string };
-        return data.token;
+        return { token: data.token };
       },
       iframeOptions: { theme: "LIGHT", locale: "en" },
-      // You can pass initial param values and display options via clientSideOptions:
-      // clientSideOptions: {
-      //   displayOptions: { sqlDisplay: "RESULT_ONLY", expandParamsFormByDefault: false },
-      //   params: [{ param_id: "xxx", param_value: "\"value\"" }],
-      // },
     });
 
     setStatus("Ready");
-
-    // ParamHelper example (typed params):
-    // import { CodatumEmbed, createParamHelper } from "@codatum/embed";
-    // const paramHelper = createParamHelper({ myParam: "686d820209183cfa1045cb81" });
-    // const encoded = paramHelper.encode({ myParam: "Hello" });
-    // embed.reload({ params: encoded });
 
     embed.on("paramChanged", (payload) => {
       console.log("[paramChanged]", payload);

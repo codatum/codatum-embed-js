@@ -37,7 +37,7 @@
             return window.CodatumEmbed.init({
               container: containerEl,
               embedUrl: config.embedUrl,
-              tokenProvider: function () {
+              sessionProvider: function () {
                 return fetch(SERVER_URL + "/token", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
@@ -47,7 +47,7 @@
                     if (!res.ok) return res.json().then(function (d) { throw new Error(d.message || "Token failed"); });
                     return res.json();
                   })
-                  .then(function (data) { return data.token; });
+                  .then(function (data) { return { token: data.token }; });
               },
               iframeOptions: { theme: "LIGHT", locale: "en" },
             });

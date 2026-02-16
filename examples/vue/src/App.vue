@@ -1,9 +1,5 @@
 <script setup lang="ts">
-import {
-  CodatumEmbed,
-  type ClientSideOptions,
-  type EncodedParam,
-} from "@codatum/embed-vue";
+import { CodatumEmbed, type EncodedParam } from "@codatum/embed-vue";
 import { onMounted, ref, computed } from "vue";
 
 const SERVER_URL = "http://localhost:3100";
@@ -58,7 +54,7 @@ const onReady = () => {
   statusError.value = false;
 };
 
-const tokenProvider = async (): Promise<string> => {
+const sessionProvider = async () => {
   const params = serverParams.value.map((p) => {
     return {
       paramId: p.paramId,
@@ -75,22 +71,14 @@ const tokenProvider = async (): Promise<string> => {
     throw new Error(data.message ?? "Token issuance failed");
   }
   const data = (await res.json()) as { token: string };
-  return data.token;
-};
-
-const clientSideOptions = computed<ClientSideOptions>(() => {
   return {
-    displayOptions: {
-      expandParamsFormByDefault: true,
-    },
-    params: clientParams.value.map((p) => {
-      return {
-        param_id: p.paramId,
-        param_value: JSON.stringify(clientParamValues.value[p.paramId]),
-      };
-    }),
+    token: data.token,
+    params: clientParams.value.map((p) => ({
+      param_id: p.paramId,
+      param_value: JSON.stringify(clientParamValues.value[p.paramId]),
+    })),
   };
-});
+};
 
 const onParamChanged = (ev: { params: EncodedParam[] }) => {
   ev.params.forEach((p) => {
@@ -108,8 +96,8 @@ const onEmbedError = (err: Error) => {
 };
 
 const embedRef = ref<InstanceType<typeof CodatumEmbed> | null>(null);
-const reloadEmbed = (options?: ClientSideOptions) => {
-  embedRef.value?.instance?.reload(options);
+const reloadEmbed = () => {
+  embedRef.value?.instance?.reload();
 };
 </script>
 
@@ -119,24 +107,10 @@ const reloadEmbed = (options?: ClientSideOptions) => {
     <div class="mb-3">
       <button
         type="button"
-        @click="() => reloadEmbed()"
+        @click="reloadEmbed"
         class="btn btn-outline-secondary"
       >
         reload()
-      </button>
-      <button
-        type="button"
-        @click="() => reloadEmbed({})"
-        class="btn btn-outline-secondary ms-2"
-      >
-        reload({})
-      </button>
-      <button
-        type="button"
-        @click="() => reloadEmbed(clientSideOptions)"
-        class="btn btn-outline-secondary ms-2"
-      >
-        reload(clientSideOptions)
       </button>
     </div>
     <div class="row g-3 mb-3">
@@ -189,7 +163,7 @@ const reloadEmbed = (options?: ClientSideOptions) => {
       <CodatumEmbed
         ref="embedRef"
         :embedUrl="embedUrl"
-        :tokenProvider="tokenProvider"
+        :sessionProvider="sessionProvider"
         :iframeOptions="{
           theme: 'LIGHT',
           locale: 'en',
@@ -197,7 +171,7 @@ const reloadEmbed = (options?: ClientSideOptions) => {
           style: { height: '600px' },
         }"
         :tokenOptions="{}"
-        :clientSideOptions="clientSideOptions"
+        :displayOptions="{ expandParamsFormByDefault: true }"
         @ready="onReady"
         @paramChanged="onParamChanged"
         @executeSqlsTriggered="(e) => console.log('[executeSqlsTriggered]', e)"
