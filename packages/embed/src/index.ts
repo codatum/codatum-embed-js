@@ -11,17 +11,18 @@ export { init } from "./CodatumEmbed";
 export { createParamHelper } from "./ParamHelper";
 
 export type {
-  ClientSideOptions,
   CodatumEmbedErrorCode,
   CodatumEmbedInstance,
   CodatumEmbedOptions,
   DecodedParams,
+  DisplayOptions,
   EmbedEventMap,
   EmbedStatus,
   EncodedParam,
   IframeOptions,
   ParamEncodeOptions,
   ParamHelper,
+  SessionProviderResult,
   TokenOptions,
 } from "./types";
 

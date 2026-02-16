@@ -149,7 +149,7 @@ pnpm run test:watch   # Watch mode
 
 ## Design and testing
 
-- **Internal flow**: Init resolves container → creates iframe → listens for `READY_FOR_TOKEN` → calls `tokenProvider` → sends `SET_TOKEN`; then message handler relays `PARAM_CHANGED` / `EXECUTE_SQLS_TRIGGERED`. Auto-refresh re-calls `tokenProvider` and re-sends `SET_TOKEN`. `reload()` does the same and resets the refresh timer. See the implementation in `packages/embed/src` for details.
+- **Internal flow**: Init resolves container → creates iframe → listens for `READY_FOR_TOKEN` → calls `sessionProvider` → sends `SET_TOKEN`; then message handler relays `PARAM_CHANGED` / `EXECUTE_SQLS_TRIGGERED`. Auto-refresh re-calls `sessionProvider` and re-sends `SET_TOKEN`. `reload()` does the same and resets the refresh timer. See the implementation in `packages/embed/src` for details.
 - **Tests**: Vitest with jsdom. Use spies on `iframe.contentWindow.postMessage` and simulate iframe → parent messages with `window.dispatchEvent(new MessageEvent(...))`. Use `vi.useFakeTimers()` for init timeout and auto-refresh. E2E against a real Codatum iframe is out of scope.
 
 ## References

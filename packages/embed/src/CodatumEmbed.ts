@@ -1,9 +1,9 @@
 import type {
-  ClientSideOptions,
   CodatumEmbedOptions,
   EmbedEventMap,
   EmbedMessage,
   EmbedStatus,
+  EncodedParam,
   CodatumEmbedInstance as ICodatumEmbedInstance,
 } from "./types";
 import { CodatumEmbedError, type TokenOptions } from "./types";
@@ -33,7 +33,7 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
   private _status: EmbedStatus = "initializing";
   private initTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private refreshTimerId: ReturnType<typeof setTimeout> | null = null;
-  private reloadId = 0;
+  private reloadInProgress = false;
   private readyForTokenHandled = false;
   private readonly eventHandlers: {
     [K in keyof EmbedEventMap]: EmbedEventMap[K][];
@@ -114,44 +114,50 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
     }
   }
 
-  private sendSetToken(token: string): void {
+  private sendSetToken(token: string, params?: EncodedParam[]): void {
     const win = this.iframeEl.contentWindow;
     if (!win || this.isDestroyed) return;
-    // remove un-serializable properties
-    const clientSideOptions = this.options.clientSideOptions
-      ? JSON.parse(JSON.stringify(this.options.clientSideOptions))
+    const payload: Record<string, unknown> = {
+      displayOptions: this.options.displayOptions,
+      ...(params != null && params.length > 0 ? { params } : {}),
+    };
+    const serialized = Object.keys(payload).length
+      ? JSON.parse(JSON.stringify(payload))
       : undefined;
     win.postMessage(
       {
         type: "SET_TOKEN",
         token,
-        ...clientSideOptions,
+        ...serialized,
       },
       this.expectedOrigin,
     );
   }
 
-  /** Calls tokenProvider and retries with exponential backoff up to retryCount on failure. On success, schedules the next token refresh. */
-  private fetchTokenWithRetry(attempt = 0, delayMs = 1000): Promise<string> {
+  /** Calls sessionProvider and retries with exponential backoff up to retryCount on failure. On success, schedules the next token refresh. */
+  private fetchSessionWithRetry(
+    attempt = 0,
+    delayMs = 1000,
+  ): Promise<{ token: string; params?: EncodedParam[] }> {
     return this.options
-      .tokenProvider()
+      .sessionProvider()
       .catch((err: unknown) => {
         if (this.isDestroyed) return Promise.reject(err);
         if (attempt < this.retryCount) {
-          return new Promise<string>((resolve, reject) => {
+          return new Promise<{ token: string; params?: EncodedParam[] }>((resolve, reject) => {
             setTimeout(() => {
-              this.fetchTokenWithRetry(attempt + 1, delayMs * 2).then(resolve, reject);
+              this.fetchSessionWithRetry(attempt + 1, delayMs * 2).then(resolve, reject);
             }, delayMs);
           });
         }
         return Promise.reject(err);
       })
-      .then((token) => {
-        const ttlMs = getTokenTtlMs(token);
+      .then((session) => {
+        const ttlMs = getTokenTtlMs(session.token);
         if (ttlMs && ttlMs > 0) {
           this.scheduleRefresh(ttlMs);
         }
-        return token;
+        return session;
       });
   }
 
@@ -177,10 +183,10 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
 
   private runRefreshWithRetry(): void {
     if (this.isDestroyed) return;
-    this.fetchTokenWithRetry()
-      .then((token) => {
+    this.fetchSessionWithRetry()
+      .then((session) => {
         if (this.isDestroyed) return;
-        this.sendSetToken(token);
+        this.sendSetToken(session.token, session.params);
         this.onRefreshed?.();
       })
       .catch((err) => {
@@ -215,12 +221,12 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
   private onReadyForToken(): void {
     if (this.readyForTokenHandled || this._status !== "initializing") return;
     this.readyForTokenHandled = true;
-    this.fetchTokenWithRetry()
-      .then((token) => {
+    this.fetchSessionWithRetry()
+      .then((session) => {
         if (this.isDestroyed) return;
         this._status = "ready";
         this.clearInitTimeout();
-        this.sendSetToken(token);
+        this.sendSetToken(session.token, session.params);
         this.resolveInit(this);
       })
       .catch((err) => {
@@ -228,38 +234,34 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
         this.clearInitTimeout();
         this.rejectInit(
           new CodatumEmbedError(
-            "TOKEN_PROVIDER_FAILED",
+            "SESSION_PROVIDER_FAILED",
             err instanceof Error ? err.message : String(err),
           ),
         );
       });
   }
 
-  reload(clientSideOptions?: ClientSideOptions): Promise<void> {
-    clientSideOptions = deepClone(clientSideOptions);
-    if (this.isDestroyed) {
-      return Promise.resolve();
-    }
-    this.reloadId += 1;
-    const myId = this.reloadId;
-    return this.fetchTokenWithRetry().then(
-      (token) => {
-        if (this.isDestroyed) return;
-        if (myId !== this.reloadId) return;
-        if (clientSideOptions) {
-          this.options.clientSideOptions = clientSideOptions;
-        }
-        this.sendSetToken(token);
-      },
-      (err) => {
-        if (this.isDestroyed) return;
-        if (myId !== this.reloadId) return;
-        throw new CodatumEmbedError(
-          "TOKEN_PROVIDER_FAILED",
-          err instanceof Error ? err.message : String(err),
-        );
-      },
-    );
+  reload(): Promise<void> {
+    if (this.isDestroyed) return Promise.resolve();
+    if (this.reloadInProgress) return Promise.resolve();
+    this.reloadInProgress = true;
+    return this.fetchSessionWithRetry()
+      .then(
+        (session) => {
+          if (this.isDestroyed) return;
+          this.sendSetToken(session.token, session.params);
+        },
+        (err) => {
+          if (this.isDestroyed) return;
+          throw new CodatumEmbedError(
+            "SESSION_PROVIDER_FAILED",
+            err instanceof Error ? err.message : String(err),
+          );
+        },
+      )
+      .finally(() => {
+        this.reloadInProgress = false;
+      });
   }
 
   on<K extends keyof EmbedEventMap>(event: K, handler: EmbedEventMap[K]): void {

@@ -23,5 +23,5 @@ Then open http://localhost:5174 in the browser.
 
 ## Notes
 
-- Fetches `/config` from the examples server (localhost:3100), then renders `<CodatumEmbed>` with a `tokenProvider` that calls `/token`.
+- Fetches `/config` from the examples server (localhost:3100), then renders `<CodatumEmbed>` with a `sessionProvider` that calls `/token`.
 - Events `paramChanged` and `executeSqlsTriggered` are logged to the console.

@@ -7,6 +7,21 @@ const NOTEBOOK_ID = "b".repeat(24);
 const VALID_EMBED_URL = `https://app.codatum.com/protected/workspace/${WORKSPACE_ID}/notebook/${NOTEBOOK_ID}`;
 const EMBED_ORIGIN = "https://app.codatum.com";
 
+/** テスト用: exp/iat を持つ JWT 形式のトークンを生成する（署名はダミー） */
+function createTestJwt(iatSec: number, expSec: number): string {
+  const header = { alg: "HS256", typ: "JWT" };
+  const payload = { iat: iatSec, exp: expSec };
+  const b64url = (obj: object) =>
+    btoa(JSON.stringify(obj)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return `${b64url(header)}.${b64url(payload)}.${b64url({ sig: "dummy" })}`;
+}
+
+/** テスト用: 有効期限1時間の JWT トークン */
+const TEST_JWT = (() => {
+  const now = Math.floor(Date.now() / 1000);
+  return createTestJwt(now, now + 3600);
+})();
+
 function getContainer(): HTMLElement {
   const el = document.getElementById("container");
   if (!el) throw new Error("Test setup: #container not found");
@@ -27,7 +42,7 @@ describe("init", () => {
       init({
         container: "#container",
         embedUrl: "https://app.codatum.com/embed",
-        tokenProvider: () => Promise.resolve("token"),
+        sessionProvider: () => Promise.resolve({ token: TEST_JWT }),
       }),
     ).rejects.toMatchObject({
       code: "INVALID_OPTIONS",
@@ -40,7 +55,7 @@ describe("init", () => {
       init({
         container: "#nonexistent",
         embedUrl: VALID_EMBED_URL,
-        tokenProvider: () => Promise.resolve("token"),
+        sessionProvider: () => Promise.resolve({ token: TEST_JWT }),
       }),
     ).rejects.toMatchObject({
       code: "CONTAINER_NOT_FOUND",
@@ -53,7 +68,7 @@ describe("init", () => {
       init({
         container: "#nonexistent",
         embedUrl: VALID_EMBED_URL,
-        tokenProvider: () => Promise.resolve("token"),
+        sessionProvider: () => Promise.resolve({ token: TEST_JWT }),
       }),
     ).rejects.toBeInstanceOf(CodatumEmbedError);
   });
@@ -64,7 +79,7 @@ describe("init", () => {
     const initPromise = init({
       container,
       embedUrl: VALID_EMBED_URL,
-      tokenProvider: () => Promise.resolve("token"),
+      sessionProvider: () => Promise.resolve({ token: TEST_JWT }),
       tokenOptions: { initTimeout: 5000 },
     });
     // Attach handler before advancing timers so the rejection is never unhandled
@@ -80,13 +95,14 @@ describe("init", () => {
     vi.useRealTimers();
   });
 
-  it("resolves when READY_FOR_TOKEN is dispatched and tokenProvider succeeds", async () => {
+  it("resolves when READY_FOR_TOKEN is dispatched and sessionProvider succeeds", async () => {
     const container = getContainer();
-    const tokenProvider = vi.fn().mockResolvedValue("my-token");
+    const myToken = TEST_JWT;
+    const sessionProvider = vi.fn().mockResolvedValue({ token: myToken });
     const initPromise = init({
       container,
       embedUrl: VALID_EMBED_URL,
-      tokenProvider,
+      sessionProvider,
     });
 
     const iframe = container.querySelector("iframe");
@@ -107,11 +123,11 @@ describe("init", () => {
     );
 
     const instance = await initPromise;
-    expect(tokenProvider).toHaveBeenCalledTimes(1);
+    expect(sessionProvider).toHaveBeenCalledTimes(1);
     expect(postMessageSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         type: "SET_TOKEN",
-        token: "my-token",
+        token: myToken,
       }),
       EMBED_ORIGIN,
     );
@@ -122,13 +138,13 @@ describe("init", () => {
     postMessageSpy.mockRestore();
   });
 
-  it("rejects with TOKEN_PROVIDER_FAILED when tokenProvider throws", async () => {
+  it("rejects with SESSION_PROVIDER_FAILED when sessionProvider throws", async () => {
     const container = getContainer();
-    const tokenProvider = vi.fn().mockRejectedValue(new Error("network error"));
+    const sessionProvider = vi.fn().mockRejectedValue(new Error("network error"));
     const initPromise = init({
       container,
       embedUrl: VALID_EMBED_URL,
-      tokenProvider,
+      sessionProvider,
     });
 
     window.dispatchEvent(
@@ -140,7 +156,7 @@ describe("init", () => {
     );
 
     await expect(initPromise).rejects.toMatchObject({
-      code: "TOKEN_PROVIDER_FAILED",
+      code: "SESSION_PROVIDER_FAILED",
       message: "network error",
     });
   });
@@ -156,11 +172,11 @@ describe("instance", () => {
   beforeEach(async () => {
     document.body.innerHTML = '<div id="container"></div>';
     container = getContainer();
-    const tokenProvider = vi.fn().mockResolvedValue("token");
+    const sessionProvider = vi.fn().mockResolvedValue({ token: TEST_JWT });
     const initPromise = init({
       container,
       embedUrl,
-      tokenProvider,
+      sessionProvider,
     });
     const iframeEl = container.querySelector("iframe");
     if (!iframeEl) throw new Error("Test setup: iframe not found");
@@ -217,15 +233,22 @@ describe("instance", () => {
     expect(container.contains(iframe)).toBe(false);
   });
 
-  it("reload sends SET_TOKEN with new clientSideOptions", async () => {
-    const tokenProvider = vi.fn().mockResolvedValue("new-token");
+  it("reload calls sessionProvider and sends SET_TOKEN with returned token and params", async () => {
+    const now = Math.floor(Date.now() / 1000);
+    const firstToken = createTestJwt(now, now + 3600);
+    const newToken = createTestJwt(now, now + 7200);
+    const sessionProvider = vi
+      .fn()
+      .mockResolvedValueOnce({ token: firstToken })
+      .mockResolvedValueOnce({
+        token: newToken,
+        params: [{ param_id: "p1", param_value: '"v1"' }],
+      });
     const initPromise = init({
       container: getContainer(),
       embedUrl,
-      tokenProvider,
-      clientSideOptions: { params: [] },
+      sessionProvider,
     });
-    // Second init() appends another iframe; use the last one (the one we just created)
     const iframes = container.querySelectorAll("iframe");
     const iframeEl = iframes[iframes.length - 1] as HTMLIFrameElement;
     window.dispatchEvent(
@@ -241,13 +264,12 @@ describe("instance", () => {
     const postMessageSpy = vi.spyOn(win, "postMessage");
     postMessageSpy.mockClear();
 
-    await inst.reload({
-      params: [{ param_id: "p1", param_value: '"v1"' }],
-    });
+    await inst.reload();
+    expect(sessionProvider).toHaveBeenCalledTimes(2);
     expect(postMessageSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         type: "SET_TOKEN",
-        token: "new-token",
+        token: newToken,
         params: [{ param_id: "p1", param_value: '"v1"' }],
       }),
       origin,
@@ -256,7 +278,7 @@ describe("instance", () => {
     postMessageSpy.mockRestore();
   });
 
-  it("reload() without args resolves when destroyed (no-op)", async () => {
+  it("reload() resolves when destroyed (no-op)", async () => {
     instance.destroy();
     await expect(instance.reload()).resolves.toBeUndefined();
   });

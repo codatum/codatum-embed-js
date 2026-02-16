@@ -15,17 +15,17 @@ pnpm add @codatum/embed-vue
 import { CodatumEmbed } from "@codatum/embed-vue";
 
 const embedUrl = "https://app.codatum.com/embed/...";
-async function tokenProvider() {
+async function sessionProvider() {
   const res = await fetch("/api/embed-token", { method: "POST" });
-  const { token } = await res.json();
-  return token;
+  const data = await res.json();
+  return { token: data.token };
 }
 </script>
 
 <template>
   <CodatumEmbed
     :embed-url="embedUrl"
-    :token-provider="tokenProvider"
+    :session-provider="sessionProvider"
     :iframe-options="{ theme: 'LIGHT', locale: 'ja' }"
     @ready="console.log('Embed ready')"
     @param-changed="(e) => console.log('Params', e.params)"
@@ -42,17 +42,17 @@ Calling `reload` from the parent:
 
 <script setup>
 const embedRef = ref(null);
-// embedRef.value?.instance?.reload({ params: [...] })
+// embedRef.value?.instance?.reload() — calls sessionProvider again
 </script>
 ```
 
 ## API
 
 - **CodatumEmbed**  
-  - Props: `embedUrl`, `tokenProvider`, `iframeOptions?`, `tokenOptions?`, `clientSideOptions?`  
+  - Props: `embedUrl`, `sessionProvider`, `iframeOptions?`, `tokenOptions?`, `displayOptions?`  
   - Events: `ready`, `paramChanged`, `executeSqlsTriggered`, `error`  
   - Expose: `instance`, `status`, `error`, `isReady`
 
-Types such as `CodatumEmbedInstance`, `ClientSideOptions`, `IframeOptions`, and `TokenOptions` are re-exported from `@codatum/embed`.
+Types such as `CodatumEmbedInstance`, `DisplayOptions`, `IframeOptions`, `SessionProviderResult`, and `TokenOptions` are re-exported from `@codatum/embed`.
 
 Need a custom container or more control? Use [@codatum/embed](https://github.com/codatum/codatum-embed-js/tree/main/packages/embed) directly (e.g. call `init` in `onMounted` and `destroy` in `onUnmounted`).

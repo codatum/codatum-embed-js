@@ -5,12 +5,15 @@ export interface EncodedParam {
   is_hidden?: boolean;
 }
 
-export interface ClientSideOptions {
-  displayOptions?: {
-    sqlDisplay?: "SHOW" | "RESULT_ONLY" | "HIDE";
-    hideParamsForm?: boolean;
-    expandParamsFormByDefault?: boolean;
-  };
+export interface DisplayOptions {
+  sqlDisplay?: "SHOW" | "RESULT_ONLY" | "HIDE";
+  hideParamsForm?: boolean;
+  expandParamsFormByDefault?: boolean;
+}
+
+/** Return type of sessionProvider. params are sent to the embed with SET_TOKEN. */
+export interface SessionProviderResult {
+  token: string;
   params?: EncodedParam[];
 }
 
@@ -32,10 +35,10 @@ export interface TokenOptions {
 export interface CodatumEmbedOptions {
   container: HTMLElement | string;
   embedUrl: string;
-  tokenProvider: () => Promise<string>;
+  sessionProvider: () => Promise<SessionProviderResult>;
   iframeOptions?: IframeOptions;
   tokenOptions?: TokenOptions;
-  clientSideOptions?: ClientSideOptions;
+  displayOptions?: DisplayOptions;
 }
 
 export const EmbedMessageTypes = {
@@ -67,7 +70,7 @@ export type CodatumEmbedErrorCode =
   | "CONTAINER_NOT_FOUND"
   | "INIT_TIMEOUT"
   | "INVALID_OPTIONS"
-  | "TOKEN_PROVIDER_FAILED";
+  | "SESSION_PROVIDER_FAILED";
 
 export class CodatumEmbedError extends Error {
   code: CodatumEmbedErrorCode;
@@ -98,7 +101,7 @@ export interface ParamHelper<T extends Record<string, string>> {
 export type EmbedStatus = "initializing" | "ready" | "destroyed";
 
 export interface CodatumEmbedInstance {
-  reload(clientSideOptions?: ClientSideOptions): Promise<void>;
+  reload(): Promise<void>;
   on<K extends keyof EmbedEventMap>(event: K, handler: EmbedEventMap[K]): void;
   off<K extends keyof EmbedEventMap>(event: K, handler: EmbedEventMap[K]): void;
   destroy(): void;
