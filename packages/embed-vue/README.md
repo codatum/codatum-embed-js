@@ -15,7 +15,7 @@ pnpm add @codatum/embed-vue
 import { CodatumEmbed } from "@codatum/embed-vue";
 
 const embedUrl = "https://app.codatum.com/embed/...";
-async function sessionProvider() {
+async function tokenProvider() {
   const res = await fetch("/api/embed-token", { method: "POST" });
   const data = await res.json();
   return { token: data.token };
@@ -25,7 +25,7 @@ async function sessionProvider() {
 <template>
   <CodatumEmbed
     :embed-url="embedUrl"
-    :session-provider="sessionProvider"
+    :session-provider="tokenProvider"
     :iframe-options="{ theme: 'LIGHT', locale: 'ja' }"
     @ready="console.log('Embed ready')"
     @param-changed="(e) => console.log('Params', e.params)"
@@ -42,14 +42,14 @@ Calling `reload` from the parent:
 
 <script setup>
 const embedRef = ref(null);
-// embedRef.value?.instance?.reload() — calls sessionProvider again
+// embedRef.value?.instance?.reload() — calls tokenProvider again
 </script>
 ```
 
 ## API
 
 - **CodatumEmbed**  
-  - Props: `embedUrl`, `sessionProvider`, `iframeOptions?`, `tokenOptions?`, `displayOptions?`  
+  - Props: `embedUrl`, `tokenProvider`, `iframeOptions?`, `tokenOptions?`, `displayOptions?`  
   - Events: `ready`, `paramChanged`, `executeSqlsTriggered`, `error`  
   - Expose: `instance`, `status`, `error`, `isReady`
 

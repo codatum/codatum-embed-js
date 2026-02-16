@@ -21,18 +21,14 @@ import { CodatumEmbed } from '@codatum/embed';
 const embed = await CodatumEmbed.init({
   container: '#dashboard',
   embedUrl: 'https://app.codatum.com/protected/workspace/xxx/notebook/yyy',
-  sessionProvider: async () => {
+  tokenProvider: async () => {
     const res = await fetch('/api/codatum/token', { method: 'POST' });
     const data = await res.json();
     return { token: data.token };
   },
-  iframeOptions: { theme: 'LIGHT', locale: 'ja', style: { height: '600px' } },
 });
 
-// Optional: listen for parameter changes
-embed.on('paramChanged', (payload) => console.log('Params:', payload.params));
-
-// Cleanup when done
+// cleanup
 embed.destroy();
 ```
 
@@ -42,7 +38,7 @@ embed.destroy();
 
 **`CodatumEmbed.init(options: CodatumEmbedOptions): Promise<CodatumEmbedInstance>`**
 
-Creates the iframe, waits for the embed to be ready, gets a session from `sessionProvider`, and sends token (and optional params) to the embed. Throws `CodatumEmbedError` on failure.
+Creates the iframe, waits for the embed to be ready, gets a token and params from `tokenProvider`, and sends token (and optional params) to the embed. Throws `CodatumEmbedError` on failure.
 
 #### `CodatumEmbedOptions` definition
 
@@ -50,7 +46,7 @@ Creates the iframe, waits for the embed to be ready, gets a session from `sessio
 |--------|----------|-------------|
 | `container` | Yes | `HTMLElement` or CSS selector where the iframe is inserted |
 | `embedUrl` | Yes | Signed embed URL from Codatum |
-| `sessionProvider` | Yes | `() => Promise<{ token: string, params?: EncodedParam[] }>`. Called on init, on auto-refresh, and when `reload()` is used. Returned `params` are sent to the embed with the token. |
+| `tokenProvider` | Yes | `() => Promise<{ token: string, params?: EncodedParam[] }>`. Called on `init()`, `reload()`, and on token auto-refresh. Returned `params` are sent to the embed with the token. |
 | `iframeOptions` | No | See [iframeOptions](#iframeoptions) below |
 | `tokenOptions` | No | See [tokenOptions](#tokenoptions) below |
 | `displayOptions` | No | See [displayOptions](#displayoptions) below |
@@ -75,12 +71,11 @@ Controls token lifetime, refresh behavior, and init timeout.
 | `refreshBuffer` | `number` | `60` | Seconds before expiry to trigger refresh |
 | `retryCount` | `number` | `2` | Number of retries on token fetch failure; `0` = no retry |
 | `initTimeout` | `number` | `30000` | Max wait in ms for embed "ready"; `0` = no timeout |
-| `onRefreshed` | `() => void` | `undefined` | Callback when token is successfully refreshed |
-| `onRefreshError` | `(error: Error) => void` | `undefined` | Callback when refresh or token fetch fails |
+| `onRefreshError` | `(error: Error) => void` | `undefined` | Callback when `tokenProvider` fails after all retries |
 
 #### displayOptions
 
-Sent to the embed with the token (SET_TOKEN message). Fixed at init; cannot be changed on `reload()`.
+Sent to the embed with the token.
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
@@ -88,11 +83,9 @@ Sent to the embed with the token (SET_TOKEN message). Fixed at init; cannot be c
 | `hideParamsForm` | `boolean` | `false` | Hide the parameter form in the embed (e.g. when your app owns the filters) |
 | `expandParamsFormByDefault` | `boolean` | `false` | Whether the parameter form is expanded by default |
 
-Params are supplied by `sessionProvider`: each time it is called (init, refresh, or `reload()`), the returned `params` (if any) are sent to the embed with the token. Use ParamHelper `encode()` to build `EncodedParam[]` and return them from `sessionProvider`.
-
 ### Instance methods
 
-- **`reload()`** — Calls `sessionProvider` again and sends the returned token and params via `SET_TOKEN`.
+- **`reload()`** — Calls `tokenProvider` again and sends the returned token and params via `SET_TOKEN`.
 - **`on(event, handler)`** / **`off(event, handler)`** — Subscribe to `paramChanged` and `executeSqlsTriggered` (postMessage payloads from the iframe).
 - **`destroy()`** — Removes iframe, clears listeners and timers. No-op if already destroyed.
 
@@ -110,11 +103,11 @@ All errors are thrown/rejected as `CodatumEmbedError` with `code`:
 | `CONTAINER_NOT_FOUND` | Container element not found at init |
 | `INVALID_OPTIONS` | Init options are invalid |
 | `INIT_TIMEOUT` | Ready not received within `tokenOptions.initTimeout` |
-| `SESSION_PROVIDER_FAILED` | `sessionProvider` threw (init or reload) |
+| `SESSION_PROVIDER_FAILED` | `tokenProvider` threw (init or reload) |
 
 ## ParamHelper
 
-Use `CodatumEmbed.createParamHelper(paramDefs)` to map alias names to Codatum `param_id`s (from the admin UI). Use `encode()` to build params to return from `sessionProvider`; use `decode()` for event payloads.
+Use `CodatumEmbed.createParamHelper(paramDefs)` to map alias names to Codatum `param_id`s (from the admin UI). Use `encode()` to build params to return from `tokenProvider`; use `decode()` for event payloads.
 
 ```ts
 import { CodatumEmbed } from '@codatum/embed';
@@ -128,7 +121,7 @@ const paramHelper = CodatumEmbed.createParamHelper({
 const embed = await CodatumEmbed.init({
   container: '#dashboard',
   embedUrl: '...',
-  sessionProvider: async () => {
+  tokenProvider: async () => {
     const res = await fetch('/api/session', { method: 'POST' });
     const data = await res.json();
     return {
@@ -150,7 +143,7 @@ embed.on('paramChanged', (payload) => {
   // { store_id, date_range, product_category }
 });
 
-// Reload: calls sessionProvider again; params come from its return value
+// Reload: calls tokenProvider again; params come from its return value
 await embed.reload();
 ```
 
@@ -172,7 +165,7 @@ const embed = await CodatumEmbed.init({
   container: '#dashboard',
   embedUrl: 'https://app.codatum.com/protected/workspace/xxx/notebook/yyy',
   iframeOptions: { theme: 'LIGHT', locale: 'ja', style: { height: '600px' } },
-  sessionProvider: async () => {
+  tokenProvider: async () => {
     const res = await fetch('/api/codatum/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -211,7 +204,7 @@ const embed = await CodatumEmbed.init({
   embedUrl: '...',
   iframeOptions: { theme: 'LIGHT', locale: 'ja' },
   displayOptions: { hideParamsForm: true },
-  sessionProvider: async () => {
+  tokenProvider: async () => {
     const res = await fetch('/api/codatum/token', { method: 'POST', ... });
     const data = await res.json();
     return {
@@ -227,7 +220,7 @@ const embed = await CodatumEmbed.init({
 async function onFilterChange(storeId: string, dateRange: [string, string]) {
   currentStoreId = storeId;
   currentDateRange = dateRange;
-  await embed.reload(); // sessionProvider is called again with current closure values
+  await embed.reload(); // tokenProvider is called again with current closure values
 }
 ```
 
@@ -240,7 +233,7 @@ let latestValues = paramHelper.decode([]);
 const embed = await CodatumEmbed.init({
   container: '#dashboard',
   embedUrl: '...',
-  sessionProvider: async () => {
+  tokenProvider: async () => {
     const res = await fetch('/api/codatum/token', {
       method: 'POST',
       body: JSON.stringify({ tenant_id: currentUser.tenantId, store_id: currentStoreId }),
@@ -261,7 +254,7 @@ embed.on('paramChanged', (payload) => { latestValues = paramHelper.decode(payloa
 
 async function onStoreSwitch(storeId: string) {
   currentStoreId = storeId;
-  await embed.reload(); // sessionProvider returns new token + params for the new store
+  await embed.reload(); // tokenProvider returns new token + params for the new store
 }
 ```
 
@@ -272,12 +265,12 @@ const [salesDashboard, supportDashboard] = await Promise.all([
   CodatumEmbed.init({
     container: '#sales',
     embedUrl: 'https://app.codatum.com/.../notebook/aaa',
-    sessionProvider: () => fetchSession('aaa'), // returns { token, params? }
+    tokenProvider: () => fetchSession('aaa'), // returns { token, params? }
   }),
   CodatumEmbed.init({
     container: '#support',
     embedUrl: 'https://app.codatum.com/.../notebook/bbb',
-    sessionProvider: () => fetchSession('bbb'),
+    tokenProvider: () => fetchSession('bbb'),
   }),
 ]);
 ```
@@ -287,7 +280,7 @@ const [salesDashboard, supportDashboard] = await Promise.all([
 ```html
 <script src="https://unpkg.com/@codatum/embed/dist/index.global.min.js"></script>
 <script>
-  CodatumEmbed.init({ container: '#dashboard', embedUrl: '...', sessionProvider: async () => ({ token: '...' }) });
+  CodatumEmbed.init({ container: '#dashboard', embedUrl: '...', tokenProvider: async () => ({ token: '...' }) });
 </script>
 ```
 

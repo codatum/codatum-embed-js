@@ -54,7 +54,7 @@ const onReady = () => {
   statusError.value = false;
 };
 
-const sessionProvider = async () => {
+const tokenProvider = async () => {
   const params = serverParams.value.map((p) => {
     return {
       paramId: p.paramId,
@@ -163,7 +163,7 @@ const reloadEmbed = () => {
       <CodatumEmbed
         ref="embedRef"
         :embedUrl="embedUrl"
-        :sessionProvider="sessionProvider"
+        :tokenProvider="tokenProvider"
         :iframeOptions="{
           theme: 'LIGHT',
           locale: 'en',

@@ -13,7 +13,7 @@ import { onUnmounted, ref, watch } from "vue";
 const props = withDefaults(
   defineProps<{
     embedUrl: string;
-    sessionProvider: () => Promise<SessionProviderResult>;
+    tokenProvider: () => Promise<SessionProviderResult>;
     iframeOptions?: IframeOptions;
     tokenOptions?: TokenOptions;
     displayOptions?: DisplayOptions;
@@ -44,7 +44,7 @@ stopWatch = watch(
     CodatumEmbedCore.init({
       container: el,
       embedUrl: props.embedUrl,
-      sessionProvider: props.sessionProvider,
+      tokenProvider: props.tokenProvider,
       iframeOptions: props.iframeOptions,
       tokenOptions: props.tokenOptions,
       displayOptions: props.displayOptions,

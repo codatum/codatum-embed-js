@@ -42,7 +42,7 @@ describe("init", () => {
       init({
         container: "#container",
         embedUrl: "https://app.codatum.com/embed",
-        sessionProvider: () => Promise.resolve({ token: TEST_JWT }),
+        tokenProvider: () => Promise.resolve({ token: TEST_JWT }),
       }),
     ).rejects.toMatchObject({
       code: "INVALID_OPTIONS",
@@ -55,7 +55,7 @@ describe("init", () => {
       init({
         container: "#nonexistent",
         embedUrl: VALID_EMBED_URL,
-        sessionProvider: () => Promise.resolve({ token: TEST_JWT }),
+        tokenProvider: () => Promise.resolve({ token: TEST_JWT }),
       }),
     ).rejects.toMatchObject({
       code: "CONTAINER_NOT_FOUND",
@@ -68,7 +68,7 @@ describe("init", () => {
       init({
         container: "#nonexistent",
         embedUrl: VALID_EMBED_URL,
-        sessionProvider: () => Promise.resolve({ token: TEST_JWT }),
+        tokenProvider: () => Promise.resolve({ token: TEST_JWT }),
       }),
     ).rejects.toBeInstanceOf(CodatumEmbedError);
   });
@@ -79,7 +79,7 @@ describe("init", () => {
     const initPromise = init({
       container,
       embedUrl: VALID_EMBED_URL,
-      sessionProvider: () => Promise.resolve({ token: TEST_JWT }),
+      tokenProvider: () => Promise.resolve({ token: TEST_JWT }),
       tokenOptions: { initTimeout: 5000 },
     });
     // Attach handler before advancing timers so the rejection is never unhandled
@@ -95,14 +95,14 @@ describe("init", () => {
     vi.useRealTimers();
   });
 
-  it("resolves when READY_FOR_TOKEN is dispatched and sessionProvider succeeds", async () => {
+  it("resolves when READY_FOR_TOKEN is dispatched and tokenProvider succeeds", async () => {
     const container = getContainer();
     const myToken = TEST_JWT;
-    const sessionProvider = vi.fn().mockResolvedValue({ token: myToken });
+    const tokenProvider = vi.fn().mockResolvedValue({ token: myToken });
     const initPromise = init({
       container,
       embedUrl: VALID_EMBED_URL,
-      sessionProvider,
+      tokenProvider,
     });
 
     const iframe = container.querySelector("iframe");
@@ -123,7 +123,7 @@ describe("init", () => {
     );
 
     const instance = await initPromise;
-    expect(sessionProvider).toHaveBeenCalledTimes(1);
+    expect(tokenProvider).toHaveBeenCalledTimes(1);
     expect(postMessageSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         type: "SET_TOKEN",
@@ -138,13 +138,13 @@ describe("init", () => {
     postMessageSpy.mockRestore();
   });
 
-  it("rejects with SESSION_PROVIDER_FAILED when sessionProvider throws", async () => {
+  it("rejects with SESSION_PROVIDER_FAILED when tokenProvider throws", async () => {
     const container = getContainer();
-    const sessionProvider = vi.fn().mockRejectedValue(new Error("network error"));
+    const tokenProvider = vi.fn().mockRejectedValue(new Error("network error"));
     const initPromise = init({
       container,
       embedUrl: VALID_EMBED_URL,
-      sessionProvider,
+      tokenProvider,
     });
 
     window.dispatchEvent(
@@ -172,11 +172,11 @@ describe("instance", () => {
   beforeEach(async () => {
     document.body.innerHTML = '<div id="container"></div>';
     container = getContainer();
-    const sessionProvider = vi.fn().mockResolvedValue({ token: TEST_JWT });
+    const tokenProvider = vi.fn().mockResolvedValue({ token: TEST_JWT });
     const initPromise = init({
       container,
       embedUrl,
-      sessionProvider,
+      tokenProvider,
     });
     const iframeEl = container.querySelector("iframe");
     if (!iframeEl) throw new Error("Test setup: iframe not found");
@@ -233,11 +233,11 @@ describe("instance", () => {
     expect(container.contains(iframe)).toBe(false);
   });
 
-  it("reload calls sessionProvider and sends SET_TOKEN with returned token and params", async () => {
+  it("reload calls tokenProvider and sends SET_TOKEN with returned token and params", async () => {
     const now = Math.floor(Date.now() / 1000);
     const firstToken = createTestJwt(now, now + 3600);
     const newToken = createTestJwt(now, now + 7200);
-    const sessionProvider = vi
+    const tokenProvider = vi
       .fn()
       .mockResolvedValueOnce({ token: firstToken })
       .mockResolvedValueOnce({
@@ -247,7 +247,7 @@ describe("instance", () => {
     const initPromise = init({
       container: getContainer(),
       embedUrl,
-      sessionProvider,
+      tokenProvider,
     });
     const iframes = container.querySelectorAll("iframe");
     const iframeEl = iframes[iframes.length - 1] as HTMLIFrameElement;
@@ -265,7 +265,7 @@ describe("instance", () => {
     postMessageSpy.mockClear();
 
     await inst.reload();
-    expect(sessionProvider).toHaveBeenCalledTimes(2);
+    expect(tokenProvider).toHaveBeenCalledTimes(2);
     expect(postMessageSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         type: "SET_TOKEN",

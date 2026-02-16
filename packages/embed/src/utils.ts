@@ -41,10 +41,10 @@ export const getTokenTtlMs = (token: string): number | null => {
   try {
     const base64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
     const payload = JSON.parse(atob(base64));
-    return (payload.exp - payload.iat) * 1000;
+    return payload.exp * 1000 - Date.now();
   } catch (error: unknown) {
     // Unexpected behavior
-    console.error(`Failed to get token TTL from token: ${token}`, error);
+    console.error(`Failed to get token TTL: ${token}`, error);
     return null;
   }
 };

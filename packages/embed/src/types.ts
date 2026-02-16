@@ -11,7 +11,7 @@ export interface DisplayOptions {
   expandParamsFormByDefault?: boolean;
 }
 
-/** Return type of sessionProvider. params are sent to the embed with SET_TOKEN. */
+/** Return type of tokenProvider. params are sent to the embed with SET_TOKEN. */
 export interface SessionProviderResult {
   token: string;
   params?: EncodedParam[];
@@ -28,14 +28,13 @@ export interface TokenOptions {
   refreshBuffer?: number;
   retryCount?: number; // if 0, no retry
   initTimeout?: number; // milliseconds; if 0, no timeout
-  onRefreshed?: () => void;
   onRefreshError?: (error: Error) => void;
 }
 
 export interface CodatumEmbedOptions {
   container: HTMLElement | string;
   embedUrl: string;
-  sessionProvider: () => Promise<SessionProviderResult>;
+  tokenProvider: () => Promise<SessionProviderResult>;
   iframeOptions?: IframeOptions;
   tokenOptions?: TokenOptions;
   displayOptions?: DisplayOptions;
