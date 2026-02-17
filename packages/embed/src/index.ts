@@ -1,5 +1,6 @@
 import { init } from "./CodatumEmbed";
-import { createParamMapper, RESET_TO_DEFAULT } from "./ParamMapper";
+import { createParamMapper } from "./ParamMapper";
+import { RESET_TO_DEFAULT } from "./types";
 
 export const CodatumEmbed = {
   init,
@@ -7,15 +8,15 @@ export const CodatumEmbed = {
   RESET_TO_DEFAULT,
 };
 
-// FIXME
 export { init } from "./CodatumEmbed";
-export { createParamMapper, RESET_TO_DEFAULT } from "./ParamMapper";
+export { createParamMapper } from "./ParamMapper";
 
 export type {
   CodatumEmbedErrorCode,
   CodatumEmbedInstance,
   CodatumEmbedOptions,
   DecodedParams,
+  DefineDecodedParams,
   DisplayOptions,
   EmbedEventMap,
   EmbedStatus,
@@ -31,5 +32,4 @@ export type {
   TokenOptions,
   TokenProviderResult,
 } from "./types";
-
-export { CodatumEmbedError } from "./types";
+export { CodatumEmbedError, RESET_TO_DEFAULT } from "./types";

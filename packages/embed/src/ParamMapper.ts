@@ -6,10 +6,7 @@ import type {
   ParamMeta,
   PickedDecodedParams,
 } from "./types";
-import { CodatumEmbedError } from "./types";
-
-/** Special value for resetting to default */
-export const RESET_TO_DEFAULT = "_RESET_TO_DEFAULT_" as const;
+import { CodatumEmbedError, RESET_TO_DEFAULT } from "./types";
 
 export class ParamMapper<
   T extends ParamMapping,

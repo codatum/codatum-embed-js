@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { createParamMapper, ParamMapper, RESET_TO_DEFAULT } from "./ParamMapper";
+import { createParamMapper, ParamMapper } from "./ParamMapper";
 import type { EncodedParam } from "./types";
-import { CodatumEmbedError } from "./types";
+import { CodatumEmbedError, RESET_TO_DEFAULT } from "./types";
 
 describe("createParamMapper", () => {
   const mapping = {

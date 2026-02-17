@@ -84,7 +84,32 @@ export class CodatumEmbedError extends Error {
 
 export type ParamMapping = Record<string, string>;
 
-export type ParamMeta = { hidden?: boolean; required?: boolean };
+/** Special value for resetting to default */
+export const RESET_TO_DEFAULT = "_RESET_TO_DEFAULT_" as const;
+
+export type ParamDatatype = "STRING" | "NUMBER" | "BOOLEAN" | "DATE" | "STRING[]" | "[DATE, DATE]";
+
+export type ParamMeta = { hidden?: boolean; required?: boolean; datatype?: ParamDatatype };
+
+export type DatatypeToTs<D extends ParamDatatype> = D extends "STRING"
+  ? string | typeof RESET_TO_DEFAULT
+  : D extends "NUMBER"
+    ? number | typeof RESET_TO_DEFAULT
+    : D extends "BOOLEAN"
+      ? boolean | typeof RESET_TO_DEFAULT
+      : D extends "DATE"
+        ? string | typeof RESET_TO_DEFAULT
+        : D extends "STRING[]"
+          ? string[] | typeof RESET_TO_DEFAULT
+          : D extends "[DATE, DATE]"
+            ? [string, string] | typeof RESET_TO_DEFAULT
+            : never;
+
+export type ParamValueType<Meta extends ParamMeta> = Meta extends { datatype: infer D }
+  ? D extends ParamDatatype
+    ? DatatypeToTs<D>
+    : unknown
+  : unknown;
 
 type ParamMetaMap<T extends ParamMapping> = Partial<Record<keyof T & string, ParamMeta>>;
 
@@ -97,12 +122,18 @@ export type DecodedParams<
 > = {
   [K in keyof T & keyof ResolvedMeta<T, M> as ResolvedMeta<T, M>[K] extends { required: true }
     ? K
-    : never]: unknown;
+    : never]: ParamValueType<ResolvedMeta<T, M>[K]>;
 } & {
   [K in keyof T & keyof ResolvedMeta<T, M> as ResolvedMeta<T, M>[K] extends { required: true }
     ? never
-    : K]?: unknown;
+    : K]?: ParamValueType<ResolvedMeta<T, M>[K]>;
 };
+
+/** Derives DecodedParams from meta only */
+export type DefineDecodedParams<M extends Record<string, ParamMeta>> = DecodedParams<
+  { [K in keyof M]: string },
+  M
+>;
 
 export type PickedDecodedParams<
   T extends ParamMapping,
@@ -111,11 +142,11 @@ export type PickedDecodedParams<
 > = {
   [P in K & keyof ResolvedMeta<T, M> as ResolvedMeta<T, M>[P] extends { required: true }
     ? P
-    : never]: unknown;
+    : never]: ParamValueType<ResolvedMeta<T, M>[P]>;
 } & {
   [P in K & keyof ResolvedMeta<T, M> as ResolvedMeta<T, M>[P] extends { required: true }
     ? never
-    : P]?: unknown;
+    : P]?: ParamValueType<ResolvedMeta<T, M>[P]>;
 };
 
 export interface ParamMapperEncodeOptions<K extends string> {

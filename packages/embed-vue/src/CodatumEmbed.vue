@@ -3,7 +3,6 @@ import { CodatumEmbed as CodatumEmbedCore } from "@codatum/embed";
 import type {
   CodatumEmbedInstance,
   DisplayOptions,
-  EncodedParam,
   IframeOptions,
   TokenProviderResult,
   TokenOptions,
