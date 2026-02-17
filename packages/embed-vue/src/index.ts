@@ -1,12 +1,4 @@
 import CodatumEmbed from "./CodatumEmbed.vue";
+export { CodatumEmbed as CodatumEmbedVue };
 
-export { CodatumEmbed };
-export type {
-  CodatumEmbedInstance,
-  DisplayOptions,
-  EmbedStatus,
-  EncodedParam,
-  IframeOptions,
-  TokenOptions,
-  TokenProviderResult,
-} from "@codatum/embed";
+export * from "@codatum/embed";

@@ -32,7 +32,6 @@ const containerRef = ref<HTMLElement | null>(null);
 const instance = ref<CodatumEmbedInstance | null>(null);
 const status = ref<"initializing" | "ready" | "destroyed">("initializing");
 const error = ref<Error | null>(null);
-const isReady = ref(false);
 
 let stopWatch: (() => void) | undefined;
 stopWatch = watch(
@@ -52,7 +51,6 @@ stopWatch = watch(
       .then((emb: CodatumEmbedInstance) => {
         instance.value = emb;
         status.value = emb.status;
-        isReady.value = true;
       })
       .catch((err: unknown) => {
         error.value = err instanceof Error ? err : new Error(String(err));
@@ -69,7 +67,6 @@ onUnmounted(() => {
     instance.value = null;
   }
   status.value = "destroyed";
-  isReady.value = false;
 });
 
 watch(instance, (inst: CodatumEmbedInstance | null) => {
@@ -96,7 +93,6 @@ defineExpose({
   instance,
   status,
   error,
-  isReady,
 });
 </script>
 

@@ -20,6 +20,9 @@ importers:
 
   examples/server:
     dependencies:
+      '@codatum/embed':
+        specifier: workspace:*
+        version: link:../../packages/embed
       '@hono/node-server':
         specifier: ^1.13.0
         version: 1.19.9(hono@4.11.9)

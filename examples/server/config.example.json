@@ -4,5 +4,19 @@
   "integrationId": "your_integration_id",
   "pageId": "your_page_id",
   "embedUrl": "https://app.codatum.com/protected/workspace/xxx/notebook/yyy",
-  "params": []
+  "params": {
+    "tenant_id": {
+      "paramId": "xxxxxxxxxxxxxxxxxxxxxxxx",
+      "required": true
+    },
+    "store_id": {
+      "paramId": "xxxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    "date_range": {
+      "paramId": "xxxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    "product_category": {
+      "paramId": "xxxxxxxxxxxxxxxxxxxxxxxx"
+    }
+  }
 }

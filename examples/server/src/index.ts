@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { createParamMapper, type ParamMapDef } from "@codatum/embed";
 import { serve } from "@hono/node-server";
 import { type Context, Hono } from "hono";
 import { cors } from "hono/cors";
@@ -15,14 +16,14 @@ interface Config {
   pageId: string;
   embedUrl: string;
   params: {
-    paramId: string;
-    paramName: string;
-    defaultValue: unknown;
-    isServerSide?: boolean;
-  }[];
+    tenant_id: ParamMapDef;
+    store_id: ParamMapDef;
+    date_range: ParamMapDef;
+    product_category: ParamMapDef;
+  };
 }
 
-function loadConfig(): Config {
+const loadConfig = (): Config => {
   if (!existsSync(CONFIG_PATH)) {
     console.error(
       "config.json not found. Copy config.example.json to config.json and set your credentials.",
@@ -31,7 +32,7 @@ function loadConfig(): Config {
   }
   const raw = readFileSync(CONFIG_PATH, "utf-8");
   return JSON.parse(raw) as Config;
-}
+};
 
 const config = loadConfig();
 
@@ -49,16 +50,20 @@ app.use(
 app.get("/config", (c: Context) => {
   return c.json({
     embedUrl: config.embedUrl,
-    params: config.params,
+    params: {
+      store_id: config.params.store_id,
+      date_range: config.params.date_range,
+      product_category: config.params.product_category,
+    },
   });
 });
 
+const getTenantIdMock = (userId: string): string => {
+  return `tenant_${userId}`;
+};
+
 interface TokenRequestBody {
   tokenUserId: string;
-  params?: {
-    paramId: string;
-    paramValue: unknown;
-  }[];
 }
 
 app.post("/token", async (c: Context) => {
@@ -68,10 +73,18 @@ app.post("/token", async (c: Context) => {
   } catch {
     return c.json({ message: "Invalid JSON body" }, 400);
   }
-  const { tokenUserId, params } = body;
+  const { tokenUserId } = body;
   if (!tokenUserId || typeof tokenUserId !== "string" || tokenUserId.trim() === "") {
     return c.json({ message: "tokenUserId is required" }, 400);
   }
+
+  const tenantId = getTenantIdMock(tokenUserId);
+  const mapper = createParamMapper({
+    tenant_id: config.params.tenant_id,
+  });
+  const encodedParams = mapper.encode({
+    tenant_id: tenantId,
+  });
 
   const payload = {
     api_key: config.apiKey,
@@ -79,21 +92,7 @@ app.post("/token", async (c: Context) => {
     integration_id: config.integrationId,
     page_id: config.pageId,
     token_user_id: tokenUserId.trim(),
-    params: params
-      ? params.map((p) => {
-          return {
-            param_id: p.paramId,
-            param_value: JSON.stringify(p.paramValue),
-          };
-        })
-      : config.params
-          .filter((p) => p.isServerSide)
-          .map((p) => {
-            return {
-              param_id: p.paramId,
-              param_value: JSON.stringify(p.defaultValue),
-            };
-          }),
+    params: encodedParams,
   };
 
   const res = await fetch(CODATUM_ISSUE_TOKEN_URL, {

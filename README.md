@@ -41,18 +41,18 @@ embed.destroy();
 
 Creates the iframe, waits for the iframe to be ready, gets a token and params from `tokenProvider`, and sends token (and optional params) to the iframe. Throws `CodatumEmbedError` on failure.
 
-#### `CodatumEmbedOptions` definition
+#### `CodatumEmbedOptions`
 
 | Property | Required | Description |
 |--------|----------|-------------|
 | `container` | Yes | `HTMLElement` or CSS selector where the iframe is inserted |
 | `embedUrl` | Yes | Signed embed URL from Codatum |
 | `tokenProvider` | Yes | `() => Promise<{ token: string, params?: EncodedParam[] }>`. Called on `init()`, `reload()`, and on token auto-refresh. Returned `params` are sent to the embed with the token. |
-| `iframeOptions` | No | See [iframeOptions](#iframeoptions) below |
-| `tokenOptions` | No | See [tokenOptions](#tokenoptions) below |
-| `displayOptions` | No | See [displayOptions](#displayoptions) below |
+| `iframeOptions` | No | See [IframeOptions](#iframeoptions) below |
+| `tokenOptions` | No | See [TokenOptions](#tokenoptions) below |
+| `displayOptions` | No | See [DisplayOptions](#displayoptions) below |
 
-#### iframeOptions
+#### `IframeOptions`
 
 Options applied to the iframe element and passed to the embed via URL/search params.
 
@@ -63,7 +63,7 @@ Options applied to the iframe element and passed to the embed via URL/search par
 | `className` | `string` | - | CSS class name(s) applied to the iframe element |
 | `style` | `object` | `{width: '100%', height: '100%', border: 'none'}` | Inline styles for the iframe; overrides the default styles |
 
-#### tokenOptions
+#### `TokenOptions`
 
 Controls token lifetime, refresh behavior, and init timeout.
 
@@ -74,7 +74,7 @@ Controls token lifetime, refresh behavior, and init timeout.
 | `initTimeout` | `number` | `30000` | Max wait in ms for embed "ready"; `0` = no timeout |
 | `onRefreshError` | `(error: Error) => void` | `undefined` | Callback when `tokenProvider` fails after all retries |
 
-#### displayOptions
+#### `DisplayOptions`
 
 Sent to the embed with the token.
 
