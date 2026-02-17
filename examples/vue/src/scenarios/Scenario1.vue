@@ -2,38 +2,56 @@
 import {
   CodatumEmbedVue,
   createParamMapper,
+  RESET_TO_DEFAULT,
   type EncodedParam,
   type ParamMapDef,
   type ParamMapper,
 } from "@codatum/embed-vue";
-import { onMounted, ref, computed } from "vue";
+import { onMounted, ref } from "vue";
 
 const SERVER_URL = "http://localhost:3100";
+const SCENARIO_ID = "scenario1";
 
 const embedUrl = ref<string | null>(null);
 const statusMessage = ref("Loading config…");
 const statusError = ref(false);
 
-type ParamMapDefs = {
-  store_id: ParamMapDef;
+type ClientParamMapDefs = {
   date_range: ParamMapDef;
   product_category: ParamMapDef;
 };
-type ParamValues = {
-  store_id?: string;
-  date_range?: [string, string];
+type ClientParamValues = {
+  date_range?: [string, string] | typeof RESET_TO_DEFAULT;
   product_category?: string;
 };
-const paramMapper = ref<ParamMapper<ParamMapDefs> | null>(null);
-const paramValues = ref<ParamValues>({});
+const clientParamMapper = ref<ParamMapper<ClientParamMapDefs> | null>(null);
+const clientParamValues = ref<ClientParamValues>({
+  date_range: RESET_TO_DEFAULT,
+});
+
+type ServerParamMapDefs = {
+  store_id: ParamMapDef;
+};
+type ServerParamValues = {
+  store_id?: string;
+};
+const serverParamMapper = ref<ParamMapper<ServerParamMapDefs> | null>(null);
+const serverParamValues = ref<ServerParamValues>({});
 
 onMounted(async () => {
   try {
-    const configRes = await fetch(`${SERVER_URL}/scenario1/config`);
+    const configRes = await fetch(`${SERVER_URL}/${SCENARIO_ID}/config`);
     if (!configRes.ok) throw new Error(`config failed: ${configRes.status}`);
     const config = await configRes.json();
     embedUrl.value = config.embedUrl;
-    paramMapper.value = createParamMapper(config.params as ParamMapDefs);
+    const _params = config.params as ClientParamMapDefs & ServerParamMapDefs;
+    clientParamMapper.value = createParamMapper({
+      date_range: _params.date_range,
+      product_category: _params.product_category,
+    });
+    serverParamMapper.value = createParamMapper({
+      store_id: _params.store_id,
+    });
     statusMessage.value = "Initializing…";
   } catch (err) {
     statusMessage.value =
@@ -49,13 +67,13 @@ const onReady = () => {
 };
 
 const tokenProvider = async () => {
-  const res = await fetch(`${SERVER_URL}/scenario1/token`, {
+  const res = await fetch(`${SERVER_URL}/${SCENARIO_ID}/token`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       tokenUserId: "demo-user",
       params: {
-        store_id: paramValues.value.store_id,
+        store_id: serverParamValues.value.store_id,
       },
     }),
   });
@@ -66,35 +84,19 @@ const tokenProvider = async () => {
   const data = (await res.json()) as { token: string };
   return {
     token: data.token,
-    params: paramMapper.value?.encode(paramValues.value) ?? [],
+    params: clientParamMapper.value?.encode(clientParamValues.value) ?? [],
   };
 };
 
 const onParamChanged = (ev: { params: EncodedParam[] }) => {
-  if (!paramMapper.value) return;
-  paramValues.value = paramMapper.value.decode(ev.params) as ParamValues;
+  if (!clientParamMapper.value || !serverParamMapper.value) return;
+  clientParamValues.value = clientParamMapper.value.decode(
+    ev.params
+  ) as ClientParamValues;
+  serverParamValues.value = serverParamMapper.value.decode(
+    ev.params
+  ) as ServerParamValues;
 };
-
-const dateRangeStart = computed({
-  get: () => paramValues.value.date_range?.[0] ?? "",
-  set: (v: string) => {
-    const prev = paramValues.value.date_range ?? ["", ""];
-    paramValues.value = {
-      ...paramValues.value,
-      date_range: [v, prev[1] ?? ""],
-    };
-  },
-});
-const dateRangeEnd = computed({
-  get: () => paramValues.value.date_range?.[1] ?? "",
-  set: (v: string) => {
-    const prev = paramValues.value.date_range ?? ["", ""];
-    paramValues.value = {
-      ...paramValues.value,
-      date_range: [prev[0] ?? "", v],
-    };
-  },
-});
 
 const onEmbedError = (err: Error) => {
   statusMessage.value = err.message;
@@ -108,60 +110,14 @@ const reloadEmbed = () => {
 </script>
 
 <template>
-  <div class="border rounded p-3 bg-light mb-3">
-    <h2 class="h6 mb-3">Parameters</h2>
-    <div class="mb-2">
-      <label for="store_id" class="form-label small mb-1">Store Id</label>
-      <input
-        id="store_id"
-        v-model="paramValues.store_id"
-        type="text"
-        class="form-control form-control-sm"
-      />
-    </div>
-    <div class="mb-2">
-      <label for="date_range" class="form-label small mb-1">Date Range</label>
-      <div class="row g-2">
-        <div class="col">
-          <input
-            id="date_range-start"
-            v-model="dateRangeStart"
-            type="text"
-            class="form-control form-control-sm"
-            placeholder="Start"
-          />
-        </div>
-        <div class="col">
-          <input
-            id="date_range-end"
-            v-model="dateRangeEnd"
-            type="text"
-            class="form-control form-control-sm"
-            placeholder="End"
-          />
-        </div>
-      </div>
-    </div>
-    <div class="mb-3">
-      <label for="product_category" class="form-label small mb-1">
-        Product Category
-      </label>
-      <input
-        id="product_category"
-        v-model="paramValues.product_category"
-        type="text"
-        class="form-control form-control-sm"
-      />
-    </div>
-    <div class="text-end">
-      <button
-        type="button"
-        @click="reloadEmbed"
-        class="btn btn-outline-secondary"
-      >
-        Reload
-      </button>
-    </div>
+  <div class="mb-3 text-end">
+    <button
+      type="button"
+      @click="reloadEmbed"
+      class="btn btn-outline-secondary"
+    >
+      Reload
+    </button>
   </div>
   <div
     class="alert py-2 mb-3"

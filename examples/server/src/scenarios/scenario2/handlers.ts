@@ -23,9 +23,6 @@ interface Config {
 
 interface TokenRequestBody {
   tokenUserId: string;
-  params?: {
-    store_id?: string;
-  };
 }
 
 const app = new Hono();
@@ -44,18 +41,16 @@ app.post("/token", async (c: Context) => {
   } catch {
     throw new Error("Invalid JSON body");
   }
-  const { tokenUserId, params } = body;
+  const { tokenUserId } = body;
   if (!tokenUserId || typeof tokenUserId !== "string" || tokenUserId.trim() === "") {
     throw new Error("tokenUserId is required");
   }
 
   const tenantId = `tenant_${tokenUserId}`;
-  const storeId = params?.store_id ?? `${tenantId}_store`;
   const mapper = createParamMapper(config.params);
 
   const encodedParams = mapper.encode({
     tenant_id: tenantId,
-    store_id: storeId,
   });
 
   const payload: IssueTokenPayload = {

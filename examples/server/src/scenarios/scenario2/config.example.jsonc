@@ -1,4 +1,4 @@
-// caseA: https://docs.codatum.com/sharing/signed-embed/use-case
+// caseB: https://docs.codatum.com/sharing/signed-embed/use-case
 {
   "apiKey": "your_api_key",
   "apiSecret": "your_api_secret",
@@ -10,7 +10,7 @@
     "tenant_id": {
       "paramId": "xxxxxxxxxxxxxxxxxxxxxxxx"
     },
-    // Initial value for a server-side parameter
+    // Client-side parameter
     "store_id": {
       "paramId": "xxxxxxxxxxxxxxxxxxxxxxxx"
     },
