@@ -1,44 +1,44 @@
 /** Parameter shape used in postMessage */
-export interface EncodedParam {
+export type EncodedParam = {
   param_id: string;
   param_value: string;
   is_hidden?: boolean;
-}
+};
 
-export interface DisplayOptions {
+export type DisplayOptions = {
   sqlDisplay?: "SHOW" | "RESULT_ONLY" | "HIDE";
   hideParamsForm?: boolean;
   expandParamsFormByDefault?: boolean;
-}
+};
 
 /** Return type of tokenProvider. params are sent to the embed with SET_TOKEN. */
-export interface TokenProviderResult {
+export type TokenProviderResult = {
   token: string;
   params?: EncodedParam[];
-}
+};
 
-export interface IframeOptions {
+export type IframeOptions = {
   theme?: "LIGHT" | "DARK";
   locale?: string;
   className?: string;
   style?: Partial<CSSStyleDeclaration>;
-}
+};
 
-export interface TokenOptions {
+export type TokenOptions = {
   refreshBuffer?: number;
   retryCount?: number; // if 0, no retry
   initTimeout?: number; // milliseconds; if 0, no timeout
   onRefreshError?: (error: Error) => void;
-}
+};
 
-export interface CodatumEmbedOptions {
+export type CodatumEmbedOptions = {
   container: HTMLElement | string;
   embedUrl: string;
   tokenProvider: () => Promise<TokenProviderResult>;
   iframeOptions?: IframeOptions;
   tokenOptions?: TokenOptions;
   displayOptions?: DisplayOptions;
-}
+};
 
 export const EmbedMessageTypes = {
   READY_FOR_TOKEN: "READY_FOR_TOKEN",
@@ -153,13 +153,19 @@ export type DefineDecodedParams<M extends Record<string, ParamMeta>> = DecodedPa
   M
 >;
 
-export interface ParamMapperEncodeOptions<K extends string> {
+export type ParamMapperEncodeOptions<K extends string> = {
+  /** Only encode the specified keys. */
   only?: K[];
-}
+  /** When true, skips required and datatype validation. */
+  noValidate?: boolean;
+};
 
-export interface ParamMapperDecodeOptions<K extends string> {
+export type ParamMapperDecodeOptions<K extends string> = {
+  /** Only decode the specified keys. */
   only?: K[];
-}
+  /** When true, skips required and datatype validation. */
+  noValidate?: boolean;
+};
 
 export interface ParamMapper<
   T extends ParamMapping,
