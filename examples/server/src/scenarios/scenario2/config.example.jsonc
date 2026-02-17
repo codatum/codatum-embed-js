@@ -5,22 +5,14 @@
   "integrationId": "your_integration_id",
   "pageId": "your_page_id",
   "embedUrl": "https://app.codatum.com/protected/workspace/xxx/notebook/yyy",
-  "params": {
+  "paramMapping": {
     // Fixed value for a server-side parameter
-    "tenant_id": {
-      "paramId": "xxxxxxxxxxxxxxxxxxxxxxxx"
-    },
+    "tenant_id": "xxxxxxxxxxxxxxxxxxxxxxxx",
     // Client-side parameter
-    "store_id": {
-      "paramId": "xxxxxxxxxxxxxxxxxxxxxxxx"
-    },
+    "store_id": "xxxxxxxxxxxxxxxxxxxxxxxx",
     // Client-side parameter
-    "date_range": {
-      "paramId": "xxxxxxxxxxxxxxxxxxxxxxxx"
-    },
+    "date_range": "xxxxxxxxxxxxxxxxxxxxxxxx",
     // Client-side parameter
-    "product_category": {
-      "paramId": "xxxxxxxxxxxxxxxxxxxxxxxx"
-    }
+    "product_category": "xxxxxxxxxxxxxxxxxxxxxxxx"
   }
 }

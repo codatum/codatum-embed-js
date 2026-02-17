@@ -1,6 +1,6 @@
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createParamMapper, type ParamMapDef } from "@codatum/embed";
+import { createParamMapper } from "@codatum/embed";
 import { type Context, Hono } from "hono";
 import { type IssueTokenPayload, issueToken, loadConfig } from "../utils.js";
 
@@ -13,11 +13,11 @@ interface Config {
   integrationId: string;
   pageId: string;
   embedUrl: string;
-  params: {
-    tenant_id: ParamMapDef;
-    store_id: ParamMapDef;
-    date_range: ParamMapDef;
-    product_category: ParamMapDef;
+  paramMapping: {
+    tenant_id: string;
+    store_id: string;
+    date_range: string;
+    product_category: string;
   };
 }
 
@@ -47,7 +47,7 @@ app.post("/token", async (c: Context) => {
   }
 
   const tenantId = `tenant_${tokenUserId}`;
-  const mapper = createParamMapper(config.params);
+  const mapper = createParamMapper(config.paramMapping);
 
   const encodedParams = mapper.encode({
     tenant_id: tenantId,

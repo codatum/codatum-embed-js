@@ -113,14 +113,19 @@ Decode with `ParamMapper.decode(payload.params)`. `EncodedParam`: see [ParamMapp
 
 The embed talks in `param_id`s (IDs assigned per notebook parameter). Your app typically wants to work with meaningful keys like `store_id` or `date_range`. **ParamMapper** maps between your app’s key–value pairs and Codatum’s `param_id` + `param_value`, in both directions.
 
+**`createParamMapper(mapping, meta?)`**
+
+- **mapping** — `Record<string, string>`: your app’s key → Codatum `param_id`.
+- **meta** (optional) — `Record<key, ParamMeta>` with the same keys: `{ hidden?: boolean; required?: boolean }` per key. Use it to mark params as hidden or required.
+
 ```ts
 import { CodatumEmbed } from '@codatum/embed';
 
-// Define mapping: your app’s key → Codatum param_id (and optional hidden/required)
+// Mapping: your app’s key → Codatum param_id
 const paramMapper = CodatumEmbed.createParamMapper({
-  store_id: { paramId: '67a1b2c3d4e5f6a7b8c9d0e1' },
-  date_range: { paramId: '67a1b2c3d4e5f6a7b8c9d0e2' },
-  product_category: { paramId: '67a1b2c3d4e5f6a7b8c9d0e3' },
+  store_id: '67a1b2c3d4e5f6a7b8c9d0e1',
+  date_range: '67a1b2c3d4e5f6a7b8c9d0e2',
+  product_category: '67a1b2c3d4e5f6a7b8c9d0e3',
 });
 
 // Your app keeps state by meaningful keys:
@@ -151,7 +156,7 @@ paramMapper.decode(payloadParams);
 **Method details**
 
 - **`encode(values)`** — Use when returning from `tokenProvider`. App key:value → `EncodedParam[]`; values are JSON-stringified into `param_value`. Throws `MISSING_REQUIRED_PARAM` if a key with `required: true` is missing. Use the sentinel `'_RESET_TO_DEFAULT_'` to reset a param to the notebook’s default.
-- **`decode(params)`** — Use in `paramChanged` (and similar) handlers. `EncodedParam[]` (array of `{ param_id, param_value }`) → app key:value. `param_id`s not in `paramDefs` are ignored. Throws `MISSING_REQUIRED_PARAM` when a required param is missing, and `INVALID_PARAM_VALUE` for invalid JSON in `param_value`.
+- **`decode(params)`** — Use in `paramChanged` (and similar) handlers. `EncodedParam[]` (array of `{ param_id, param_value }`) → app key:value. `param_id`s not in the mapping are ignored. Throws `MISSING_REQUIRED_PARAM` when a required param is missing, and `INVALID_PARAM_VALUE` for invalid JSON in `param_value`.
 
 ## Errors
 
@@ -172,9 +177,9 @@ All errors are thrown/rejected as `CodatumEmbedError` with `code`. Both `Codatum
 
 ```ts
 const paramMapper = CodatumEmbed.createParamMapper({
-  date_range: { paramId: '67a1b2c3d4e5f6a7b8c9d0e1' },
-  product_category: { paramId: '67a1b2c3d4e5f6a7b8c9d0e2' },
-  store_id: { paramId: '67a1b2c3d4e5f6a7b8c9d0e3' },
+  date_range: '67a1b2c3d4e5f6a7b8c9d0e1',
+  product_category: '67a1b2c3d4e5f6a7b8c9d0e2',
+  store_id: '67a1b2c3d4e5f6a7b8c9d0e3',
 });
 
 const embed = await CodatumEmbed.init({
@@ -215,11 +220,14 @@ embed.on('paramChanged', (payload) => {
 let currentStoreId = 'store_001';
 let currentDateRange: [string, string] = ['2025-01-01', '2025-01-31'];
 
-const paramMapper = CodatumEmbed.createParamMapper({
-  store_id: { paramId: '67a1b2c3d4e5f6a7b8c9d0e1', hidden: true },
-  date_range: { paramId: '67a1b2c3d4e5f6a7b8c9d0e2' },
-  product_category: { paramId: '67a1b2c3d4e5f6a7b8c9d0e3' },
-});
+const paramMapper = CodatumEmbed.createParamMapper(
+  {
+    store_id: '67a1b2c3d4e5f6a7b8c9d0e1',
+    date_range: '67a1b2c3d4e5f6a7b8c9d0e2',
+    product_category: '67a1b2c3d4e5f6a7b8c9d0e3',
+  },
+  { store_id: { hidden: true } },
+);
 
 const embed = await CodatumEmbed.init({
   container: '#dashboard',
@@ -249,11 +257,14 @@ async function onFilterChange(storeId: string, dateRange: [string, string]) {
 
 ```ts
 let currentStoreId = 'store_001';
-const paramMapper = CodatumEmbed.createParamMapper({
-  store_id: { paramId: '67a1b2c3d4e5f6a7b8c9d0e1', hidden: true },
-  date_range: { paramId: '67a1b2c3d4e5f6a7b8c9d0e2' },
-  product_category: { paramId: '67a1b2c3d4e5f6a7b8c9d0e3' },
-});
+const paramMapper = CodatumEmbed.createParamMapper(
+  {
+    store_id: '67a1b2c3d4e5f6a7b8c9d0e1',
+    date_range: '67a1b2c3d4e5f6a7b8c9d0e2',
+    product_category: '67a1b2c3d4e5f6a7b8c9d0e3',
+  },
+  { store_id: { hidden: true } },
+);
 let latestValues = paramMapper.decode([]);
 
 const embed = await CodatumEmbed.init({

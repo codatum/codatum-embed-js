@@ -82,45 +82,63 @@ export class CodatumEmbedError extends Error {
   }
 }
 
-export type ParamMapDef = { paramId: string; hidden?: boolean; required?: boolean };
-export type ParamMapDefs = Record<string, ParamMapDef>;
+export type ParamMapping = Record<string, string>;
 
-export type DecodedParams<T extends ParamMapDefs> = {
-  [K in keyof T as T[K] extends { required: true } ? K : never]: unknown;
+export type ParamMeta = { hidden?: boolean; required?: boolean };
+
+type ParamMetaMap<T extends ParamMapping> = Partial<Record<keyof T & string, ParamMeta>>;
+
+type ResolvedMeta<T extends ParamMapping, M extends ParamMetaMap<T>> = M &
+  Record<keyof T & string, ParamMeta>;
+
+export type DecodedParams<
+  T extends ParamMapping,
+  M extends ParamMetaMap<T> = ParamMetaMap<ParamMapping>,
+> = {
+  [K in keyof T & keyof ResolvedMeta<T, M> as ResolvedMeta<T, M>[K] extends { required: true }
+    ? K
+    : never]: unknown;
 } & {
-  [K in keyof T as T[K] extends { required: true } ? never : K]?: unknown;
+  [K in keyof T & keyof ResolvedMeta<T, M> as ResolvedMeta<T, M>[K] extends { required: true }
+    ? never
+    : K]?: unknown;
 };
 
-export type PickedDecodedParams<T extends ParamMapDefs, K extends keyof T> = {
-  [P in K as T[P] extends { required: true } ? P : never]: unknown;
+export type PickedDecodedParams<
+  T extends ParamMapping,
+  M extends ParamMetaMap<T>,
+  K extends keyof T & string,
+> = {
+  [P in K & keyof ResolvedMeta<T, M> as ResolvedMeta<T, M>[P] extends { required: true }
+    ? P
+    : never]: unknown;
 } & {
-  [P in K as T[P] extends { required: true } ? never : P]?: unknown;
+  [P in K & keyof ResolvedMeta<T, M> as ResolvedMeta<T, M>[P] extends { required: true }
+    ? never
+    : P]?: unknown;
 };
 
-export interface ParamMapperEncodeOptions<
-  T extends ParamMapDefs,
-  K extends keyof T & string = keyof T & string,
-> {
+export interface ParamMapperEncodeOptions<K extends string> {
   only?: K[];
 }
 
-export interface ParamMapperDecodeOptions<
-  T extends ParamMapDefs,
-  K extends keyof T & string = keyof T & string,
-> {
+export interface ParamMapperDecodeOptions<K extends string> {
   only?: K[];
 }
 
-export interface ParamMapper<T extends ParamMapDefs> {
+export interface ParamMapper<
+  T extends ParamMapping,
+  M extends ParamMetaMap<T> = ParamMetaMap<ParamMapping>,
+> {
   encode<K extends keyof T & string = keyof T & string>(
-    values: PickedDecodedParams<T, K>,
-    options?: ParamMapperEncodeOptions<T, K>,
+    values: PickedDecodedParams<T, M, K>,
+    options?: ParamMapperEncodeOptions<K>,
   ): EncodedParam[];
 
   decode<K extends keyof T & string = keyof T & string>(
     params: EncodedParam[],
-    options?: ParamMapperDecodeOptions<T, K>,
-  ): PickedDecodedParams<T, K>;
+    options?: ParamMapperDecodeOptions<K>,
+  ): PickedDecodedParams<T, M, K>;
 }
 
 export type EmbedStatus = "initializing" | "ready" | "destroyed";

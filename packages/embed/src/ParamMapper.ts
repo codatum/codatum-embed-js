@@ -2,9 +2,8 @@ import type {
   DecodedParams,
   EncodedParam,
   ParamMapper as IParamMapper,
-  ParamMapDefs,
-  ParamMapperDecodeOptions,
-  ParamMapperEncodeOptions,
+  ParamMapping,
+  ParamMeta,
   PickedDecodedParams,
 } from "./types";
 import { CodatumEmbedError } from "./types";
@@ -12,29 +11,37 @@ import { CodatumEmbedError } from "./types";
 /** Special value for resetting to default */
 export const RESET_TO_DEFAULT = "_RESET_TO_DEFAULT_" as const;
 
-export class ParamMapper<T extends ParamMapDefs> implements IParamMapper<T> {
-  private readonly paramDefs: T;
+export class ParamMapper<
+  T extends ParamMapping,
+  M extends Partial<Record<keyof T & string, ParamMeta>> = Partial<Record<string, ParamMeta>>,
+> implements IParamMapper<T, M>
+{
+  private readonly defs: Record<string, { paramId: string } & ParamMeta>;
   private readonly aliasByParamId: Map<string, keyof T & string>;
 
-  constructor(paramDefs: T) {
-    this.paramDefs = paramDefs;
+  constructor(mapping: T, meta?: M) {
+    this.defs = {};
+    for (const key of Object.keys(mapping) as (keyof T & string)[]) {
+      const paramId = mapping[key];
+      const m = meta?.[key];
+      this.defs[key as string] = { paramId, ...m };
+    }
     this.aliasByParamId = new Map();
-    for (const [alias, def] of Object.entries(paramDefs)) {
-      this.aliasByParamId.set(def.paramId, alias as keyof T & string);
+    for (const [alias, paramId] of Object.entries(mapping)) {
+      this.aliasByParamId.set(paramId, alias as keyof T & string);
     }
   }
 
   encode<K extends keyof T & string = keyof T & string>(
-    values: PickedDecodedParams<T, K>,
-    options?: ParamMapperEncodeOptions<T, K>,
+    values: PickedDecodedParams<T, M, K>,
+    options?: { only?: K[] },
   ): EncodedParam[] {
     const result: EncodedParam[] = [];
-    const valuesByKey = values as unknown as Record<keyof T, unknown>;
-    const keys = options?.only ?? (Object.keys(this.paramDefs) as (keyof T & string)[]);
+    const keys = options?.only ?? (Object.keys(this.defs) as (keyof T & string)[]);
+    const valuesByKey = values as unknown as Record<string, unknown>;
     for (const key of keys) {
-      const def = this.paramDefs[key];
+      const def = this.defs[key as string];
       if (def == null) continue;
-      const paramId = def.paramId;
       const raw = valuesByKey[key];
       if (raw == null) {
         if (def.required) {
@@ -46,7 +53,7 @@ export class ParamMapper<T extends ParamMapDefs> implements IParamMapper<T> {
         continue;
       }
       result.push({
-        param_id: paramId,
+        param_id: def.paramId,
         param_value: raw === RESET_TO_DEFAULT ? RESET_TO_DEFAULT : JSON.stringify(raw),
         is_hidden: def.hidden ? true : undefined,
       });
@@ -56,15 +63,14 @@ export class ParamMapper<T extends ParamMapDefs> implements IParamMapper<T> {
 
   decode<K extends keyof T & string = keyof T & string>(
     params: EncodedParam[],
-    options?: ParamMapperDecodeOptions<T, K>,
-  ): PickedDecodedParams<T, K> {
-    const result: Partial<DecodedParams<T>> = {};
-    const keys = options?.only ?? (Object.keys(this.paramDefs) as (keyof T & string)[]);
+    options?: { only?: K[] },
+  ): PickedDecodedParams<T, M, K> {
+    const result: Partial<DecodedParams<T, M>> = {};
+    const keys = options?.only ?? (Object.keys(this.defs) as (keyof T & string)[]);
     for (const key of keys) {
-      const def = this.paramDefs[key];
+      const def = this.defs[key as string];
       if (def == null) continue;
-      const paramId = def.paramId;
-      const encodedParam = params.find((p) => p.param_id === paramId);
+      const encodedParam = params.find((p) => p.param_id === def.paramId);
       if (encodedParam == null) {
         if (def.required) {
           throw new CodatumEmbedError(
@@ -83,10 +89,13 @@ export class ParamMapper<T extends ParamMapDefs> implements IParamMapper<T> {
         );
       }
     }
-    return result as DecodedParams<T>;
+    return result as unknown as PickedDecodedParams<T, M, K>;
   }
 }
 
-export function createParamMapper<T extends ParamMapDefs>(paramDefs: T): ParamMapper<T> {
-  return new ParamMapper(paramDefs);
+export function createParamMapper<
+  T extends ParamMapping,
+  M extends Partial<Record<keyof T & string, ParamMeta>> = Partial<Record<string, ParamMeta>>,
+>(mapping: T, meta?: M): ParamMapper<T, M> {
+  return new ParamMapper(mapping, meta);
 }

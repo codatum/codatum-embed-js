@@ -4,7 +4,6 @@ import {
   createParamMapper,
   RESET_TO_DEFAULT,
   type EncodedParam,
-  type ParamMapDef,
   type ParamMapper,
 } from "@codatum/embed-vue";
 import { onMounted, ref } from "vue";
@@ -16,27 +15,21 @@ const embedUrl = ref<string | null>(null);
 const statusMessage = ref("Loading config…");
 const statusError = ref(false);
 
-type ClientParamMapDefs = {
-  date_range: ParamMapDef;
-  product_category: ParamMapDef;
-};
-type ClientParamValues = {
+const paramMapper = ref<ParamMapper<{
+  store_id: string;
+  date_range: string;
+  product_category: string;
+}> | null>(null);
+
+const paramValues = ref<{
+  store_id?: string;
   date_range?: [string, string] | typeof RESET_TO_DEFAULT;
   product_category?: string;
-};
-const clientParamMapper = ref<ParamMapper<ClientParamMapDefs> | null>(null);
-const clientParamValues = ref<ClientParamValues>({
+}>({
+  store_id: undefined,
   date_range: RESET_TO_DEFAULT,
+  product_category: undefined,
 });
-
-type ServerParamMapDefs = {
-  store_id: ParamMapDef;
-};
-type ServerParamValues = {
-  store_id?: string;
-};
-const serverParamMapper = ref<ParamMapper<ServerParamMapDefs> | null>(null);
-const serverParamValues = ref<ServerParamValues>({});
 
 onMounted(async () => {
   try {
@@ -44,14 +37,7 @@ onMounted(async () => {
     if (!configRes.ok) throw new Error(`config failed: ${configRes.status}`);
     const config = await configRes.json();
     embedUrl.value = config.embedUrl;
-    const _params = config.params as ClientParamMapDefs & ServerParamMapDefs;
-    clientParamMapper.value = createParamMapper({
-      date_range: _params.date_range,
-      product_category: _params.product_category,
-    });
-    serverParamMapper.value = createParamMapper({
-      store_id: _params.store_id,
-    });
+    paramMapper.value = createParamMapper(config.paramMapping);
     statusMessage.value = "Initializing…";
   } catch (err) {
     statusMessage.value =
@@ -73,7 +59,7 @@ const tokenProvider = async () => {
     body: JSON.stringify({
       tokenUserId: "demo-user",
       params: {
-        store_id: serverParamValues.value.store_id,
+        store_id: paramValues.value.store_id,
       },
     }),
   });
@@ -84,18 +70,18 @@ const tokenProvider = async () => {
   const data = (await res.json()) as { token: string };
   return {
     token: data.token,
-    params: clientParamMapper.value?.encode(clientParamValues.value) ?? [],
+    params:
+      paramMapper.value?.encode(paramValues.value, {
+        only: ["date_range", "product_category"],
+      }) ?? [],
   };
 };
 
 const onParamChanged = (ev: { params: EncodedParam[] }) => {
-  if (!clientParamMapper.value || !serverParamMapper.value) return;
-  clientParamValues.value = clientParamMapper.value.decode(
+  if (!paramMapper.value) return;
+  paramValues.value = paramMapper.value.decode(
     ev.params
-  ) as ClientParamValues;
-  serverParamValues.value = serverParamMapper.value.decode(
-    ev.params
-  ) as ServerParamValues;
+  ) as typeof paramValues.value;
 };
 
 const onEmbedError = (err: Error) => {
