@@ -96,7 +96,7 @@ Sent to the embed with the token.
 | Property | Type | Description |
 |----------|------|-------------|
 | `iframe` | `HTMLIFrameElement \| null` | The embed iframe element. |
-| `status` | `'initializing' \| 'ready' \| 'destroyed'` | Current instance state. |
+| `status` | `'INITIALIZING' \| 'READY' \| 'DESTROYED'` | Current instance state. |
 
 ### Events
 

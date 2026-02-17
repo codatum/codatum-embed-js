@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { init } from "./CodatumEmbed";
-import { CodatumEmbedError } from "./types";
+import { CodatumEmbedError, CodatumEmbedStatuses } from "./types";
 
 const WORKSPACE_ID = "a".repeat(24);
 const NOTEBOOK_ID = "b".repeat(24);
@@ -131,7 +131,7 @@ describe("init", () => {
       }),
       EMBED_ORIGIN,
     );
-    expect(instance.status).toBe("ready");
+    expect(instance.status).toBe(CodatumEmbedStatuses.READY);
     expect(instance.iframe).toBe(iframe);
 
     instance.destroy();
@@ -229,7 +229,7 @@ describe("instance", () => {
   it("destroy removes iframe and sets status to destroyed", () => {
     expect(container.contains(iframe)).toBe(true);
     instance.destroy();
-    expect(instance.status).toBe("destroyed");
+    expect(instance.status).toBe(CodatumEmbedStatuses.DESTROYED);
     expect(instance.iframe).toBeNull();
     expect(container.contains(iframe)).toBe(false);
   });

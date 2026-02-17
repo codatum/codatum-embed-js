@@ -65,13 +65,17 @@ export type EmbedEventMap = {
   executeSqlsTriggered: (payload: ExecuteSqlsTriggeredMessage) => void;
 };
 
+export const CodatumEmbedErrorCodes = {
+  CONTAINER_NOT_FOUND: "CONTAINER_NOT_FOUND",
+  INIT_TIMEOUT: "INIT_TIMEOUT",
+  INVALID_OPTIONS: "INVALID_OPTIONS",
+  SESSION_PROVIDER_FAILED: "SESSION_PROVIDER_FAILED",
+  MISSING_REQUIRED_PARAM: "MISSING_REQUIRED_PARAM",
+  INVALID_PARAM_VALUE: "INVALID_PARAM_VALUE",
+} as const;
+
 export type CodatumEmbedErrorCode =
-  | "CONTAINER_NOT_FOUND"
-  | "INIT_TIMEOUT"
-  | "INVALID_OPTIONS"
-  | "SESSION_PROVIDER_FAILED"
-  | "MISSING_REQUIRED_PARAM"
-  | "INVALID_PARAM_VALUE";
+  (typeof CodatumEmbedErrorCodes)[keyof typeof CodatumEmbedErrorCodes];
 
 export class CodatumEmbedError extends Error {
   code: CodatumEmbedErrorCode;
@@ -177,7 +181,13 @@ export type DefineParamMapper<M extends Record<string, ParamMeta>> = ParamMapper
   M
 >;
 
-export type EmbedStatus = "initializing" | "ready" | "destroyed";
+export const CodatumEmbedStatuses = {
+  INITIALIZING: "INITIALIZING",
+  READY: "READY",
+  DESTROYED: "DESTROYED",
+} as const;
+
+export type CodatumEmbedStatus = (typeof CodatumEmbedStatuses)[keyof typeof CodatumEmbedStatuses];
 
 export interface CodatumEmbedInstance {
   reload(): Promise<void>;
@@ -185,5 +195,5 @@ export interface CodatumEmbedInstance {
   off<K extends keyof EmbedEventMap>(event: K, handler: EmbedEventMap[K]): void;
   destroy(): void;
   readonly iframe: HTMLIFrameElement | null;
-  readonly status: EmbedStatus;
+  readonly status: CodatumEmbedStatus;
 }
