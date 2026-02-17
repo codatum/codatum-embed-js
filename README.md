@@ -80,20 +80,24 @@ Sent to the embed with the token.
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `sqlDisplay` | `'SHOW'` \| `'RESULT_ONLY'` \| `'HIDE'` | `'SHOW'` | Whether to show SQL editor, results only, or hide |
+| `sqlDisplay` | `'SHOW'` \| `'RESULT_ONLY'` \| `'HIDE'` | `'SHOW'` | Whether to show SQL Blocks, results only, or hide |
 | `hideParamsForm` | `boolean` | `false` | Hide the parameter form in the embed (e.g. when your app owns the filters) |
 | `expandParamsFormByDefault` | `boolean` | `false` | Whether the parameter form is expanded by default |
 
 ### Instance methods
 
-- **`reload()`** — Calls `tokenProvider` again and sends the returned token and params via `SET_TOKEN`.
-- **`on(event, handler)`** / **`off(event, handler)`** — Subscribe to `paramChanged` and `executeSqlsTriggered` (postMessage payloads from the iframe).
-- **`destroy()`** — Removes iframe, clears listeners and timers. No-op if already destroyed.
+| Method | Description |
+|--------|-------------|
+| `reload()` | Calls `tokenProvider` again and sends the returned token and params via `SET_TOKEN`. |
+| `on(event, handler)` / `off(event, handler)` | Subscribe to `paramChanged` and `executeSqlsTriggered` (postMessage payloads from the iframe). |
+| `destroy()` | Removes iframe, clears listeners and timers. No-op if already destroyed. |
 
 ### Instance properties
 
-- **`iframe`** — `HTMLIFrameElement | null`
-- **`status`** — `'initializing' | 'ready' | 'destroyed'`
+| Property | Type | Description |
+|----------|------|-------------|
+| `iframe` | `HTMLIFrameElement \| null` | The embed iframe element. |
+| `status` | `'initializing' \| 'ready' \| 'destroyed'` | Current instance state. |
 
 ## ParamMapper
 
