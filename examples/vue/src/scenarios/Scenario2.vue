@@ -4,7 +4,8 @@ import {
   createParamMapper,
   RESET_TO_DEFAULT,
   type EncodedParam,
-  type ParamMapper,
+  type DefineDecodedParams,
+  type DefineParamMapper,
 } from "@codatum/embed-vue";
 import { onMounted, ref, computed } from "vue";
 
@@ -15,21 +16,21 @@ const embedUrl = ref<string | null>(null);
 const statusMessage = ref("Loading config…");
 const statusError = ref(false);
 
-type ParamValues = {
-  store_id?: string;
-  date_range?: [string, string];
-  product_category?: string;
-};
-const paramMapper = ref<ParamMapper<{
-  store_id: string;
-  date_range: string;
-  product_category: string;
-}> | null>(null);
-const paramValues = ref<{
-  store_id?: string;
-  date_range?: [string, string] | typeof RESET_TO_DEFAULT;
-  product_category?: string;
-}>({});
+const paramDefs = {
+  store_id: { datatype: "STRING" },
+  date_range: { datatype: "[DATE, DATE]" },
+  product_category: { datatype: "STRING" },
+} as const;
+
+type ParamValues = DefineDecodedParams<typeof paramDefs>;
+type ParamMapper = DefineParamMapper<typeof paramDefs>;
+
+const paramMapper = ref<ParamMapper | null>(null);
+const paramValues = ref<ParamValues>({
+  store_id: undefined,
+  date_range: RESET_TO_DEFAULT,
+  product_category: undefined,
+});
 
 onMounted(async () => {
   try {
@@ -37,7 +38,7 @@ onMounted(async () => {
     if (!configRes.ok) throw new Error(`config failed: ${configRes.status}`);
     const config = await configRes.json();
     embedUrl.value = config.embedUrl;
-    paramMapper.value = createParamMapper(config.paramMapping);
+    paramMapper.value = createParamMapper(config.paramMapping) as ParamMapper;
     statusMessage.value = "Initializing…";
   } catch (err) {
     statusMessage.value =

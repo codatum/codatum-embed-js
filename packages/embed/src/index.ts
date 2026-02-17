@@ -17,6 +17,7 @@ export type {
   CodatumEmbedOptions,
   DecodedParams,
   DefineDecodedParams,
+  DefineParamMapper,
   DisplayOptions,
   EmbedEventMap,
   EmbedStatus,

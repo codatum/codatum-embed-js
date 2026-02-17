@@ -129,12 +129,6 @@ export type DecodedParams<
     : K]?: ParamValueType<ResolvedMeta<T, M>[K]>;
 };
 
-/** Derives DecodedParams from meta only */
-export type DefineDecodedParams<M extends Record<string, ParamMeta>> = DecodedParams<
-  { [K in keyof M]: string },
-  M
->;
-
 export type PickedDecodedParams<
   T extends ParamMapping,
   M extends ParamMetaMap<T>,
@@ -148,6 +142,12 @@ export type PickedDecodedParams<
     ? never
     : P]?: ParamValueType<ResolvedMeta<T, M>[P]>;
 };
+
+/** Derives DecodedParams from meta only */
+export type DefineDecodedParams<M extends Record<string, ParamMeta>> = DecodedParams<
+  { [K in keyof M]: string },
+  M
+>;
 
 export interface ParamMapperEncodeOptions<K extends string> {
   only?: K[];
@@ -171,6 +171,11 @@ export interface ParamMapper<
     options?: ParamMapperDecodeOptions<K>,
   ): PickedDecodedParams<T, M, K>;
 }
+
+export type DefineParamMapper<M extends Record<string, ParamMeta>> = ParamMapper<
+  { [K in keyof M]: string },
+  M
+>;
 
 export type EmbedStatus = "initializing" | "ready" | "destroyed";
 
