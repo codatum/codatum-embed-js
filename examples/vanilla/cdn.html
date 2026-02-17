@@ -28,7 +28,7 @@
           }
         }
 
-        fetch(SERVER_URL + "/config")
+        fetch(SERVER_URL + "/scenario1/config")
           .then(function (res) {
             if (!res.ok) throw new Error("config failed: " + res.status);
             return res.json();
@@ -38,7 +38,7 @@
               container: containerEl,
               embedUrl: config.embedUrl,
               tokenProvider: function () {
-                return fetch(SERVER_URL + "/token", {
+                return fetch(SERVER_URL + "/scenario1/token", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ tokenUserId: "demo-user" }),

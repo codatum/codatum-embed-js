@@ -96,7 +96,7 @@ Sent to the embed with the token.
 | Property | Type | Description |
 |----------|------|-------------|
 | `iframe` | `HTMLIFrameElement \| null` | The embed iframe element. |
-| `status` | `'initializing' \| 'ready' \| 'destroyed'` | Current instance state. |
+| `status` | `'INITIALIZING' \| 'READY' \| 'DESTROYED'` | Current instance state. |
 
 ### Events
 
@@ -111,47 +111,118 @@ Decode with `ParamMapper.decode(payload.params)`. `EncodedParam`: see [ParamMapp
 
 ## ParamMapper
 
-The embed talks in `param_id`s (IDs assigned per notebook parameter). Your app typically wants to work with meaningful keys like `store_id` or `date_range`. **ParamMapper** maps between your app’s key–value pairs and Codatum’s `param_id` + `param_value`, in both directions.
+The embed uses `param_id`s (IDs assigned per notebook parameter). Your app typically works with meaningful keys such as `store_id` or `date_range`. **ParamMapper** maps between your app’s key–value pairs and Codatum’s `param_id` + `param_value` in both directions.
+
+### Basic usage
 
 ```ts
 import { CodatumEmbed } from '@codatum/embed';
 
-// Define mapping: your app’s key → Codatum param_id (and optional hidden/required)
 const paramMapper = CodatumEmbed.createParamMapper({
-  store_id: { paramId: '67a1b2c3d4e5f6a7b8c9d0e1' },
-  date_range: { paramId: '67a1b2c3d4e5f6a7b8c9d0e2' },
-  product_category: { paramId: '67a1b2c3d4e5f6a7b8c9d0e3' },
+  store_id: '67a1b2c3d4e5f6a7b8c9d0e1',
+  date_range: '67a1b2c3d4e5f6a7b8c9d0e2',
+  product_category: '67a1b2c3d4e5f6a7b8c9d0e3',
 });
 
-// Your app keeps state by meaningful keys:
 const appState = {
   store_id: 'store_001',
   date_range: ['2025-01-01', '2025-01-31'],
-  product_category: [],
+  product_category: 'electronics',
 };
 
-// encode: app key:value → what the embed expects (param_id + param_value). Use in tokenProvider return.
+// encode: app key:value → EncodedParam[] (use in tokenProvider return)
 paramMapper.encode(appState);
 // → [
 //   { param_id: '67a1b2c3...', param_value: '"store_001"' },
 //   { param_id: '67a1b2c3...', param_value: '["2025-01-01","2025-01-31"]' },
-//   { param_id: '67a1b2c3...', param_value: '[]' },
+//   { param_id: '67a1b2c3...', param_value: '"electronics"' },
 // ]
 
-// decode: in paramChanged, payload.params is an array of { param_id, param_value } (same shape as encode output)
-const payloadParams = [
-  { param_id: '67a1b2c3...', param_value: '"store_001"' },
-  { param_id: '67a1b2c3...', param_value: '["2025-01-01","2025-01-31"]' },
-  { param_id: '67a1b2c3...', param_value: '[]' },
-];
-paramMapper.decode(payloadParams);
-// → { store_id: 'store_001', date_range: [...], product_category: [] }
+// decode: EncodedParam[] → app key:value (use in paramChanged / executeSqlsTriggered)
+paramMapper.decode(payload.params);
+// → { store_id: 'store_001', date_range: [...], product_category: 'electronics' }
 ```
 
-**Method details**
+### Creating a mapper
 
-- **`encode(values)`** — Use when returning from `tokenProvider`. App key:value → `EncodedParam[]`; values are JSON-stringified into `param_value`. Throws `MISSING_REQUIRED_PARAM` if a key with `required: true` is missing. Use the sentinel `'_RESET_TO_DEFAULT_'` to reset a param to the notebook’s default.
-- **`decode(params)`** — Use in `paramChanged` (and similar) handlers. `EncodedParam[]` (array of `{ param_id, param_value }`) → app key:value. `param_id`s not in `paramDefs` are ignored. Throws `MISSING_REQUIRED_PARAM` when a required param is missing, and `INVALID_PARAM_VALUE` for invalid JSON in `param_value`.
+**`createParamMapper(mapping, meta?)`**
+
+| Argument | Type | Description |
+|----------|------|-------------|
+| `mapping` | `Record<string, string>` | Your app’s key → Codatum `param_id` for each parameter. |
+| `meta` | `Record<key, ParamMeta>` (optional) | Same keys as `mapping`. Per-key options: `hidden`, `required`, `datatype`. |
+
+**`ParamMeta`** (optional, per key):
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `datatype` | `ParamDatatype` | Enables validation and improves typing. See [Param datatypes](#param-datatypes) below. |
+| `required` | `boolean` | If `true`, `encode` and `decode` throw `MISSING_REQUIRED_PARAM` when the param is missing. |
+| `hidden` | `boolean` | If `true`, encoded params include `is_hidden: true` so the embed can hide them from the params form. |
+
+#### Param datatypes
+
+When `meta[key].datatype` is set, `encode` and `decode` validate values. Supported values:
+
+| `ParamDatatype` | JS/TS type | Notes |
+|-----------------|------------|--------|
+| `'STRING'` | `string` | — |
+| `'NUMBER'` | `number` | Rejects `NaN`. |
+| `'BOOLEAN'` | `boolean` | — |
+| `'DATE'` | `string` | Must be `YYYY-MM-DD`. |
+| `'STRING[]'` | `string[]` | Array of strings. |
+| `'[DATE, DATE]'` | `[string, string]` | Date range; both elements must be `YYYY-MM-DD`. |
+
+### Instance methods
+
+| Method | Description |
+|--------|-------------|
+| **`encode(values, options?)`** | App key:value → `EncodedParam[]`. JSON-stringifies values. Use `RESET_TO_DEFAULT` as a value to reset that param to the notebook’s default.
+| **`decode(params, options?)`** | `EncodedParam[]` → app key:value. Ignores params not in mapping. |
+
+#### `encode` / `decode` options
+
+Both methods accept an optional second argument:
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `only` | `(keyof mapping)[]` | Limit to these keys. Useful when the host sends only a subset (e.g. server sends some params; client sends the rest via `encode` with `only`). |
+| `noValidate` | `boolean` | When `true`, skips required and datatype validation. |
+
+### Type-first usage
+
+When you define parameter definitions (e.g. with `datatype`) and want typed encode/decode, you can use the helper types.
+
+```ts
+import { createParamMapper, RESET_TO_DEFAULT, type DefineDecodedParams, type EncodedParam } from '@codatum/embed';
+
+const paramDefs = {
+  store_id: { datatype: 'STRING', required: true },
+  date_range: { datatype: '[DATE, DATE]' },
+  product_category: { datatype: 'STRING' },
+} as const;
+
+type ParamValues = DefineDecodedParams<typeof paramDefs>;
+// → { store_id: string, date_range?: [string, string], product_category?: string }
+
+const paramValues: ParamValues = {
+  store_id: 'store_001',
+  date_range: RESET_TO_DEFAULT,
+  product_category: 'electronics'
+};
+
+const paramMapper = createParamMapper(paramDefs);
+const clientParams = paramMapper.encode(paramValues, { only: ['date_range', 'product_category'] })
+// → [
+//   { param_id: '67a1b2c3...', param_value: '["2025-01-01","2025-01-31"]' },
+//   { param_id: '67a1b2c3...', param_value: '"electronics"' },
+// ]
+
+const onParamChanged = (ev: { params: EncodedParam[] }) => {
+  const values: ParamValues = paramMapper.decode(ev.params);
+  console.log('Changed:', values);
+};
+```
 
 ## Errors
 
@@ -172,9 +243,9 @@ All errors are thrown/rejected as `CodatumEmbedError` with `code`. Both `Codatum
 
 ```ts
 const paramMapper = CodatumEmbed.createParamMapper({
-  date_range: { paramId: '67a1b2c3d4e5f6a7b8c9d0e1' },
-  product_category: { paramId: '67a1b2c3d4e5f6a7b8c9d0e2' },
-  store_id: { paramId: '67a1b2c3d4e5f6a7b8c9d0e3' },
+  date_range: '67a1b2c3d4e5f6a7b8c9d0e1',
+  product_category: '67a1b2c3d4e5f6a7b8c9d0e2',
+  store_id: '67a1b2c3d4e5f6a7b8c9d0e3',
 });
 
 const embed = await CodatumEmbed.init({
@@ -192,7 +263,7 @@ const embed = await CodatumEmbed.init({
       token: data.token,
       params: paramMapper.encode({
         date_range: '_RESET_TO_DEFAULT_',
-        product_category: [],
+        product_category: 'electronics',
         store_id: currentUser.defaultStoreId,
       }),
     };
@@ -215,11 +286,14 @@ embed.on('paramChanged', (payload) => {
 let currentStoreId = 'store_001';
 let currentDateRange: [string, string] = ['2025-01-01', '2025-01-31'];
 
-const paramMapper = CodatumEmbed.createParamMapper({
-  store_id: { paramId: '67a1b2c3d4e5f6a7b8c9d0e1', hidden: true },
-  date_range: { paramId: '67a1b2c3d4e5f6a7b8c9d0e2' },
-  product_category: { paramId: '67a1b2c3d4e5f6a7b8c9d0e3' },
-});
+const paramMapper = CodatumEmbed.createParamMapper(
+  {
+    store_id: '67a1b2c3d4e5f6a7b8c9d0e1',
+    date_range: '67a1b2c3d4e5f6a7b8c9d0e2',
+    product_category: '67a1b2c3d4e5f6a7b8c9d0e3',
+  },
+  { store_id: { hidden: true } },
+);
 
 const embed = await CodatumEmbed.init({
   container: '#dashboard',
@@ -232,7 +306,7 @@ const embed = await CodatumEmbed.init({
     return {
       token: data.token,
       params: paramMapper.encode(
-        { store_id: currentStoreId, date_range: currentDateRange, product_category: [] },
+        { store_id: currentStoreId, date_range: currentDateRange, product_category: 'electronics' },
       ),
     };
   },
@@ -249,11 +323,14 @@ async function onFilterChange(storeId: string, dateRange: [string, string]) {
 
 ```ts
 let currentStoreId = 'store_001';
-const paramMapper = CodatumEmbed.createParamMapper({
-  store_id: { paramId: '67a1b2c3d4e5f6a7b8c9d0e1', hidden: true },
-  date_range: { paramId: '67a1b2c3d4e5f6a7b8c9d0e2' },
-  product_category: { paramId: '67a1b2c3d4e5f6a7b8c9d0e3' },
-});
+const paramMapper = CodatumEmbed.createParamMapper(
+  {
+    store_id: '67a1b2c3d4e5f6a7b8c9d0e1',
+    date_range: '67a1b2c3d4e5f6a7b8c9d0e2',
+    product_category: '67a1b2c3d4e5f6a7b8c9d0e3',
+  },
+  { store_id: { hidden: true } },
+);
 let latestValues = paramMapper.decode([]);
 
 const embed = await CodatumEmbed.init({
@@ -269,7 +346,7 @@ const embed = await CodatumEmbed.init({
       token: data.token,
       params: paramMapper.encode({
         date_range: '_RESET_TO_DEFAULT_',
-        product_category: [],
+        product_category: 'electronics',
         store_id: currentStoreId,
       }),
     };

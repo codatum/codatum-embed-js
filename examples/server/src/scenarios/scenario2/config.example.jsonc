@@ -1,0 +1,18 @@
+// caseB: https://docs.codatum.com/sharing/signed-embed/use-case
+{
+  "apiKey": "your_api_key",
+  "apiSecret": "your_api_secret",
+  "integrationId": "your_integration_id",
+  "pageId": "your_page_id",
+  "embedUrl": "https://app.codatum.com/protected/workspace/xxx/notebook/yyy",
+  "paramMapping": {
+    // Fixed value for a server-side parameter
+    "tenant_id": "xxxxxxxxxxxxxxxxxxxxxxxx",
+    // Client-side parameter
+    "store_id": "xxxxxxxxxxxxxxxxxxxxxxxx",
+    // Client-side parameter
+    "date_range": "xxxxxxxxxxxxxxxxxxxxxxxx",
+    // Client-side parameter
+    "product_category": "xxxxxxxxxxxxxxxxxxxxxxxx"
+  }
+}

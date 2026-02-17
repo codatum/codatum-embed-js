@@ -9,7 +9,7 @@ describe("CodatumEmbed", () => {
 
   it("createParamMapper returns mapper with encode and decode", () => {
     const mapper = CodatumEmbed.createParamMapper({
-      id: { paramId: "67a1b2c3d4e5f6a7b8c9d0e1" },
+      id: "67a1b2c3d4e5f6a7b8c9d0e1",
     });
     expect(mapper.encode).toBeDefined();
     expect(mapper.decode).toBeDefined();

@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { CodatumEmbed as CodatumEmbedCore } from "@codatum/embed";
+import { CodatumEmbed, CodatumEmbedStatuses } from "@codatum/embed";
 import type {
   CodatumEmbedInstance,
   DisplayOptions,
-  EncodedParam,
   IframeOptions,
   TokenProviderResult,
   TokenOptions,
   ParamChangedMessage,
   ExecuteSqlsTriggeredMessage,
+  CodatumEmbedStatus,
 } from "@codatum/embed";
 import { onUnmounted, ref, watch } from "vue";
 
@@ -32,7 +32,7 @@ const emit = defineEmits<{
 
 const containerRef = ref<HTMLElement | null>(null);
 const instance = ref<CodatumEmbedInstance | null>(null);
-const status = ref<"initializing" | "ready" | "destroyed">("initializing");
+const status = ref<CodatumEmbedStatus>(CodatumEmbedStatuses.INITIALIZING);
 const error = ref<Error | null>(null);
 
 let stopWatch: (() => void) | undefined;
@@ -41,8 +41,8 @@ stopWatch = watch(
   (el: HTMLElement | null) => {
     if (!el) return;
     error.value = null;
-    status.value = "initializing";
-    CodatumEmbedCore.init({
+    status.value = CodatumEmbedStatuses.INITIALIZING;
+    CodatumEmbed.init({
       container: el,
       embedUrl: props.embedUrl,
       tokenProvider: props.tokenProvider,
@@ -56,7 +56,7 @@ stopWatch = watch(
       })
       .catch((err: unknown) => {
         error.value = err instanceof Error ? err : new Error(String(err));
-        status.value = "destroyed";
+        status.value = CodatumEmbedStatuses.DESTROYED;
       });
   },
   { immediate: true }
@@ -68,7 +68,7 @@ onUnmounted(() => {
     instance.value.destroy();
     instance.value = null;
   }
-  status.value = "destroyed";
+  status.value = CodatumEmbedStatuses.DESTROYED;
 });
 
 watch(instance, (inst: CodatumEmbedInstance | null) => {

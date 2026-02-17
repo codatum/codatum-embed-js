@@ -24,7 +24,7 @@ async function run() {
 
   let embedUrl: string;
   try {
-    const configRes = await fetch(`${SERVER_URL}/config`);
+    const configRes = await fetch(`${SERVER_URL}/scenario1/config`);
     if (!configRes.ok) throw new Error(`config failed: ${configRes.status}`);
     const config = (await configRes.json()) as { embedUrl: string };
     embedUrl = config.embedUrl;
@@ -39,7 +39,7 @@ async function run() {
       container: containerEl,
       embedUrl,
       tokenProvider: async () => {
-        const res = await fetch(`${SERVER_URL}/token`, {
+        const res = await fetch(`${SERVER_URL}/scenario1/token`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ tokenUserId: "demo-user" }),
