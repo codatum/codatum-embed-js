@@ -47,7 +47,7 @@ Creates the iframe, waits for the iframe to be ready, gets a token and params fr
 |--------|----------|-------------|
 | `container` | Yes | `HTMLElement` or CSS selector where the iframe is inserted |
 | `embedUrl` | Yes | Signed embed URL from Codatum |
-| `tokenProvider` | Yes | `() => Promise<{ token: string, params?: EncodedParam[] }>`. Called on `init()`, `reload()`, and on token auto-refresh. Returned `params` are sent to the embed with the token. |
+| `tokenProvider` | Yes | `() => Promise<{ token: string, params?: EncodedParam[] }>`. Called on `init()`, `reload()`, and on token auto-refresh. Returned `params` are sent to the embed with the token as client-side params. |
 | `iframeOptions` | No | See [IframeOptions](#iframeoptions) below |
 | `tokenOptions` | No | See [TokenOptions](#tokenoptions) below |
 | `displayOptions` | No | See [DisplayOptions](#displayoptions) below |
