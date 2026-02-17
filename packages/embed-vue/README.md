@@ -1,6 +1,8 @@
 # @codatum/embed-vue
 
-Vue 3 integration for Codatum Signed Embed. Wraps [@codatum/embed](https://github.com/codatum/codatum-embed-js/tree/main/packages/embed) and provides a single component.
+Vue 3 integration for Codatum Signed Embed. Provides a single component that wraps the core SDK. All of [@codatum/embed](/README.md) is re-exported so you can use this package as a single entry point (one version, no split).
+
+For options, types, events, and programmatic API details, see **[@codatum/embed](/README.md)**.
 
 ## Installation
 
@@ -12,7 +14,7 @@ pnpm add @codatum/embed-vue
 
 ```vue
 <script setup lang="ts">
-import { CodatumEmbed } from "@codatum/embed-vue";
+import { CodatumEmbedVue } from "@codatum/embed-vue";
 
 const embedUrl = "https://app.codatum.com/embed/...";
 async function tokenProvider() {
@@ -23,36 +25,49 @@ async function tokenProvider() {
 </script>
 
 <template>
-  <CodatumEmbed
-    :embed-url="embedUrl"
-    :session-provider="tokenProvider"
-    :iframe-options="{ theme: 'LIGHT', locale: 'ja' }"
+  <CodatumEmbedVue
+    :embedUrl="embedUrl"
+    :tokenProvider="tokenProvider"
+    :iframeOptions="{ theme: 'LIGHT', locale: 'ja' }"
     @ready="console.log('Embed ready')"
-    @param-changed="(e) => console.log('Params', e.params)"
-    @execute-sqls-triggered="(e) => console.log('Execute', e.params)"
+    @paramChanged="(e) => console.log('Params', e.params)"
+    @executeSqlsTriggered="(e) => console.log('Execute', e.params)"
     @error="(e) => console.error(e)"
   />
 </template>
 ```
 
-Calling `reload` from the parent:
-
-```vue
-<CodatumEmbed ref="embedRef" ... />
-
-<script setup>
-const embedRef = ref(null);
-// embedRef.value?.instance?.reload() — calls tokenProvider again
-</script>
-```
+Calling `reload` from the parent: use a ref and `embedRef.value?.instance?.reload()`. See [@codatum/embed](/README.md) for the instance API.
 
 ## API
 
-- **CodatumEmbed**  
-  - Props: `embedUrl`, `tokenProvider`, `iframeOptions?`, `tokenOptions?`, `displayOptions?`  
-  - Events: `ready`, `paramChanged`, `executeSqlsTriggered`, `error`  
-  - Expose: `instance`, `status`, `error`, `isReady`
+Option types and behavior (e.g. `iframeOptions`, `tokenOptions`, `displayOptions`) are the same as in [@codatum/embed](/README.md). The component uses its root element as the iframe container (no `container` prop).
 
-Types such as `CodatumEmbedInstance`, `DisplayOptions`, `IframeOptions`, `TokenProviderResult`, and `TokenOptions` are re-exported from `@codatum/embed`.
+### Props
 
-Need a custom container or more control? Use [@codatum/embed](https://github.com/codatum/codatum-embed-js/tree/main/packages/embed) directly (e.g. call `init` in `onMounted` and `destroy` in `onUnmounted`).
+| Prop | Required | Type | Description |
+|------|----------|------|-------------|
+| `embedUrl` | Yes | `string` | Signed embed URL from Codatum |
+| `tokenProvider` | Yes | `() => Promise<TokenProviderResult>` | Called on init, reload, and token refresh; see [@codatum/embed](/README.md) |
+| `iframeOptions` | No | `IframeOptions` | theme, locale, className, style |
+| `tokenOptions` | No | `TokenOptions` | refreshBuffer, retryCount, initTimeout, onRefreshError |
+| `displayOptions` | No | `DisplayOptions` | sqlDisplay, hideParamsForm, expandParamsFormByDefault |
+
+### Events
+
+| Event | Payload | When |
+|-------|---------|------|
+| `ready` | — | Embed is ready and token/params have been applied |
+| `paramChanged` | `{ params: EncodedParam[] }` | User changed params in the embed |
+| `executeSqlsTriggered` | `{ params: EncodedParam[] }` | Execute SQL was triggered in the embed |
+| `error` | `Error` | Init or token provider failed |
+
+### Expose (ref)
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `instance` | `CodatumEmbed \| null` | Core embed instance; use for `reload()`, `on()`, `off()`, `destroy()` |
+| `status` | `'initializing' \| 'ready' \| 'destroyed'` | Current embed state |
+| `error` | `Error \| null` | Last error from init or tokenProvider |
+
+Need a custom container or full control? Use `CodatumEmbed.init()` from this package (or [@codatum/embed](/README.md)) in `onMounted` and `instance.destroy()` in `onUnmounted`.

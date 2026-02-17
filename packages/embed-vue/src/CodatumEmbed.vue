@@ -7,6 +7,8 @@ import type {
   IframeOptions,
   TokenProviderResult,
   TokenOptions,
+  ParamChangedMessage,
+  ExecuteSqlsTriggeredMessage,
 } from "@codatum/embed";
 import { onUnmounted, ref, watch } from "vue";
 
@@ -22,8 +24,8 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  paramChanged: [payload: { params: EncodedParam[] }];
-  executeSqlsTriggered: [payload: { params: EncodedParam[] }];
+  paramChanged: [payload: ParamChangedMessage];
+  executeSqlsTriggered: [payload: ExecuteSqlsTriggeredMessage];
   ready: [];
   error: [err: Error];
 }>();
@@ -32,7 +34,6 @@ const containerRef = ref<HTMLElement | null>(null);
 const instance = ref<CodatumEmbedInstance | null>(null);
 const status = ref<"initializing" | "ready" | "destroyed">("initializing");
 const error = ref<Error | null>(null);
-const isReady = ref(false);
 
 let stopWatch: (() => void) | undefined;
 stopWatch = watch(
@@ -52,7 +53,6 @@ stopWatch = watch(
       .then((emb: CodatumEmbedInstance) => {
         instance.value = emb;
         status.value = emb.status;
-        isReady.value = true;
       })
       .catch((err: unknown) => {
         error.value = err instanceof Error ? err : new Error(String(err));
@@ -69,14 +69,13 @@ onUnmounted(() => {
     instance.value = null;
   }
   status.value = "destroyed";
-  isReady.value = false;
 });
 
 watch(instance, (inst: CodatumEmbedInstance | null) => {
   if (!inst) return;
-  const onParamChanged = (payload: { params: EncodedParam[] }) =>
+  const onParamChanged = (payload: ParamChangedMessage) =>
     emit("paramChanged", payload);
-  const onExecuteSqlsTriggered = (payload: { params: EncodedParam[] }) =>
+  const onExecuteSqlsTriggered = (payload: ExecuteSqlsTriggeredMessage) =>
     emit("executeSqlsTriggered", payload);
   inst.on("paramChanged", onParamChanged);
   inst.on("executeSqlsTriggered", onExecuteSqlsTriggered);
@@ -96,7 +95,6 @@ defineExpose({
   instance,
   status,
   error,
-  isReady,
 });
 </script>
 

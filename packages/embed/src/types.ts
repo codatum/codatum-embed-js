@@ -46,14 +46,14 @@ export const EmbedMessageTypes = {
   EXECUTE_SQLS_TRIGGERED: "EXECUTE_SQLS_TRIGGERED",
 } as const;
 
-type ReadyForTokenMessage = {
+export type ReadyForTokenMessage = {
   type: typeof EmbedMessageTypes.READY_FOR_TOKEN;
 };
-type ParamChangedMessage = {
+export type ParamChangedMessage = {
   type: typeof EmbedMessageTypes.PARAM_CHANGED;
   params: EncodedParam[];
 };
-type ExecuteSqlsTriggeredMessage = {
+export type ExecuteSqlsTriggeredMessage = {
   type: typeof EmbedMessageTypes.EXECUTE_SQLS_TRIGGERED;
   params: EncodedParam[];
 };
@@ -61,8 +61,8 @@ type ExecuteSqlsTriggeredMessage = {
 export type EmbedMessage = ReadyForTokenMessage | ParamChangedMessage | ExecuteSqlsTriggeredMessage;
 
 export type EmbedEventMap = {
-  paramChanged: (payload: Omit<ParamChangedMessage, "type">) => void;
-  executeSqlsTriggered: (payload: Omit<ExecuteSqlsTriggeredMessage, "type">) => void;
+  paramChanged: (payload: ParamChangedMessage) => void;
+  executeSqlsTriggered: (payload: ExecuteSqlsTriggeredMessage) => void;
 };
 
 export type CodatumEmbedErrorCode =

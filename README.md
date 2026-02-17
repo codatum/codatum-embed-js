@@ -41,18 +41,18 @@ embed.destroy();
 
 Creates the iframe, waits for the iframe to be ready, gets a token and params from `tokenProvider`, and sends token (and optional params) to the iframe. Throws `CodatumEmbedError` on failure.
 
-#### `CodatumEmbedOptions` definition
+#### `CodatumEmbedOptions`
 
 | Property | Required | Description |
 |--------|----------|-------------|
 | `container` | Yes | `HTMLElement` or CSS selector where the iframe is inserted |
 | `embedUrl` | Yes | Signed embed URL from Codatum |
-| `tokenProvider` | Yes | `() => Promise<{ token: string, params?: EncodedParam[] }>`. Called on `init()`, `reload()`, and on token auto-refresh. Returned `params` are sent to the embed with the token. |
-| `iframeOptions` | No | See [iframeOptions](#iframeoptions) below |
-| `tokenOptions` | No | See [tokenOptions](#tokenoptions) below |
-| `displayOptions` | No | See [displayOptions](#displayoptions) below |
+| `tokenProvider` | Yes | `() => Promise<{ token: string, params?: EncodedParam[] }>`. Called on `init()`, `reload()`, and on token auto-refresh. Returned `params` are sent to the embed with the token as client-side params. |
+| `iframeOptions` | No | See [IframeOptions](#iframeoptions) below |
+| `tokenOptions` | No | See [TokenOptions](#tokenoptions) below |
+| `displayOptions` | No | See [DisplayOptions](#displayoptions) below |
 
-#### iframeOptions
+#### `IframeOptions`
 
 Options applied to the iframe element and passed to the embed via URL/search params.
 
@@ -63,7 +63,7 @@ Options applied to the iframe element and passed to the embed via URL/search par
 | `className` | `string` | - | CSS class name(s) applied to the iframe element |
 | `style` | `object` | `{width: '100%', height: '100%', border: 'none'}` | Inline styles for the iframe; overrides the default styles |
 
-#### tokenOptions
+#### `TokenOptions`
 
 Controls token lifetime, refresh behavior, and init timeout.
 
@@ -74,32 +74,44 @@ Controls token lifetime, refresh behavior, and init timeout.
 | `initTimeout` | `number` | `30000` | Max wait in ms for embed "ready"; `0` = no timeout |
 | `onRefreshError` | `(error: Error) => void` | `undefined` | Callback when `tokenProvider` fails after all retries |
 
-#### displayOptions
+#### `DisplayOptions`
 
 Sent to the embed with the token.
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `sqlDisplay` | `'SHOW'` \| `'RESULT_ONLY'` \| `'HIDE'` | `'SHOW'` | Whether to show SQL editor, results only, or hide |
+| `sqlDisplay` | `'SHOW'` \| `'RESULT_ONLY'` \| `'HIDE'` | `'SHOW'` | Whether to show SQL Blocks, results only, or hide |
 | `hideParamsForm` | `boolean` | `false` | Hide the parameter form in the embed (e.g. when your app owns the filters) |
 | `expandParamsFormByDefault` | `boolean` | `false` | Whether the parameter form is expanded by default |
 
 ### Instance methods
 
-- **`reload()`** — Calls `tokenProvider` again and sends the returned token and params via `SET_TOKEN`.
-- **`on(event, handler)`** / **`off(event, handler)`** — Subscribe to `paramChanged` and `executeSqlsTriggered` (postMessage payloads from the iframe).
-- **`destroy()`** — Removes iframe, clears listeners and timers. No-op if already destroyed.
+| Method | Description |
+|--------|-------------|
+| `reload()` | Calls `tokenProvider` again and sends the returned token and params via `SET_TOKEN`. |
+| `destroy()` | Removes iframe, clears listeners and timers. No-op if already destroyed. |
 
 ### Instance properties
 
-- **`iframe`** — `HTMLIFrameElement | null`
-- **`status`** — `'initializing' | 'ready' | 'destroyed'`
+| Property | Type | Description |
+|----------|------|-------------|
+| `iframe` | `HTMLIFrameElement \| null` | The embed iframe element. |
+| `status` | `'initializing' \| 'ready' \| 'destroyed'` | Current instance state. |
+
+### Events
+
+Subscribe with `on(event, handler)` and `off(event, handler)`.
+
+| Event | Description | Payload |
+|-------|-------------|---------|
+| `paramChanged` | User changed parameters in the embed. | `{ type: 'PARAM_CHANGED', params: EncodedParam[] }` |
+| `executeSqlsTriggered` | SQL execution was triggered in the embed. | `{ type: 'EXECUTE_SQLS_TRIGGERED', params: EncodedParam[] }` |
+
+Decode with `ParamMapper.decode(payload.params)`. `EncodedParam`: see [ParamMapper](#parammapper).
 
 ## ParamMapper
 
 The embed talks in `param_id`s (IDs assigned per notebook parameter). Your app typically wants to work with meaningful keys like `store_id` or `date_range`. **ParamMapper** maps between your app’s key–value pairs and Codatum’s `param_id` + `param_value`, in both directions.
-
-**Transformation (code-style)**
 
 ```ts
 import { CodatumEmbed } from '@codatum/embed';
