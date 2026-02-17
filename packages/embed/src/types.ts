@@ -91,17 +91,36 @@ export type DecodedParams<T extends ParamMapDefs> = {
   [K in keyof T as T[K] extends { required: true } ? never : K]?: unknown;
 };
 
-export interface ParamMapperEncodeOptions<T extends ParamMapDefs> {
-  only?: (keyof T & string)[];
+export type PickedDecodedParams<T extends ParamMapDefs, K extends keyof T> = {
+  [P in K as T[P] extends { required: true } ? P : never]: unknown;
+} & {
+  [P in K as T[P] extends { required: true } ? never : P]?: unknown;
+};
+
+export interface ParamMapperEncodeOptions<
+  T extends ParamMapDefs,
+  K extends keyof T & string = keyof T & string,
+> {
+  only?: K[];
 }
 
-export interface ParamMapperDecodeOptions<T extends ParamMapDefs> {
-  only?: (keyof T & string)[];
+export interface ParamMapperDecodeOptions<
+  T extends ParamMapDefs,
+  K extends keyof T & string = keyof T & string,
+> {
+  only?: K[];
 }
 
 export interface ParamMapper<T extends ParamMapDefs> {
-  encode(values: DecodedParams<T>, options?: ParamMapperEncodeOptions<T>): EncodedParam[];
-  decode(params: EncodedParam[], options?: ParamMapperDecodeOptions<T>): Partial<DecodedParams<T>>;
+  encode<K extends keyof T & string = keyof T & string>(
+    values: PickedDecodedParams<T, K>,
+    options?: ParamMapperEncodeOptions<T, K>,
+  ): EncodedParam[];
+
+  decode<K extends keyof T & string = keyof T & string>(
+    params: EncodedParam[],
+    options?: ParamMapperDecodeOptions<T, K>,
+  ): PickedDecodedParams<T, K>;
 }
 
 export type EmbedStatus = "initializing" | "ready" | "destroyed";

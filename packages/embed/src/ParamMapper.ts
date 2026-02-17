@@ -5,6 +5,7 @@ import type {
   ParamMapDefs,
   ParamMapperDecodeOptions,
   ParamMapperEncodeOptions,
+  PickedDecodedParams,
 } from "./types";
 import { CodatumEmbedError } from "./types";
 
@@ -23,7 +24,10 @@ export class ParamMapper<T extends ParamMapDefs> implements IParamMapper<T> {
     }
   }
 
-  encode(values: DecodedParams<T>, options?: ParamMapperEncodeOptions<T>): EncodedParam[] {
+  encode<K extends keyof T & string = keyof T & string>(
+    values: PickedDecodedParams<T, K>,
+    options?: ParamMapperEncodeOptions<T, K>,
+  ): EncodedParam[] {
     const result: EncodedParam[] = [];
     const valuesByKey = values as unknown as Record<keyof T, unknown>;
     const keys = options?.only ?? (Object.keys(this.paramDefs) as (keyof T & string)[]);
@@ -50,7 +54,10 @@ export class ParamMapper<T extends ParamMapDefs> implements IParamMapper<T> {
     return result;
   }
 
-  decode(params: EncodedParam[], options?: ParamMapperDecodeOptions<T>): DecodedParams<T> {
+  decode<K extends keyof T & string = keyof T & string>(
+    params: EncodedParam[],
+    options?: ParamMapperDecodeOptions<T, K>,
+  ): PickedDecodedParams<T, K> {
     const result: Partial<DecodedParams<T>> = {};
     const keys = options?.only ?? (Object.keys(this.paramDefs) as (keyof T & string)[]);
     for (const key of keys) {
