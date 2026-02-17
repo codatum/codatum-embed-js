@@ -6,8 +6,7 @@
   "embedUrl": "https://app.codatum.com/protected/workspace/xxx/notebook/yyy",
   "params": {
     "tenant_id": {
-      "paramId": "xxxxxxxxxxxxxxxxxxxxxxxx",
-      "required": true
+      "paramId": "xxxxxxxxxxxxxxxxxxxxxxxx"
     },
     "store_id": {
       "paramId": "xxxxxxxxxxxxxxxxxxxxxxxx"

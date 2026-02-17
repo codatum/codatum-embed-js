@@ -16,6 +16,10 @@ app.use(
   }),
 );
 
+app.onError((err, c) => {
+  return c.json({ message: err.message }, 400);
+});
+
 app.route("/scenario1", scenario1App);
 
 serve({ fetch: app.fetch, port: PORT }, (info: { port: number }) => {

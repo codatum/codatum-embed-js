@@ -1,11 +1,13 @@
 import { existsSync, readFileSync } from "node:fs";
+import JSON5 from "json5";
 
 export const loadConfig = <T>(path: string): T => {
   if (!existsSync(path)) {
     throw new Error(`Config file not found: ${path}`);
   }
   const raw = readFileSync(path, "utf-8");
-  return JSON.parse(raw) as T;
+  // to allow comments in JSON
+  return JSON5.parse(raw) as T;
 };
 
 const CODATUM_ISSUE_TOKEN_URL = "https://api.codatum.com/api/notebook/issueToken";
