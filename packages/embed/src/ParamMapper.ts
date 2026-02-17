@@ -2,14 +2,16 @@ import type {
   DecodedParams,
   EncodedParam,
   ParamMapper as IParamMapper,
-  ParamMapDef,
+  ParamMapDefs,
+  ParamMapperDecodeOptions,
+  ParamMapperEncodeOptions,
 } from "./types";
 import { CodatumEmbedError } from "./types";
 
 /** Special value for resetting to default */
 export const RESET_TO_DEFAULT = "_RESET_TO_DEFAULT_" as const;
 
-export class ParamMapper<T extends Record<string, ParamMapDef>> implements IParamMapper<T> {
+export class ParamMapper<T extends ParamMapDefs> implements IParamMapper<T> {
   private readonly paramDefs: T;
   private readonly aliasByParamId: Map<string, keyof T & string>;
 
@@ -21,14 +23,17 @@ export class ParamMapper<T extends Record<string, ParamMapDef>> implements IPara
     }
   }
 
-  encode(values: DecodedParams<T>): EncodedParam[] {
+  encode(values: DecodedParams<T>, options?: ParamMapperEncodeOptions<T>): EncodedParam[] {
     const result: EncodedParam[] = [];
     const valuesByKey = values as unknown as Record<keyof T, unknown>;
-    for (const key of Object.keys(this.paramDefs) as (keyof T & string)[]) {
-      const paramId = this.paramDefs[key].paramId;
+    const keys = options?.only ?? (Object.keys(this.paramDefs) as (keyof T & string)[]);
+    for (const key of keys) {
+      const def = this.paramDefs[key];
+      if (def == null) continue;
+      const paramId = def.paramId;
       const raw = valuesByKey[key];
       if (raw == null) {
-        if (this.paramDefs[key].required) {
+        if (def.required) {
           throw new CodatumEmbedError(
             "MISSING_REQUIRED_PARAM",
             `Missing required parameter: ${key}`,
@@ -39,19 +44,22 @@ export class ParamMapper<T extends Record<string, ParamMapDef>> implements IPara
       result.push({
         param_id: paramId,
         param_value: raw === RESET_TO_DEFAULT ? RESET_TO_DEFAULT : JSON.stringify(raw),
-        is_hidden: this.paramDefs[key].hidden ? true : undefined,
+        is_hidden: def.hidden ? true : undefined,
       });
     }
     return result;
   }
 
-  decode(params: EncodedParam[]): DecodedParams<T> {
+  decode(params: EncodedParam[], options?: ParamMapperDecodeOptions<T>): DecodedParams<T> {
     const result: Partial<DecodedParams<T>> = {};
-    for (const key of Object.keys(this.paramDefs) as (keyof T & string)[]) {
-      const paramId = this.paramDefs[key].paramId;
+    const keys = options?.only ?? (Object.keys(this.paramDefs) as (keyof T & string)[]);
+    for (const key of keys) {
+      const def = this.paramDefs[key];
+      if (def == null) continue;
+      const paramId = def.paramId;
       const encodedParam = params.find((p) => p.param_id === paramId);
       if (encodedParam == null) {
-        if (this.paramDefs[key].required) {
+        if (def.required) {
           throw new CodatumEmbedError(
             "MISSING_REQUIRED_PARAM",
             `Missing required parameter: ${key}`,
@@ -72,8 +80,6 @@ export class ParamMapper<T extends Record<string, ParamMapDef>> implements IPara
   }
 }
 
-export function createParamMapper<T extends Record<string, ParamMapDef>>(
-  paramDefs: T,
-): ParamMapper<T> {
+export function createParamMapper<T extends ParamMapDefs>(paramDefs: T): ParamMapper<T> {
   return new ParamMapper(paramDefs);
 }

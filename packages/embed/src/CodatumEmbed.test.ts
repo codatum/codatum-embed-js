@@ -210,6 +210,7 @@ describe("instance", () => {
       }),
     );
     expect(handler).toHaveBeenCalledWith({
+      type: "PARAM_CHANGED",
       params: [{ param_id: "id1", param_value: '"v1"' }],
     });
 

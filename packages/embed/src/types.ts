@@ -83,16 +83,25 @@ export class CodatumEmbedError extends Error {
 }
 
 export type ParamMapDef = { paramId: string; hidden?: boolean; required?: boolean };
+export type ParamMapDefs = Record<string, ParamMapDef>;
 
-export type DecodedParams<T extends Record<string, ParamMapDef>> = {
+export type DecodedParams<T extends ParamMapDefs> = {
   [K in keyof T as T[K] extends { required: true } ? K : never]: unknown;
 } & {
   [K in keyof T as T[K] extends { required: true } ? never : K]?: unknown;
 };
 
-export interface ParamMapper<T extends Record<string, ParamMapDef>> {
-  encode(values: DecodedParams<T>): EncodedParam[];
-  decode(params: EncodedParam[]): Partial<DecodedParams<T>>;
+export interface ParamMapperEncodeOptions<T extends ParamMapDefs> {
+  only?: (keyof T & string)[];
+}
+
+export interface ParamMapperDecodeOptions<T extends ParamMapDefs> {
+  only?: (keyof T & string)[];
+}
+
+export interface ParamMapper<T extends ParamMapDefs> {
+  encode(values: DecodedParams<T>, options?: ParamMapperEncodeOptions<T>): EncodedParam[];
+  decode(params: EncodedParam[], options?: ParamMapperDecodeOptions<T>): Partial<DecodedParams<T>>;
 }
 
 export type EmbedStatus = "initializing" | "ready" | "destroyed";

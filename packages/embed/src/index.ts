@@ -25,6 +25,8 @@ export type {
   ParamChangedMessage,
   ParamMapDef,
   ParamMapper,
+  ParamMapperDecodeOptions,
+  ParamMapperEncodeOptions,
   ReadyForTokenMessage,
   TokenOptions,
   TokenProviderResult,
