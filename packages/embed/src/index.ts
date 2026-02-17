@@ -20,9 +20,12 @@ export type {
   EmbedEventMap,
   EmbedStatus,
   EncodedParam,
+  ExecuteSqlsTriggeredMessage,
   IframeOptions,
+  ParamChangedMessage,
   ParamMapDef,
   ParamMapper,
+  ReadyForTokenMessage,
   TokenOptions,
   TokenProviderResult,
 } from "./types";

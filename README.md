@@ -89,7 +89,6 @@ Sent to the embed with the token.
 | Method | Description |
 |--------|-------------|
 | `reload()` | Calls `tokenProvider` again and sends the returned token and params via `SET_TOKEN`. |
-| `on(event, handler)` / `off(event, handler)` | Subscribe to `paramChanged` and `executeSqlsTriggered` (postMessage payloads from the iframe). |
 | `destroy()` | Removes iframe, clears listeners and timers. No-op if already destroyed. |
 
 ### Instance properties
@@ -99,11 +98,20 @@ Sent to the embed with the token.
 | `iframe` | `HTMLIFrameElement \| null` | The embed iframe element. |
 | `status` | `'initializing' \| 'ready' \| 'destroyed'` | Current instance state. |
 
+### Events
+
+Subscribe with `on(event, handler)` and `off(event, handler)`.
+
+| Event | Description | Payload |
+|-------|-------------|---------|
+| `paramChanged` | User changed parameters in the embed. | `{ type: 'PARAM_CHANGED', params: EncodedParam[] }` |
+| `executeSqlsTriggered` | SQL execution was triggered in the embed. | `{ type: 'EXECUTE_SQLS_TRIGGERED', params: EncodedParam[] }` |
+
+Decode with `ParamMapper.decode(payload.params)`. `EncodedParam`: see [ParamMapper](#parammapper).
+
 ## ParamMapper
 
 The embed talks in `param_id`s (IDs assigned per notebook parameter). Your app typically wants to work with meaningful keys like `store_id` or `date_range`. **ParamMapper** maps between your app’s key–value pairs and Codatum’s `param_id` + `param_value`, in both directions.
-
-**Transformation (code-style)**
 
 ```ts
 import { CodatumEmbed } from '@codatum/embed';

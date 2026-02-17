@@ -7,6 +7,8 @@ import type {
   IframeOptions,
   TokenProviderResult,
   TokenOptions,
+  ParamChangedMessage,
+  ExecuteSqlsTriggeredMessage,
 } from "@codatum/embed";
 import { onUnmounted, ref, watch } from "vue";
 
@@ -22,8 +24,8 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  paramChanged: [payload: { params: EncodedParam[] }];
-  executeSqlsTriggered: [payload: { params: EncodedParam[] }];
+  paramChanged: [payload: ParamChangedMessage];
+  executeSqlsTriggered: [payload: ExecuteSqlsTriggeredMessage];
   ready: [];
   error: [err: Error];
 }>();
@@ -71,9 +73,9 @@ onUnmounted(() => {
 
 watch(instance, (inst: CodatumEmbedInstance | null) => {
   if (!inst) return;
-  const onParamChanged = (payload: { params: EncodedParam[] }) =>
+  const onParamChanged = (payload: ParamChangedMessage) =>
     emit("paramChanged", payload);
-  const onExecuteSqlsTriggered = (payload: { params: EncodedParam[] }) =>
+  const onExecuteSqlsTriggered = (payload: ExecuteSqlsTriggeredMessage) =>
     emit("executeSqlsTriggered", payload);
   inst.on("paramChanged", onParamChanged);
   inst.on("executeSqlsTriggered", onExecuteSqlsTriggered);

@@ -197,14 +197,12 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
     if (data.type === "READY_FOR_TOKEN") {
       this.onReadyForToken();
     } else if (data.type === "PARAM_CHANGED") {
-      const params = Array.isArray(data.params) ? data.params : [];
       for (const h of this.eventHandlers.paramChanged) {
-        h({ params: deepClone(params) });
+        h(deepClone(data));
       }
     } else if (data.type === "EXECUTE_SQLS_TRIGGERED") {
-      const params = Array.isArray(data.params) ? data.params : [];
       for (const h of this.eventHandlers.executeSqlsTriggered) {
-        h({ params: deepClone(params) });
+        h(deepClone(data));
       }
     }
   }

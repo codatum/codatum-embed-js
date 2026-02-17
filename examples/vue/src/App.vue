@@ -3,7 +3,6 @@ import {
   CodatumEmbedVue,
   createParamMapper,
   type EncodedParam,
-  type DecodedParams,
   type ParamMapDef,
   type ParamMapper,
 } from "@codatum/embed-vue";
