@@ -40,7 +40,7 @@ const emit = defineEmits<{
 
 const containerRef = ref<HTMLElement | null>(null);
 const instance = ref<EmbedInstance | null>(null);
-const status = ref<EmbedStatus>(EmbedStatuses.INITIALIZING);
+const status = ref<EmbedStatus>(EmbedStatuses.CREATED);
 const error = ref<EmbedError | null>(null);
 
 let stopWatch: (() => void) | undefined;
@@ -49,7 +49,6 @@ stopWatch = watch(
   (el: HTMLElement | null) => {
     if (!el) return;
     error.value = null;
-    status.value = EmbedStatuses.INITIALIZING;
     const embed = createEmbed({
       container: el,
       embedUrl: props.embedUrl,
@@ -65,6 +64,7 @@ stopWatch = watch(
       displayOptions: props.displayOptions,
     });
     instance.value = embed;
+    status.value = EmbedStatuses.INITIALIZING;
     embed
       .init()
       .then(() => {

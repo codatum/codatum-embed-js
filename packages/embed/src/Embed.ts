@@ -38,12 +38,11 @@ export class EmbedInstance implements IEmbedInstance {
   private readonly onRefreshError?: TokenOptions["onRefreshError"];
   private shortTtlCount = 0;
 
-  private _status: EmbedStatus = EmbedStatuses.INITIALIZING;
+  private _status: EmbedStatus = EmbedStatuses.CREATED;
   private initTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private refreshTimerId: ReturnType<typeof setTimeout> | null = null;
   private reloadInProgress = false;
   private readyForTokenHandled = false;
-  private initStarted = false;
   private readonly eventHandlers: {
     [K in keyof EmbedEventMap]: EmbedEventMap[K][];
   } = {
@@ -86,14 +85,12 @@ export class EmbedInstance implements IEmbedInstance {
    */
   init(): Promise<void> {
     if (this.isDestroyed) {
-      return Promise.reject(
-        new EmbedError(EmbedErrorCodes.INVALID_OPTIONS, "Instance already destroyed"),
-      );
+      return Promise.resolve();
     }
-    if (this.initStarted) {
+    if (this._status !== EmbedStatuses.CREATED) {
       return this.initPromise;
     }
-    this.initStarted = true;
+    this._status = EmbedStatuses.INITIALIZING;
 
     const container =
       typeof this.options.container === "string"
@@ -137,10 +134,6 @@ export class EmbedInstance implements IEmbedInstance {
       }, initTimeoutMs);
     }
 
-    return this.initPromise;
-  }
-
-  getInitPromise(): Promise<void> {
     return this.initPromise;
   }
 
@@ -321,6 +314,7 @@ export class EmbedInstance implements IEmbedInstance {
 
   reload(): Promise<void> {
     if (this.isDestroyed) return Promise.resolve();
+    if (this._status !== EmbedStatuses.READY) return Promise.resolve();
     if (this.reloadInProgress) return Promise.resolve();
     this.reloadInProgress = true;
     return this.fetchSessionWithRetry(TokenProviderTriggers.RELOAD)
