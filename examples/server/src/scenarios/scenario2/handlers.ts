@@ -2,7 +2,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createParamMapper } from "@codatum/embed";
 import { type Context, Hono } from "hono";
-import { getIntegrationId, type IssueTokenPayload, issueToken, loadConfig } from "../utils.js";
+import { getStoreIdsByTenantId, getTenantIdByUserId, getUserId } from "../scenarioUtils";
+import { getIntegrationId, type IssueTokenPayload, issueToken, loadConfig } from "../utils";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CONFIG_PATH = join(__dirname, "config.jsonc");
@@ -26,9 +27,18 @@ interface TokenRequestBody {
 
 const app = new Hono();
 
-app.get("/config", (c: Context) => {
+app.get("/config", async (c: Context) => {
   const config = loadConfig<Config>(CONFIG_PATH);
-  return c.json(config);
+  const userId = getUserId();
+  const tenantId = await getTenantIdByUserId(userId);
+  const storeIds = await getStoreIdsByTenantId(tenantId);
+  return c.json({
+    embedUrl: config.embedUrl,
+    paramMapping: config.paramMapping,
+    userId: getUserId(),
+    // send storeIds to frontend to generate select options
+    storeIds,
+  });
 });
 
 app.post("/token", async (c: Context) => {
@@ -41,11 +51,11 @@ app.post("/token", async (c: Context) => {
     throw new Error("Invalid JSON body");
   }
   const { tokenUserId } = body;
-  if (!tokenUserId || typeof tokenUserId !== "string" || tokenUserId.trim() === "") {
+  if (!tokenUserId) {
     throw new Error("tokenUserId is required");
   }
 
-  const tenantId = `tenant_${tokenUserId}`;
+  const tenantId = await getTenantIdByUserId(tokenUserId);
   const mapper = createParamMapper(config.paramMapping, {
     tenant_id: { datatype: "STRING", required: true },
   });
@@ -58,7 +68,7 @@ app.post("/token", async (c: Context) => {
     api_secret: config.apiSecret,
     integration_id: getIntegrationId(config.embedUrl),
     page_id: config.pageId,
-    token_user_id: tokenUserId.trim(),
+    token_user_id: tokenUserId,
     params: encodedParams,
   };
 

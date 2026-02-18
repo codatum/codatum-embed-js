@@ -11,8 +11,14 @@ import {
 import { onMounted, ref } from "vue";
 
 const API_URL = "http://localhost:3100/scenario1";
+type Config = {
+  embedUrl: string;
+  paramMapping: { [key: string]: string };
+  userId: string;
+};
 
 const embedUrl = ref<string | null>(null);
+const userId = ref<string | null>(null);
 const statusMessage = ref("Loading config…");
 const statusError = ref(false);
 
@@ -36,8 +42,9 @@ onMounted(async () => {
   try {
     const configRes = await fetch(`${API_URL}/config`);
     if (!configRes.ok) throw new Error(`config failed: ${configRes.status}`);
-    const config = await configRes.json();
+    const config: Config = await configRes.json();
     embedUrl.value = config.embedUrl;
+    userId.value = config.userId;
     paramMapper.value = createParamMapper(
       config.paramMapping,
       paramDefs
@@ -61,8 +68,9 @@ const tokenProvider = async () => {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      tokenUserId: "demo-user",
+      tokenUserId: userId.value,
       params: {
+        // send server-side params to keep current values
         store_id: paramValues.value.store_id,
       },
     }),
@@ -72,14 +80,11 @@ const tokenProvider = async () => {
     throw new Error(data.message ?? "Token issuance failed");
   }
   const data = (await res.json()) as { token: string };
+  // send client-side params to keep current values
   const clientParams =
     paramMapper.value?.encode(paramValues.value, {
       only: ["date_range", "product_category"],
     }) ?? [];
-  console.log("tokenProvider result:", {
-    token: data.token,
-    params: clientParams,
-  });
   return {
     token: data.token,
     params: clientParams,
@@ -88,9 +93,7 @@ const tokenProvider = async () => {
 
 const onParamChanged = (ev: { params: EncodedParam[] }) => {
   if (!paramMapper.value) return;
-  paramValues.value = paramMapper.value.decode(
-    ev.params
-  ) as typeof paramValues.value;
+  paramValues.value = paramMapper.value.decode(ev.params);
 };
 
 const onEmbedError = (err: CodatumEmbedError) => {
@@ -100,7 +103,11 @@ const onEmbedError = (err: CodatumEmbedError) => {
 
 const embedRef = ref<InstanceType<typeof CodatumEmbedVue> | null>(null);
 const reloadEmbed = async () => {
-  await embedRef.value?.reload();
+  const success = await embedRef.value?.reload();
+  if (success) {
+    statusMessage.value = "Reloaded";
+    statusError.value = false;
+  }
 };
 </script>
 

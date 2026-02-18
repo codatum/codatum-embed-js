@@ -30,12 +30,16 @@ interface TokenRequestBody {
 
 const app = new Hono();
 
-app.get("/config", (c: Context) => {
+app.get("/config", async (c: Context) => {
   const config = loadConfig<Config>(CONFIG_PATH);
+  const userId = getUserId();
+  const tenantId = await getTenantIdByUserId(userId);
+  const storeIds = await getStoreIdsByTenantId(tenantId);
   return c.json({
     embedUrl: config.embedUrl,
     paramMapping: config.paramMapping,
     userId: getUserId(),
+    storeIds,
   });
 });
 
@@ -49,7 +53,7 @@ app.post("/token", async (c: Context) => {
     throw new Error("Invalid JSON body");
   }
   const { tokenUserId, params } = body;
-  if (!tokenUserId) {
+  if (!tokenUserId || typeof tokenUserId !== "string" || tokenUserId.trim() === "") {
     throw new Error("tokenUserId is required");
   }
 
@@ -76,7 +80,7 @@ app.post("/token", async (c: Context) => {
     api_secret: config.apiSecret,
     integration_id: getIntegrationId(config.embedUrl),
     page_id: config.pageId,
-    token_user_id: tokenUserId,
+    token_user_id: tokenUserId.trim(),
     params: encodedParams,
   };
 

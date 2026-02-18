@@ -9,9 +9,9 @@ import {
   type DefineParamMapper,
   type TokenProviderContext,
 } from "@codatum/embed-vue";
-import { onMounted, ref, computed } from "vue";
+import { onMounted, ref } from "vue";
 
-const API_URL = "http://localhost:3100/scenario2";
+const API_URL = "http://localhost:3100/scenario3";
 type Config = {
   embedUrl: string;
   paramMapping: { [key: string]: string };
@@ -73,24 +73,23 @@ const tokenProvider = async (ctx: TokenProviderContext) => {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       tokenUserId: userId.value,
+      params: {
+        store_id: paramValues.value.store_id,
+      },
     }),
   });
   if (!res.ok) {
     const data = (await res.json()) as { message?: string };
+    if (res.status === 400) {
+      ctx.markNonRetryable();
+    }
     throw new Error(data.message ?? "Token issuance failed");
   }
   const data = (await res.json()) as { token: string };
-  let clientParams: EncodedParam[] = [];
-  try {
-    clientParams =
-      paramMapper.value?.encode(paramValues.value, {
-        only: ["store_id", "date_range", "product_category"],
-      }) ?? [];
-  } catch (err) {
-    // skip retries if params are invalid
-    ctx.markNonRetryable();
-    throw err;
-  }
+  const clientParams =
+    paramMapper.value?.encode(paramValues.value, {
+      only: ["date_range", "product_category"],
+    }) ?? [];
   return {
     token: data.token,
     params: clientParams,
@@ -109,68 +108,7 @@ const onEmbedError = (err: CodatumEmbedError) => {
 
 const embedRef = ref<InstanceType<typeof CodatumEmbedVue> | null>(null);
 const reloadEmbed = async () => {
-  const success = await embedRef.value?.reload();
-  if (success) {
-    statusMessage.value = "Reloaded";
-    statusError.value = false;
-  }
-};
-
-/** form handlers */
-const dateRangeStart = computed({
-  get: () => {
-    if (paramValues.value.date_range === RESET_TO_DEFAULT) return "";
-    return paramValues.value.date_range?.[0] ?? "";
-  },
-  set: (v: string) => {
-    const prev = paramValues.value.date_range ?? ["", ""];
-    paramValues.value = {
-      ...paramValues.value,
-      date_range: [v, prev[1] ?? ""],
-    };
-  },
-});
-const dateRangeEnd = computed({
-  get: () => {
-    if (paramValues.value.date_range === RESET_TO_DEFAULT) return "";
-    return paramValues.value.date_range?.[1] ?? "";
-  },
-  set: (v: string) => {
-    const prev = paramValues.value.date_range ?? ["", ""];
-    paramValues.value = {
-      ...paramValues.value,
-      date_range: [prev[0] ?? "", v],
-    };
-  },
-});
-
-const productCategoryArray = computed(
-  () => paramValues.value.product_category ?? []
-);
-
-const updateProductCategory = (index: number, value: string): void => {
-  const arr = [...(paramValues.value.product_category ?? [])];
-  arr[index] = value;
-  paramValues.value = {
-    ...paramValues.value,
-    product_category: arr,
-  };
-};
-
-const addProductCategory = (): void => {
-  paramValues.value = {
-    ...paramValues.value,
-    product_category: [...(paramValues.value.product_category ?? []), ""],
-  };
-};
-
-const removeProductCategory = (index: number): void => {
-  const arr = [...(paramValues.value.product_category ?? [])];
-  arr.splice(index, 1);
-  paramValues.value = {
-    ...paramValues.value,
-    product_category: arr,
-  };
+  await embedRef.value?.reload();
 };
 </script>
 
@@ -187,66 +125,8 @@ const removeProductCategory = (index: number): void => {
         <option v-for="storeId in storeIds" :key="storeId" :value="storeId">
           {{ storeId }}
         </option>
+        <option value="store3">store3(invalid)</option>
       </select>
-    </div>
-    <div class="mb-2">
-      <label for="date_range" class="form-label small mb-1">Date Range</label>
-      <div class="row g-2">
-        <div class="col">
-          <input
-            id="date_range-start"
-            v-model="dateRangeStart"
-            type="text"
-            class="form-control form-control-sm"
-            placeholder="Start"
-          />
-        </div>
-        <div class="col">
-          <input
-            id="date_range-end"
-            v-model="dateRangeEnd"
-            type="text"
-            class="form-control form-control-sm"
-            placeholder="End"
-          />
-        </div>
-      </div>
-    </div>
-    <div class="mb-3">
-      <label class="form-label small mb-1">Product Category</label>
-      <div
-        v-for="(item, index) in productCategoryArray"
-        :key="index"
-        class="input-group input-group-sm mb-2"
-      >
-        <input
-          :value="item"
-          type="text"
-          class="form-control form-control-sm"
-          placeholder="Category"
-          @input="
-            updateProductCategory(
-              index,
-              ($event.target as HTMLInputElement).value
-            )
-          "
-        />
-        <button
-          type="button"
-          class="btn btn-outline-secondary"
-          aria-label="Remove"
-          @click="removeProductCategory(index)"
-        >
-          ×
-        </button>
-      </div>
-      <button
-        type="button"
-        class="btn btn-outline-secondary btn-sm"
-        @click="addProductCategory"
-      >
-        + Add category
-      </button>
     </div>
     <div class="text-end">
       <button
@@ -275,7 +155,7 @@ const removeProductCategory = (index: number): void => {
         className: 'vue-example-iframe',
         style: { height: '600px' },
       }"
-      :displayOptions="{ hideParamsForm: true }"
+      :displayOptions="{ expandParamsFormByDefault: true }"
       @ready="onReady"
       @paramChanged="onParamChanged"
       @executeSqlsTriggered="onParamChanged"
