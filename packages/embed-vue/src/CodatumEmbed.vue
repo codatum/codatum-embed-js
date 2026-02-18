@@ -1,21 +1,29 @@
 <script setup lang="ts">
-import { CodatumEmbed, CodatumEmbedStatuses } from "@codatum/embed";
+import {
+  CodatumEmbed,
+  CodatumEmbedError,
+  CodatumEmbedErrorCodes,
+  CodatumEmbedStatuses,
+} from "@codatum/embed";
 import type {
   CodatumEmbedInstance,
-  DisplayOptions,
-  IframeOptions,
-  TokenProviderResult,
-  TokenOptions,
-  ParamChangedMessage,
-  ExecuteSqlsTriggeredMessage,
   CodatumEmbedStatus,
+  DisplayOptions,
+  ExecuteSqlsTriggeredMessage,
+  IframeOptions,
+  ParamChangedMessage,
+  TokenOptions,
+  TokenProviderContext,
+  TokenProviderResult,
 } from "@codatum/embed";
 import { onUnmounted, ref, watch } from "vue";
 
 const props = withDefaults(
   defineProps<{
     embedUrl: string;
-    tokenProvider: () => Promise<TokenProviderResult>;
+    tokenProvider: (
+      context: TokenProviderContext
+    ) => Promise<TokenProviderResult>;
     iframeOptions?: IframeOptions;
     tokenOptions?: TokenOptions;
     displayOptions?: DisplayOptions;
@@ -27,13 +35,13 @@ const emit = defineEmits<{
   paramChanged: [payload: ParamChangedMessage];
   executeSqlsTriggered: [payload: ExecuteSqlsTriggeredMessage];
   ready: [];
-  error: [err: Error];
+  error: [err: CodatumEmbedError];
 }>();
 
 const containerRef = ref<HTMLElement | null>(null);
 const instance = ref<CodatumEmbedInstance | null>(null);
 const status = ref<CodatumEmbedStatus>(CodatumEmbedStatuses.INITIALIZING);
-const error = ref<Error | null>(null);
+const error = ref<CodatumEmbedError | null>(null);
 
 let stopWatch: (() => void) | undefined;
 stopWatch = watch(
@@ -55,7 +63,14 @@ stopWatch = watch(
         status.value = emb.status;
       })
       .catch((err: unknown) => {
-        error.value = err instanceof Error ? err : new Error(String(err));
+        error.value =
+          err instanceof CodatumEmbedError
+            ? err
+            : new CodatumEmbedError(
+                CodatumEmbedErrorCodes.TOKEN_PROVIDER_FAILED,
+                err instanceof Error ? err.message : String(err),
+                { cause: err }
+              );
         status.value = CodatumEmbedStatuses.DESTROYED;
       });
   },
@@ -86,15 +101,32 @@ watch(instance, (inst: CodatumEmbedInstance | null) => {
   };
 });
 
-watch(error, (err: Error | null) => {
+watch(error, (err: CodatumEmbedError | null) => {
   if (err) emit("error", err);
 });
 
+async function reload(): Promise<boolean> {
+  const inst = instance.value;
+  if (!inst) return false;
+  try {
+    await inst.reload();
+    return true;
+  } catch (err: unknown) {
+    error.value =
+      err instanceof CodatumEmbedError
+        ? err
+        : new CodatumEmbedError(
+            CodatumEmbedErrorCodes.TOKEN_PROVIDER_FAILED,
+            err instanceof Error ? err.message : String(err),
+            { cause: err }
+          );
+    return false;
+  }
+}
+
 defineExpose({
-  /** Embed instance (e.g. for calling reload). */
-  instance,
+  reload,
   status,
-  error,
 });
 </script>
 

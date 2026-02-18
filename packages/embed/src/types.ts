@@ -28,13 +28,24 @@ export type TokenOptions = {
   refreshBuffer?: number;
   retryCount?: number; // if 0, no retry
   initTimeout?: number; // milliseconds; if 0, no timeout
-  onRefreshError?: (error: Error) => void;
+  onRefreshError?: (error: CodatumEmbedError) => void;
+};
+
+export const TokenProviderTriggers = {
+  INIT: "INIT",
+  RELOAD: "RELOAD",
+  REFRESH: "REFRESH",
+} as const;
+
+export type TokenProviderContext = {
+  trigger: (typeof TokenProviderTriggers)[keyof typeof TokenProviderTriggers];
+  markNonRetryable: () => void;
 };
 
 export type CodatumEmbedOptions = {
   container: HTMLElement | string;
   embedUrl: string;
-  tokenProvider: () => Promise<TokenProviderResult>;
+  tokenProvider: (context: TokenProviderContext) => Promise<TokenProviderResult>;
   iframeOptions?: IframeOptions;
   tokenOptions?: TokenOptions;
   displayOptions?: DisplayOptions;
@@ -69,7 +80,7 @@ export const CodatumEmbedErrorCodes = {
   CONTAINER_NOT_FOUND: "CONTAINER_NOT_FOUND",
   INIT_TIMEOUT: "INIT_TIMEOUT",
   INVALID_OPTIONS: "INVALID_OPTIONS",
-  SESSION_PROVIDER_FAILED: "SESSION_PROVIDER_FAILED",
+  TOKEN_PROVIDER_FAILED: "TOKEN_PROVIDER_FAILED",
   MISSING_REQUIRED_PARAM: "MISSING_REQUIRED_PARAM",
   INVALID_PARAM_VALUE: "INVALID_PARAM_VALUE",
 } as const;
@@ -79,10 +90,14 @@ export type CodatumEmbedErrorCode =
 
 export class CodatumEmbedError extends Error {
   code: CodatumEmbedErrorCode;
-  constructor(code: CodatumEmbedErrorCode, message: string) {
+  cause?: unknown;
+  constructor(code: CodatumEmbedErrorCode, message: string, options?: { cause?: unknown }) {
     super(message);
     this.name = "CodatumEmbedError";
     this.code = code;
+    if (options?.cause !== undefined) {
+      this.cause = options.cause;
+    }
   }
 }
 

@@ -9,7 +9,7 @@ import type {
   ParamMeta,
   PickedDecodedParams,
 } from "./types";
-import { CodatumEmbedError, RESET_TO_DEFAULT } from "./types";
+import { CodatumEmbedError, CodatumEmbedErrorCodes, RESET_TO_DEFAULT } from "./types";
 
 /** YYYY-MM-DD format (ISO 8601 date) */
 const DATE_FORMAT_REGEX = /^\d{4}-\d{2}-\d{2}$/;
@@ -24,7 +24,7 @@ const validateDatatype = (value: unknown, datatype: ParamDatatype, key: string):
     case "STRING":
       if (typeof value !== "string") {
         throw new CodatumEmbedError(
-          "INVALID_PARAM_VALUE",
+          CodatumEmbedErrorCodes.INVALID_PARAM_VALUE,
           `Parameter ${key} must be a string, got ${typeof value}`,
         );
       }
@@ -32,7 +32,7 @@ const validateDatatype = (value: unknown, datatype: ParamDatatype, key: string):
     case "NUMBER":
       if (typeof value !== "number" || Number.isNaN(value)) {
         throw new CodatumEmbedError(
-          "INVALID_PARAM_VALUE",
+          CodatumEmbedErrorCodes.INVALID_PARAM_VALUE,
           `Parameter ${key} must be a number, got ${typeof value}`,
         );
       }
@@ -40,7 +40,7 @@ const validateDatatype = (value: unknown, datatype: ParamDatatype, key: string):
     case "BOOLEAN":
       if (typeof value !== "boolean") {
         throw new CodatumEmbedError(
-          "INVALID_PARAM_VALUE",
+          CodatumEmbedErrorCodes.INVALID_PARAM_VALUE,
           `Parameter ${key} must be a boolean, got ${typeof value}`,
         );
       }
@@ -48,13 +48,13 @@ const validateDatatype = (value: unknown, datatype: ParamDatatype, key: string):
     case "DATE":
       if (typeof value !== "string") {
         throw new CodatumEmbedError(
-          "INVALID_PARAM_VALUE",
+          CodatumEmbedErrorCodes.INVALID_PARAM_VALUE,
           `Parameter ${key} must be a date string, got ${typeof value}`,
         );
       }
       if (!isValidDateFormat(value)) {
         throw new CodatumEmbedError(
-          "INVALID_PARAM_VALUE",
+          CodatumEmbedErrorCodes.INVALID_PARAM_VALUE,
           `Parameter ${key} must be a date in YYYY-MM-DD format, got: ${value}`,
         );
       }
@@ -62,7 +62,7 @@ const validateDatatype = (value: unknown, datatype: ParamDatatype, key: string):
     case "STRING[]":
       if (!Array.isArray(value) || !value.every((v) => typeof v === "string")) {
         throw new CodatumEmbedError(
-          "INVALID_PARAM_VALUE",
+          CodatumEmbedErrorCodes.INVALID_PARAM_VALUE,
           `Parameter ${key} must be a string array`,
         );
       }
@@ -75,13 +75,13 @@ const validateDatatype = (value: unknown, datatype: ParamDatatype, key: string):
         typeof value[1] !== "string"
       ) {
         throw new CodatumEmbedError(
-          "INVALID_PARAM_VALUE",
+          CodatumEmbedErrorCodes.INVALID_PARAM_VALUE,
           `Parameter ${key} must be a [string, string] tuple (date range)`,
         );
       }
       if (!isValidDateFormat(value[0]) || !isValidDateFormat(value[1])) {
         throw new CodatumEmbedError(
-          "INVALID_PARAM_VALUE",
+          CodatumEmbedErrorCodes.INVALID_PARAM_VALUE,
           `Parameter ${key} must be a date range in YYYY-MM-DD format, got: [${value[0]}, ${value[1]}]`,
         );
       }
@@ -129,7 +129,7 @@ export class ParamMapper<
       if (raw == null) {
         if (!skipValidation && def.required) {
           throw new CodatumEmbedError(
-            "MISSING_REQUIRED_PARAM",
+            CodatumEmbedErrorCodes.MISSING_REQUIRED_PARAM,
             `Missing required parameter: ${key}`,
           );
         }
@@ -161,7 +161,7 @@ export class ParamMapper<
       if (encodedParam == null) {
         if (!skipValidation && def.required) {
           throw new CodatumEmbedError(
-            "MISSING_REQUIRED_PARAM",
+            CodatumEmbedErrorCodes.MISSING_REQUIRED_PARAM,
             `Missing required parameter: ${key}`,
           );
         }
@@ -172,7 +172,7 @@ export class ParamMapper<
         decoded = JSON.parse(encodedParam.param_value) as unknown;
       } catch {
         throw new CodatumEmbedError(
-          "INVALID_PARAM_VALUE",
+          CodatumEmbedErrorCodes.INVALID_PARAM_VALUE,
           `Invalid parameter value: ${encodedParam.param_value}`,
         );
       }

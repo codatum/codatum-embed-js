@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createParamMapper, ParamMapper } from "./ParamMapper";
 import type { EncodedParam } from "./types";
-import { CodatumEmbedError, RESET_TO_DEFAULT } from "./types";
+import { CodatumEmbedError, CodatumEmbedErrorCodes, RESET_TO_DEFAULT } from "./types";
 
 describe("createParamMapper", () => {
   const mapping = {
@@ -105,7 +105,7 @@ describe("createParamMapper", () => {
       err = e;
     }
     expect(err).toBeInstanceOf(CodatumEmbedError);
-    expect((err as CodatumEmbedError).code).toBe("INVALID_PARAM_VALUE");
+    expect((err as CodatumEmbedError).code).toBe(CodatumEmbedErrorCodes.INVALID_PARAM_VALUE);
     expect((err as CodatumEmbedError).message).toContain("not-json");
   });
 });

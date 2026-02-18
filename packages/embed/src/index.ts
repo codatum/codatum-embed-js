@@ -27,6 +27,7 @@ export type {
   ParamMeta,
   ReadyForTokenMessage,
   TokenOptions,
+  TokenProviderContext,
   TokenProviderResult,
 } from "./types";
 export {
