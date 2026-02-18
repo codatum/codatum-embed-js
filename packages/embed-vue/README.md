@@ -84,6 +84,6 @@ Option types and behavior (e.g. `iframeOptions`, `tokenOptions`, `displayOptions
 | Property | Type | Description |
 |----------|------|-------------|
 | `reload()` | `() => Promise<boolean>` | Re-fetches token and params; returns `false` on failure (error emitted via `@error`) |
-| `status` | `'INITIALIZING' \| 'READY' \| 'DESTROYED'` | Current embed state |
+| `status` | `'CREATED' \| 'INITIALIZING' \| 'READY' \| 'DESTROYED'` | Current embed state |
 
 Need a custom container or full control? Use `CodatumEmbed.init()` from this package (or [@codatum/embed](/README.md)) in `onMounted` and `instance.destroy()` in `onUnmounted`.

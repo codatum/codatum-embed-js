@@ -34,19 +34,9 @@ await embed.init();
 embed.destroy();
 ```
 
-## API
+## Embed
 
-### Initialization
-
-**`createEmbed(options: EmbedOptions): EmbedInstance`**
-
-Creates an embed instance (no iframe yet). Does not throw for container/token; validation is done when you call `init()`.
-
-**`instance.init(): Promise<void>`**
-
-Creates the iframe, waits for the iframe to be ready, gets a token and params from `tokenProvider`, and sends token (and optional params) to the iframe. Resolves when ready. Throws `EmbedError` on failure (e.g. container not found, token provider error, init timeout).
-
-#### `EmbedOptions`
+### `EmbedOptions`
 
 | Property | Required | Description |
 |--------|----------|-------------|
@@ -120,12 +110,18 @@ Sent to the embed with the token.
 | `hideParamsForm` | `boolean` | `false` | Hide the parameter form in the embed (e.g. when your app owns the filters) |
 | `expandParamsFormByDefault` | `boolean` | `false` | Whether the parameter form is expanded by default |
 
+### Creating an embed instance
+
+**`createEmbed(options: EmbedOptions): EmbedInstance`**
+
+Creates an embed instance. Throws `EmbedError` if options are invalid. Call `init()` to create the iframe and start the token flow.
+
 ### Instance methods
 
 | Method | Description |
 |--------|-------------|
-| `async init()` | Creates the iframe and starts the token/connection flow. Resolves when the embed is ready. Call once after `createEmbed()`. |
-| `async reload()` | Calls `tokenProvider` again and sends the returned token and params via `SET_TOKEN`. Throws `EmbedError` on failure. |
+| `async init()` | Creates the iframe, waits for it to be ready, calls `tokenProvider`, and sends token (and optional params) to the embed. Resolves when ready. Rejects with `EmbedError` on failure. |
+| `async reload()` | Calls `tokenProvider` again and sends the returned token and params via `SET_TOKEN`. May throw `EmbedError` when run. |
 | `destroy()` | Removes iframe, clears listeners and timers. No-op if already destroyed. |
 
 ### Instance properties
@@ -133,7 +129,7 @@ Sent to the embed with the token.
 | Property | Type | Description |
 |----------|------|-------------|
 | `iframe` | `HTMLIFrameElement \| null` | The embed iframe element. |
-| `status` | `'INITIALIZING' \| 'READY' \| 'DESTROYED'` | Current instance state. |
+| `status` | `'CREATED' \| 'INITIALIZING' \| 'READY' \| 'DESTROYED'` | Current instance state. |
 
 ### Events
 
@@ -273,8 +269,8 @@ All errors are thrown/rejected as `EmbedError` with a `code` property.
 
 | Code | Thrown by | Description |
 |------|----------|-------------|
+| `INVALID_OPTIONS` | `createEmbed` | Options are invalid |
 | `CONTAINER_NOT_FOUND` | `init` | Container element not found |
-| `INVALID_OPTIONS` | `init` | Options are invalid |
 | `INIT_TIMEOUT` | `init` | Ready not received within `tokenOptions.initTimeout` |
 | `TOKEN_PROVIDER_FAILED` | `init` / `reload` | `tokenProvider` threw |
 | `MISSING_REQUIRED_PARAM` | `encode` / `decode` | Required param missing |
