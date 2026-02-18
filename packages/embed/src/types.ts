@@ -28,7 +28,7 @@ export type TokenOptions = {
   refreshBuffer?: number;
   retryCount?: number; // if 0, no retry
   initTimeout?: number; // milliseconds; if 0, no timeout
-  onRefreshError?: (error: Error) => void;
+  onRefreshError?: (error: CodatumEmbedError) => void;
 };
 
 export const TokenProviderTriggers = {

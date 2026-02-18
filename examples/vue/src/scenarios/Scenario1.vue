@@ -3,6 +3,7 @@ import {
   CodatumEmbedVue,
   createParamMapper,
   RESET_TO_DEFAULT,
+  type CodatumEmbedError,
   type EncodedParam,
   type DefineDecodedParams,
   type DefineParamMapper,
@@ -92,14 +93,14 @@ const onParamChanged = (ev: { params: EncodedParam[] }) => {
   ) as typeof paramValues.value;
 };
 
-const onEmbedError = (err: Error) => {
+const onEmbedError = (err: CodatumEmbedError) => {
   statusMessage.value = err.message;
   statusError.value = true;
 };
 
 const embedRef = ref<InstanceType<typeof CodatumEmbedVue> | null>(null);
-const reloadEmbed = () => {
-  embedRef.value?.instance?.reload();
+const reloadEmbed = async () => {
+  await embedRef.value?.reload();
 };
 </script>
 

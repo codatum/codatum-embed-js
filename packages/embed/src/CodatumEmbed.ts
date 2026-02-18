@@ -197,7 +197,13 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
       })
       .catch((err) => {
         if (this.isDestroyed) return;
-        this.onRefreshError?.(err instanceof Error ? err : new Error(String(err)));
+        this.onRefreshError?.(
+          new CodatumEmbedError(
+            CodatumEmbedErrorCodes.TOKEN_PROVIDER_FAILED,
+            err instanceof Error ? err.message : String(err),
+            { cause: err },
+          ),
+        );
       });
   }
 
@@ -240,6 +246,7 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
           new CodatumEmbedError(
             CodatumEmbedErrorCodes.TOKEN_PROVIDER_FAILED,
             err instanceof Error ? err.message : String(err),
+            { cause: err },
           ),
         );
       });
@@ -260,6 +267,7 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
           throw new CodatumEmbedError(
             CodatumEmbedErrorCodes.TOKEN_PROVIDER_FAILED,
             err instanceof Error ? err.message : String(err),
+            { cause: err },
           );
         },
       )

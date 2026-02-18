@@ -3,6 +3,7 @@ import {
   CodatumEmbedVue,
   createParamMapper,
   RESET_TO_DEFAULT,
+  type CodatumEmbedError,
   type EncodedParam,
   type DefineDecodedParams,
   type DefineParamMapper,
@@ -125,18 +126,14 @@ const dateRangeEnd = computed({
   },
 });
 
-const onEmbedError = (err: Error) => {
+const onEmbedError = (err: CodatumEmbedError) => {
   statusMessage.value = err.message;
   statusError.value = true;
 };
 
 const embedRef = ref<InstanceType<typeof CodatumEmbedVue> | null>(null);
 const reloadEmbed = async () => {
-  try {
-    await embedRef.value?.instance?.reload();
-  } catch (err: unknown) {
-    onEmbedError(err as Error);
-  }
+  await embedRef.value?.reload();
 };
 </script>
 

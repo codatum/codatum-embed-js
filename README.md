@@ -103,7 +103,7 @@ Controls token lifetime, refresh behavior, and init timeout.
 | `refreshBuffer` | `number` | `60` | Number of seconds before the token expires when auto-refresh is triggered |
 | `retryCount` | `number` | `2` | Number of retries on token fetch failure; `0` = no retry |
 | `initTimeout` | `number` | `30000` | Max wait in ms for embed "ready"; `0` = no timeout |
-| `onRefreshError` | `(error: Error) => void` | `undefined` | Callback invoked when token auto-refresh fails (due to `tokenProvider` failure) and does not recover after all retries |
+| `onRefreshError` | `(error: CodatumEmbedError) => void` | `undefined` | Callback invoked when token auto-refresh fails (due to `tokenProvider` failure) and does not recover after all retries |
 
 #### `DisplayOptions`
 
@@ -263,16 +263,44 @@ const onParamChanged = (ev: { params: EncodedParam[] }) => {
 
 ## Errors
 
-All errors are thrown/rejected as `CodatumEmbedError` with `code`. Both `CodatumEmbed.init` and `ParamMapper` (encode/decode) can throw.
+All errors are thrown/rejected as `CodatumEmbedError` with a `code` property.
 
-| Code | When |
-|------|------|
-| `CONTAINER_NOT_FOUND` | Container element not found at init |
-| `INVALID_OPTIONS` | Init options are invalid |
-| `INIT_TIMEOUT` | Ready not received within `tokenOptions.initTimeout` |
-| `TOKEN_PROVIDER_FAILED` | `tokenProvider` threw (init or reload) |
-| `MISSING_REQUIRED_PARAM` | Required parameter missing (ParamMapper encode/decode) |
-| `INVALID_PARAM_VALUE` | Invalid parameter value / JSON (ParamMapper decode) |
+| Code | Thrown by | Description |
+|------|----------|-------------|
+| `CONTAINER_NOT_FOUND` | `init` | Container element not found |
+| `INVALID_OPTIONS` | `init` | Options are invalid |
+| `INIT_TIMEOUT` | `init` | Ready not received within `tokenOptions.initTimeout` |
+| `TOKEN_PROVIDER_FAILED` | `init` / `reload` | `tokenProvider` threw |
+| `MISSING_REQUIRED_PARAM` | `encode` / `decode` | Required param missing |
+| `INVALID_PARAM_VALUE` | `encode` / `decode` | Value failed validation |
+
+### Error handling
+
+`init()` and `reload()` throw on failure — handle with try/catch. Auto-refresh errors are delivered via the `tokenOptions.onRefreshError` callback.
+```ts
+try {
+  const embed = await CodatumEmbed.init({
+    container: '#dashboard',
+    embedUrl: '...',
+    tokenProvider: async () => { /* ... */ },
+    tokenOptions: {
+      onRefreshError: (error) => {
+        // Token auto-refresh failed after all retries.
+        // e.g. redirect to login, show a banner, etc.
+        console.error('Refresh failed:', error);
+      },
+    },
+  });
+
+  // reload() also throws on failure
+  await embed.reload();
+} catch (error) {
+  if (error instanceof CodatumEmbedError) {
+      // error.cause holds the original error thrown by tokenProvider (if applicable)
+    console.error(error.code, error.message);
+  }
+}
+```
 
 ## Usage examples
 
