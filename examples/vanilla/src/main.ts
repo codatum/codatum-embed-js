@@ -3,7 +3,7 @@
  * Start examples/server and set config.json before running.
  */
 
-import { CodatumEmbed } from "@codatum/embed";
+import { createEmbed } from "@codatum/embed";
 
 const SERVER_URL = "http://localhost:3100";
 
@@ -35,7 +35,7 @@ async function run() {
   }
 
   try {
-    const embed = await CodatumEmbed.init({
+    const embed = createEmbed({
       container: containerEl,
       embedUrl,
       tokenProvider: async () => {
@@ -53,6 +53,7 @@ async function run() {
       },
       iframeOptions: { theme: "LIGHT", locale: "en" },
     });
+    await embed.init();
 
     setStatus("Ready");
 

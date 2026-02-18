@@ -17,7 +17,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && tsup --config tsup.global.config.ts",
     "dev": "tsup --watch",
     "test": "vitest run",
     "test:watch": "vitest",

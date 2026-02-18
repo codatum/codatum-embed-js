@@ -34,7 +34,7 @@
             return res.json();
           })
           .then(function (config) {
-            return window.CodatumEmbed.init({
+            var embed = CodatumEmbed.createEmbed({
               container: containerEl,
               embedUrl: config.embedUrl,
               tokenProvider: function () {
@@ -51,6 +51,7 @@
               },
               iframeOptions: { theme: "LIGHT", locale: "en" },
             });
+            return embed.init().then(function () { return embed; });
           })
           .then(function (embed) {
             setStatus("Ready");
