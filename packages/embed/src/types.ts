@@ -79,10 +79,14 @@ export type CodatumEmbedErrorCode =
 
 export class CodatumEmbedError extends Error {
   code: CodatumEmbedErrorCode;
-  constructor(code: CodatumEmbedErrorCode, message: string) {
+  cause?: unknown;
+  constructor(code: CodatumEmbedErrorCode, message: string, options?: { cause?: unknown }) {
     super(message);
     this.name = "CodatumEmbedError";
     this.code = code;
+    if (options?.cause !== undefined) {
+      this.cause = options.cause;
+    }
   }
 }
 
