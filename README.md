@@ -211,11 +211,17 @@ const paramValues: ParamValues = {
   product_category: 'electronics'
 };
 
-const paramMapper = createParamMapper(paramDefs);
+const paramMapper = createParamMapper({
+  store_id: '67a1b2c3d4e5f6a7b8c9d0e1',
+  date_range: '67a1b2c3d4e5f6a7b8c9d0e2',
+  product_category: '67a1b2c3d4e5f6a7b8c9d0e3',
+}, paramDefs);
+
+// encode only the date_range and product_category params for client-side params
 const clientParams = paramMapper.encode(paramValues, { only: ['date_range', 'product_category'] })
 // → [
-//   { param_id: '67a1b2c3...', param_value: '["2025-01-01","2025-01-31"]' },
-//   { param_id: '67a1b2c3...', param_value: '"electronics"' },
+//   { param_id: '67a1b2c3d4e5f6a7b8c9d0e2', param_value: '["2025-01-01","2025-01-31"]' },
+//   { param_id: '67a1b2c3d4e5f6a7b8c9d0e3', param_value: '"electronics"' },
 // ]
 
 const onParamChanged = (ev: { params: EncodedParam[] }) => {
