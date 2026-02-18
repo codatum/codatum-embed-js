@@ -75,8 +75,8 @@ Option types and behavior (e.g. `iframeOptions`, `tokenOptions`, `displayOptions
 | Event | Payload | When |
 |-------|---------|------|
 | `ready` | — | Embed is ready and token/params have been applied |
-| `paramChanged` | `{ params: EncodedParam[] }` | User changed params in the embed |
-| `executeSqlsTriggered` | `{ params: EncodedParam[] }` | Execute SQL was triggered in the embed |
+| `paramChanged` | `{ type: 'PARAM_CHANGED', params: EncodedParam[] }` | User changed params in the embed |
+| `executeSqlsTriggered` | `{ type: 'EXECUTE_SQLS_TRIGGERED', params: EncodedParam[] }` | Execute SQL was triggered in the embed |
 | `error` | `CodatumEmbedError` | Init, reload, or token auto-refresh failed |
 
 ### Expose (ref)
