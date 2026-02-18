@@ -239,7 +239,7 @@ All errors are thrown/rejected as `CodatumEmbedError` with `code`. Both `Codatum
 | `CONTAINER_NOT_FOUND` | Container element not found at init |
 | `INVALID_OPTIONS` | Init options are invalid |
 | `INIT_TIMEOUT` | Ready not received within `tokenOptions.initTimeout` |
-| `SESSION_PROVIDER_FAILED` | `tokenProvider` threw (init or reload) |
+| `TOKEN_PROVIDER_FAILED` | `tokenProvider` threw (init or reload) |
 | `MISSING_REQUIRED_PARAM` | Required parameter missing (ParamMapper encode/decode) |
 | `INVALID_PARAM_VALUE` | Invalid parameter value / JSON (ParamMapper decode) |
 

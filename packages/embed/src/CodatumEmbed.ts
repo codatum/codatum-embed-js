@@ -6,7 +6,12 @@ import type {
   EncodedParam,
   CodatumEmbedInstance as ICodatumEmbedInstance,
 } from "./types";
-import { CodatumEmbedError, CodatumEmbedStatuses, type TokenOptions } from "./types";
+import {
+  CodatumEmbedError,
+  CodatumEmbedErrorCodes,
+  CodatumEmbedStatuses,
+  type TokenOptions,
+} from "./types";
 import {
   buildIframeSrc,
   deepClone,
@@ -73,7 +78,7 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
           this.destroy();
           this.rejectInit(
             new CodatumEmbedError(
-              "INIT_TIMEOUT",
+              CodatumEmbedErrorCodes.INIT_TIMEOUT,
               `Initialization did not complete within ${initTimeoutMs}ms`,
             ),
           );
@@ -223,7 +228,7 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
         this.clearInitTimeout();
         this.rejectInit(
           new CodatumEmbedError(
-            "SESSION_PROVIDER_FAILED",
+            CodatumEmbedErrorCodes.TOKEN_PROVIDER_FAILED,
             err instanceof Error ? err.message : String(err),
           ),
         );
@@ -243,7 +248,7 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
         (err) => {
           if (this.isDestroyed) return;
           throw new CodatumEmbedError(
-            "SESSION_PROVIDER_FAILED",
+            CodatumEmbedErrorCodes.TOKEN_PROVIDER_FAILED,
             err instanceof Error ? err.message : String(err),
           );
         },
@@ -282,11 +287,14 @@ export async function init(options: CodatumEmbedOptions): Promise<ICodatumEmbedI
       ? document.querySelector(options.container)
       : options.container;
   if (!container) {
-    throw new CodatumEmbedError("CONTAINER_NOT_FOUND", "Container element not found");
+    throw new CodatumEmbedError(
+      CodatumEmbedErrorCodes.CONTAINER_NOT_FOUND,
+      "Container element not found",
+    );
   }
   if (!isValidEmbedUrl(options.embedUrl)) {
     throw new CodatumEmbedError(
-      "INVALID_OPTIONS",
+      CodatumEmbedErrorCodes.INVALID_OPTIONS,
       "embedUrl must match https://app.codatum.com/protected/workspace/{workspaceId}/notebook/{notebookId}",
     );
   }

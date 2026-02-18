@@ -138,7 +138,7 @@ describe("init", () => {
     postMessageSpy.mockRestore();
   });
 
-  it("rejects with SESSION_PROVIDER_FAILED when tokenProvider throws", async () => {
+  it("rejects with TOKEN_PROVIDER_FAILED when tokenProvider throws", async () => {
     const container = getContainer();
     const tokenProvider = vi.fn().mockRejectedValue(new Error("network error"));
     const initPromise = init({
@@ -156,7 +156,7 @@ describe("init", () => {
     );
 
     await expect(initPromise).rejects.toMatchObject({
-      code: "SESSION_PROVIDER_FAILED",
+      code: "TOKEN_PROVIDER_FAILED",
       message: "network error",
     });
   });
