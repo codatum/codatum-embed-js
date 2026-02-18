@@ -89,7 +89,7 @@ Options applied to the iframe element and passed to the embed via URL/search par
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `theme` | `'LIGHT'` \| `'DARK'` | Browser's system theme | UI theme of the embedded notebook |
+| `theme` | `'LIGHT'` \| `'DARK'` | System default | UI theme of the embedded notebook |
 | `locale` | `string` | Browser's locale | Locale code (e.g. `'en'`, `'ja'`) for the embed UI |
 | `className` | `string` | - | CSS class name(s) applied to the iframe element |
 | `style` | `object` | `{width: '100%', height: '100%', border: 'none'}` | Inline styles for the iframe; overrides the default styles |
@@ -304,7 +304,7 @@ try {
 
 ## Usage examples
 
-The following patterns match the [Signed embed use cases](https://docs.codatum.com/sharing/signed-embed/use-case).
+The following patterns demonstrate common integration scenarios as outlined in the [Signed embed use cases](https://docs.codatum.com/sharing/signed-embed/use-case).
 
 ### Example A: Params form in embed (server validates store, client sends filters)
 
