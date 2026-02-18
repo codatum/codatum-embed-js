@@ -41,6 +41,8 @@ const emit = defineEmits<{
 const containerRef = ref<HTMLElement | null>(null);
 const instance = ref<EmbedInstance | null>(null);
 const status = ref<EmbedStatus>(EmbedStatuses.CREATED);
+
+// gather errors from init(), reload(), and token auto-refresh
 const error = ref<EmbedError | null>(null);
 
 let stopWatch: (() => void) | undefined;
