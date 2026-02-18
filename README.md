@@ -158,7 +158,7 @@ const paramMapper = CodatumEmbed.createParamMapper({
 const appState = {
   store_id: 'store_001',
   date_range: ['2025-01-01', '2025-01-31'],
-  product_category: 'electronics',
+  product_category: ['Electronics'],
 };
 
 // encode: app key:value → EncodedParam[] (use in tokenProvider return)
@@ -166,12 +166,12 @@ paramMapper.encode(appState);
 // → [
 //   { param_id: '67a1b2c3...', param_value: '"store_001"' },
 //   { param_id: '67a1b2c3...', param_value: '["2025-01-01","2025-01-31"]' },
-//   { param_id: '67a1b2c3...', param_value: '"electronics"' },
+//   { param_id: '67a1b2c3...', param_value: '["Electronics"]' },
 // ]
 
 // decode: EncodedParam[] → app key:value (use in paramChanged / executeSqlsTriggered)
 paramMapper.decode(payload.params);
-// → { store_id: 'store_001', date_range: [...], product_category: 'electronics' }
+// → { store_id: 'store_001', date_range: [...], product_category: ['Electronics'] }
 ```
 
 ### Creating a mapper
@@ -230,16 +230,16 @@ import { createParamMapper, RESET_TO_DEFAULT, type DefineDecodedParams, type Enc
 const paramDefs = {
   store_id: { datatype: 'STRING', required: true },
   date_range: { datatype: '[DATE, DATE]' },
-  product_category: { datatype: 'STRING' },
+  product_category: { datatype: 'STRING[]' },
 } as const;
 
 type ParamValues = DefineDecodedParams<typeof paramDefs>;
-// → { store_id: string, date_range?: [string, string], product_category?: string }
+// → { store_id: string, date_range?: [string, string], product_category?: string[] }
 
 const paramValues: ParamValues = {
   store_id: 'store_001',
   date_range: RESET_TO_DEFAULT,
-  product_category: 'electronics'
+  product_category: ['Electronics']
 };
 
 const paramMapper = createParamMapper({
@@ -252,7 +252,7 @@ const paramMapper = createParamMapper({
 const clientParams = paramMapper.encode(paramValues, { only: ['date_range', 'product_category'] })
 // → [
 //   { param_id: '67a1b2c3d4e5f6a7b8c9d0e2', param_value: '["2025-01-01","2025-01-31"]' },
-//   { param_id: '67a1b2c3d4e5f6a7b8c9d0e3', param_value: '"electronics"' },
+//   { param_id: '67a1b2c3d4e5f6a7b8c9d0e3', param_value: '["Electronics"]' },
 // ]
 
 const onParamChanged = (ev: { params: EncodedParam[] }) => {
@@ -328,7 +328,7 @@ const embed = await CodatumEmbed.init({
       token: data.token,
       params: paramMapper.encode({
         date_range: '_RESET_TO_DEFAULT_',
-        product_category: 'electronics',
+        product_category: ['Electronics'],
         store_id: currentUser.defaultStoreId,
       }),
     };
@@ -371,7 +371,7 @@ const embed = await CodatumEmbed.init({
     return {
       token: data.token,
       params: paramMapper.encode(
-        { store_id: currentStoreId, date_range: currentDateRange, product_category: 'electronics' },
+        { store_id: currentStoreId, date_range: currentDateRange, product_category: ['Electronics'] },
       ),
     };
   },
@@ -411,7 +411,7 @@ const embed = await CodatumEmbed.init({
       token: data.token,
       params: paramMapper.encode({
         date_range: '_RESET_TO_DEFAULT_',
-        product_category: 'electronics',
+        product_category: ['Electronics'],
         store_id: currentStoreId,
       }),
     };

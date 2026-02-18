@@ -55,7 +55,13 @@ stopWatch = watch(
       embedUrl: props.embedUrl,
       tokenProvider: props.tokenProvider,
       iframeOptions: props.iframeOptions,
-      tokenOptions: props.tokenOptions,
+      tokenOptions: {
+        ...props.tokenOptions,
+        onRefreshError: (err: CodatumEmbedError) => {
+          props.tokenOptions?.onRefreshError?.(err);
+          emit("error", err);
+        },
+      },
       displayOptions: props.displayOptions,
     })
       .then((emb: CodatumEmbedInstance) => {

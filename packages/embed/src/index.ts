@@ -24,7 +24,6 @@ export type {
   IframeOptions,
   ParamChangedMessage,
   ParamMapper,
-  ParamMeta,
   ReadyForTokenMessage,
   TokenOptions,
   TokenProviderContext,

@@ -19,7 +19,7 @@ const statusError = ref(false);
 const paramDefs = {
   store_id: { datatype: "STRING" },
   date_range: { datatype: "[DATE, DATE]" },
-  product_category: { datatype: "STRING" },
+  product_category: { datatype: "STRING[]" },
 } as const;
 
 type ParamValues = DefineDecodedParams<typeof paramDefs>;
@@ -29,7 +29,7 @@ const paramMapper = ref<ParamMapper | null>(null);
 const paramValues = ref<ParamValues>({
   store_id: undefined,
   date_range: RESET_TO_DEFAULT,
-  product_category: undefined,
+  product_category: ["Electronics"],
 });
 
 onMounted(async () => {
@@ -131,7 +131,6 @@ const reloadEmbed = async () => {
         className: 'vue-example-iframe',
         style: { height: '600px' },
       }"
-      :tokenOptions="{}"
       :displayOptions="{ expandParamsFormByDefault: true }"
       @ready="onReady"
       @paramChanged="onParamChanged"

@@ -20,7 +20,7 @@ const statusError = ref(false);
 const paramDefs = {
   store_id: { datatype: "STRING" },
   date_range: { datatype: "[DATE, DATE]" },
-  product_category: { datatype: "STRING" },
+  product_category: { datatype: "STRING[]" },
 } as const;
 
 type ParamValues = DefineDecodedParams<typeof paramDefs>;
@@ -30,7 +30,7 @@ const paramMapper = ref<ParamMapper | null>(null);
 const paramValues = ref<ParamValues>({
   store_id: undefined,
   date_range: RESET_TO_DEFAULT,
-  product_category: undefined,
+  product_category: ["Electronics"],
 });
 
 onMounted(async () => {
@@ -126,6 +126,35 @@ const dateRangeEnd = computed({
   },
 });
 
+const productCategoryArray = computed(
+  () => paramValues.value.product_category ?? []
+);
+
+const updateProductCategory = (index: number, value: string): void => {
+  const arr = [...(paramValues.value.product_category ?? [])];
+  arr[index] = value;
+  paramValues.value = {
+    ...paramValues.value,
+    product_category: arr,
+  };
+};
+
+const addProductCategory = (): void => {
+  paramValues.value = {
+    ...paramValues.value,
+    product_category: [...(paramValues.value.product_category ?? []), ""],
+  };
+};
+
+const removeProductCategory = (index: number): void => {
+  const arr = [...(paramValues.value.product_category ?? [])];
+  arr.splice(index, 1);
+  paramValues.value = {
+    ...paramValues.value,
+    product_category: arr,
+  };
+};
+
 const onEmbedError = (err: CodatumEmbedError) => {
   statusMessage.value = err.message;
   statusError.value = true;
@@ -173,15 +202,40 @@ const reloadEmbed = async () => {
       </div>
     </div>
     <div class="mb-3">
-      <label for="product_category" class="form-label small mb-1">
-        Product Category
-      </label>
-      <input
-        id="product_category"
-        v-model="paramValues.product_category"
-        type="text"
-        class="form-control form-control-sm"
-      />
+      <label class="form-label small mb-1">Product Category</label>
+      <div
+        v-for="(item, index) in productCategoryArray"
+        :key="index"
+        class="input-group input-group-sm mb-2"
+      >
+        <input
+          :value="item"
+          type="text"
+          class="form-control form-control-sm"
+          placeholder="Category"
+          @input="
+            updateProductCategory(
+              index,
+              ($event.target as HTMLInputElement).value
+            )
+          "
+        />
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          aria-label="Remove"
+          @click="removeProductCategory(index)"
+        >
+          ×
+        </button>
+      </div>
+      <button
+        type="button"
+        class="btn btn-outline-secondary btn-sm"
+        @click="addProductCategory"
+      >
+        + Add category
+      </button>
     </div>
     <div class="text-end">
       <button
@@ -209,9 +263,6 @@ const reloadEmbed = async () => {
         locale: 'en',
         className: 'vue-example-iframe',
         style: { height: '600px' },
-      }"
-      :tokenOptions="{
-        onRefreshError: onEmbedError,
       }"
       :displayOptions="{ hideParamsForm: true }"
       @ready="onReady"
