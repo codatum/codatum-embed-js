@@ -55,7 +55,13 @@ stopWatch = watch(
       embedUrl: props.embedUrl,
       tokenProvider: props.tokenProvider,
       iframeOptions: props.iframeOptions,
-      tokenOptions: props.tokenOptions,
+      tokenOptions: {
+        ...props.tokenOptions,
+        onRefreshError: (err: CodatumEmbedError) => {
+          props.tokenOptions?.onRefreshError?.(err);
+          emit("error", err);
+        },
+      },
       displayOptions: props.displayOptions,
     })
       .then((emb: CodatumEmbedInstance) => {
@@ -105,7 +111,7 @@ watch(error, (err: CodatumEmbedError | null) => {
   if (err) emit("error", err);
 });
 
-async function reload(): Promise<boolean> {
+const reload = async (): Promise<boolean> => {
   const inst = instance.value;
   if (!inst) return false;
   try {
@@ -122,7 +128,7 @@ async function reload(): Promise<boolean> {
           );
     return false;
   }
-}
+};
 
 defineExpose({
   reload,

@@ -2,13 +2,12 @@
 {
   "apiKey": "your_api_key",
   "apiSecret": "your_api_secret",
-  "integrationId": "your_integration_id",
-  "pageId": "your_page_id",
   "embedUrl": "https://app.codatum.com/protected/workspace/xxx/notebook/yyy",
+  "pageId": "your_page_id",
   "paramMapping": {
-    // Fixed value for a server-side parameter
+    // Server-side Fixed value parameter
     "tenant_id": "xxxxxxxxxxxxxxxxxxxxxxxx",
-    // Initial value for a server-side parameter
+    // Server-side Initial value parameter
     "store_id": "xxxxxxxxxxxxxxxxxxxxxxxx",
     // Client-side parameter
     "date_range": "xxxxxxxxxxxxxxxxxxxxxxxx",

@@ -33,7 +33,7 @@ const embed = await CodatumEmbed.init({
 embed.destroy();
 ```
 
-## API overview
+## API
 
 ### Initialization
 
@@ -62,7 +62,7 @@ Required callback that issues a token from your backend and returns it (and opti
 - **`context.markNonRetryable()`** — Call on failure to skip retries (ignores `tokenOptions.retryCount`).
 - **`params`** — Optional. If returned, sent to the embed with the token; use [ParamMapper](#parammapper) `encode()` to build.
 
-**Example (token + params, with context):**
+**Example:**
 
 ```ts
 tokenProvider: async (context) => {
@@ -89,7 +89,7 @@ Options applied to the iframe element and passed to the embed via URL/search par
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `theme` | `'LIGHT'` \| `'DARK'` | Browser's system theme | UI theme of the embedded notebook |
+| `theme` | `'LIGHT'` \| `'DARK'` | System default | UI theme of the embedded notebook |
 | `locale` | `string` | Browser's locale | Locale code (e.g. `'en'`, `'ja'`) for the embed UI |
 | `className` | `string` | - | CSS class name(s) applied to the iframe element |
 | `style` | `object` | `{width: '100%', height: '100%', border: 'none'}` | Inline styles for the iframe; overrides the default styles |
@@ -158,7 +158,7 @@ const paramMapper = CodatumEmbed.createParamMapper({
 const appState = {
   store_id: 'store_001',
   date_range: ['2025-01-01', '2025-01-31'],
-  product_category: 'electronics',
+  product_category: ['Electronics'],
 };
 
 // encode: app key:value → EncodedParam[] (use in tokenProvider return)
@@ -166,12 +166,12 @@ paramMapper.encode(appState);
 // → [
 //   { param_id: '67a1b2c3...', param_value: '"store_001"' },
 //   { param_id: '67a1b2c3...', param_value: '["2025-01-01","2025-01-31"]' },
-//   { param_id: '67a1b2c3...', param_value: '"electronics"' },
+//   { param_id: '67a1b2c3...', param_value: '["Electronics"]' },
 // ]
 
 // decode: EncodedParam[] → app key:value (use in paramChanged / executeSqlsTriggered)
 paramMapper.decode(payload.params);
-// → { store_id: 'store_001', date_range: [...], product_category: 'electronics' }
+// → { store_id: 'store_001', date_range: [...], product_category: ['Electronics'] }
 ```
 
 ### Creating a mapper
@@ -230,16 +230,16 @@ import { createParamMapper, RESET_TO_DEFAULT, type DefineDecodedParams, type Enc
 const paramDefs = {
   store_id: { datatype: 'STRING', required: true },
   date_range: { datatype: '[DATE, DATE]' },
-  product_category: { datatype: 'STRING' },
+  product_category: { datatype: 'STRING[]' },
 } as const;
 
 type ParamValues = DefineDecodedParams<typeof paramDefs>;
-// → { store_id: string, date_range?: [string, string], product_category?: string }
+// → { store_id: string, date_range?: [string, string], product_category?: string[] }
 
 const paramValues: ParamValues = {
   store_id: 'store_001',
   date_range: RESET_TO_DEFAULT,
-  product_category: 'electronics'
+  product_category: ['Electronics']
 };
 
 const paramMapper = createParamMapper({
@@ -252,7 +252,7 @@ const paramMapper = createParamMapper({
 const clientParams = paramMapper.encode(paramValues, { only: ['date_range', 'product_category'] })
 // → [
 //   { param_id: '67a1b2c3d4e5f6a7b8c9d0e2', param_value: '["2025-01-01","2025-01-31"]' },
-//   { param_id: '67a1b2c3d4e5f6a7b8c9d0e3', param_value: '"electronics"' },
+//   { param_id: '67a1b2c3d4e5f6a7b8c9d0e3', param_value: '["Electronics"]' },
 // ]
 
 const onParamChanged = (ev: { params: EncodedParam[] }) => {
@@ -304,151 +304,151 @@ try {
 
 ## Usage examples
 
-### Basic (params form in embed)
+The following patterns demonstrate common integration scenarios as outlined in the [Signed embed use cases](https://docs.codatum.com/sharing/signed-embed/use-case).
+
+### Example A: Params form in embed (server validates store, client sends filters)
+
+Embed shows the notebook’s parameter form. The server validates `store_id` and encodes it in the token; the client sends current `store_id` on each token request and encodes only `date_range` and `product_category` as client-side params so the form and host stay in sync.
+
+**Client**
 
 ```ts
-const paramMapper = CodatumEmbed.createParamMapper({
-  date_range: '67a1b2c3d4e5f6a7b8c9d0e1',
-  product_category: '67a1b2c3d4e5f6a7b8c9d0e2',
-  store_id: '67a1b2c3d4e5f6a7b8c9d0e3',
+const paramMapper = CodatumEmbed.createParamMapper({...}, {
+  store_id: { datatype: 'STRING' },  // server-side param
+  date_range: { datatype: '[DATE, DATE]' },  // client-side param
+  product_category: { datatype: 'STRING[]' },  // client-side param
 });
-
-const embed = await CodatumEmbed.init({
-  container: '#dashboard',
-  embedUrl: 'https://app.codatum.com/protected/workspace/xxx/notebook/yyy',
-  iframeOptions: { theme: 'LIGHT', locale: 'ja', style: { height: '600px' } },
-  tokenProvider: async () => {
-    const res = await fetch('/api/codatum/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tenant_id: currentUser.tenantId, store_id: currentUser.defaultStoreId }),
-    });
-    const data = await res.json();
-    return {
-      token: data.token,
-      params: paramMapper.encode({
-        date_range: '_RESET_TO_DEFAULT_',
-        product_category: 'electronics',
-        store_id: currentUser.defaultStoreId,
-      }),
-    };
-  },
-  tokenOptions: {
-    refreshBuffer: 300,
-    onRefreshError: () => { window.location.href = '/login'; },
-  },
-});
-
-embed.on('paramChanged', (payload) => {
-  const values = paramMapper.decode(payload.params);
-  console.log('Changed:', values);
-});
-```
-
-### Client-side params only (SaaS manages filters, hide params form)
-
-```ts
-let currentStoreId = 'store_001';
-let currentDateRange: [string, string] = ['2025-01-01', '2025-01-31'];
-
-const paramMapper = CodatumEmbed.createParamMapper(
-  {
-    store_id: '67a1b2c3d4e5f6a7b8c9d0e1',
-    date_range: '67a1b2c3d4e5f6a7b8c9d0e2',
-    product_category: '67a1b2c3d4e5f6a7b8c9d0e3',
-  },
-  { store_id: { hidden: true } },
-);
+let paramValues = { store_id: undefined, date_range: RESET_TO_DEFAULT, product_category: [] };
 
 const embed = await CodatumEmbed.init({
   container: '#dashboard',
   embedUrl: '...',
-  iframeOptions: { theme: 'LIGHT', locale: 'ja' },
+  displayOptions: { expandParamsFormByDefault: true },
+  tokenProvider: async () => {
+    const res = await fetch('/api/codatum/token', {
+      method: 'POST',
+      body: JSON.stringify({ tokenUserId: userId, params: { store_id: paramValues.store_id } }),
+    });
+    const { token } = await res.json();
+    const params = paramMapper.encode(paramValues, { only: ['date_range', 'product_category'] });
+    return { token, params };
+  },
+});
+
+embed.on('paramChanged', (ev) => { paramValues = paramMapper.decode(ev.params); });
+embed.on('executeSqlsTriggered', (ev) => { paramValues = paramMapper.decode(ev.params); });
+```
+
+**Server** — Validate `store_id` against the tenant and encode it in the token:
+
+```ts
+// POST /token body: { tokenUserId, params?: { store_id } }
+const paramMapper = CodatumEmbed.createParamMapper({...}, {
+  tenant_id: { datatype: 'STRING', required: true },  // server-side param
+  store_id: { datatype: 'STRING', required: true },  // server-side param
+});
+const tenantId = await getTenantIdByUserId(tokenUserId);
+const storeIdsForTenant = await getStoreIdsByTenantId(tenantId);
+const storeId = params?.store_id ?? storeIdsForTenant[0];
+if (!storeIdsForTenant.includes(storeId)) throw new Error('Invalid storeId');
+const encoded = paramMapper.encode({ tenant_id: tenantId, store_id: storeId });
+// issue token with encoded params
+```
+
+### Example B: Client-side params only (SaaS owns filters, hide params form)
+
+All parameters except `tenant_id` are managed by the host; the embed’s parameter form is hidden. The token carries only tenant context, so it can be cached and reused. When the user changes filters in the host UI, call `reload()` so the token provider runs again with updated values.
+
+**Client**
+
+```ts
+const paramMapper = CodatumEmbed.createParamMapper({...}, {
+  store_id: { datatype: 'STRING' },  // client-side param
+  date_range: { datatype: '[DATE, DATE]' },  // client-side param
+  product_category: { datatype: 'STRING[]' },  // client-side param
+});
+let paramValues = { store_id: 'store_001', date_range: ['2025-01-01', '2025-01-31'], product_category: [] };
+
+const embed = await CodatumEmbed.init({
+  container: '#dashboard',
+  embedUrl: '...',
   displayOptions: { hideParamsForm: true },
   tokenProvider: async () => {
-    const res = await fetch('/api/codatum/token', { method: 'POST', ... });
-    const data = await res.json();
-    return {
-      token: data.token,
-      params: paramMapper.encode(
-        { store_id: currentStoreId, date_range: currentDateRange, product_category: 'electronics' },
-      ),
-    };
+    const res = await fetch('/api/codatum/token', { method: 'POST', body: JSON.stringify({ tokenUserId: userId }) });
+    const { token } = await res.json();
+    const params = paramMapper.encode(paramValues);
+    return { token, params };
   },
 });
 
-async function onFilterChange(storeId: string, dateRange: [string, string]) {
-  currentStoreId = storeId;
-  currentDateRange = dateRange;
-  await embed.reload(); // tokenProvider is called again with current closure values
+embed.on('paramChanged', (ev) => { paramValues = paramMapper.decode(ev.params); });
+embed.on('executeSqlsTriggered', (ev) => { paramValues = paramMapper.decode(ev.params); });
+
+// When the user changes filters in the host UI, update paramValues and reload the embed
+async function onDashboardFilterChange(newValues: ParamValues) {
+  paramValues = newValues;
+  await embed.reload();
 }
 ```
 
-### Server-side parameter change (token re-issue)
+**Server** — Token needs only tenant scope (no param in body):
 
 ```ts
-let currentStoreId = 'store_001';
-const paramMapper = CodatumEmbed.createParamMapper(
-  {
-    store_id: '67a1b2c3d4e5f6a7b8c9d0e1',
-    date_range: '67a1b2c3d4e5f6a7b8c9d0e2',
-    product_category: '67a1b2c3d4e5f6a7b8c9d0e3',
-  },
-  { store_id: { hidden: true } },
-);
-let latestValues = paramMapper.decode([]);
+// POST /token body: { tokenUserId }
+const paramMapper = CodatumEmbed.createParamMapper({...}, {
+  tenant_id: { datatype: 'STRING', required: true },  // server-side param
+});
+const tenantId = await getTenantIdByUserId(tokenUserId);
+const encoded = paramMapper.encode({ tenant_id: tenantId });
+// issue token with encoded params
+```
+
+### Example C: Server-side store (token re-issue on store change)
+
+`store_id` is fixed in the token and validated server-side; changing the store requires a new token. The params form is visible for `date_range` and `product_category`. Keep latest param values from `paramChanged` and pass `store_id` to the server on each token request; when the user switches store, reload so a new token is issued for the new store.
+
+**Client**
+
+```ts
+const paramMapper = CodatumEmbed.createParamMapper({...}, {
+  store_id: { datatype: 'STRING' },  // server-side param
+  date_range: { datatype: '[DATE, DATE]' },  // client-side param
+  product_category: { datatype: 'STRING[]' },  // client-side param
+});
+let paramValues = { store_id: undefined, date_range: RESET_TO_DEFAULT, product_category: ['Electronics'] };
 
 const embed = await CodatumEmbed.init({
   container: '#dashboard',
   embedUrl: '...',
+  displayOptions: { expandParamsFormByDefault: true },
   tokenProvider: async () => {
     const res = await fetch('/api/codatum/token', {
       method: 'POST',
-      body: JSON.stringify({ tenant_id: currentUser.tenantId, store_id: currentStoreId }),
+      body: JSON.stringify({ tokenUserId: userId, params: { store_id: paramValues.store_id } }),
     });
-    const data = await res.json();
-    return {
-      token: data.token,
-      params: paramMapper.encode({
-        date_range: '_RESET_TO_DEFAULT_',
-        product_category: 'electronics',
-        store_id: currentStoreId,
-      }),
-    };
+    const { token } = await res.json();
+    const params = paramMapper.encode(paramValues, { only: ['date_range', 'product_category'] });
+    return { token, params };
   },
 });
 
-embed.on('paramChanged', (payload) => { latestValues = paramMapper.decode(payload.params); });
+embed.on('paramChanged', (ev) => { paramValues = paramMapper.decode(ev.params); });
+embed.on('executeSqlsTriggered', (ev) => { paramValues = paramMapper.decode(ev.params); });
 
 async function onStoreSwitch(storeId: string) {
-  currentStoreId = storeId;
-  await embed.reload(); // tokenProvider returns new token + params for the new store
+  paramValues.store_id = storeId;
+  await embed.reload();
 }
 ```
 
-### Multiple notebooks
-
-```ts
-const [salesDashboard, supportDashboard] = await Promise.all([
-  CodatumEmbed.init({
-    container: '#sales',
-    embedUrl: 'https://app.codatum.com/.../notebook/aaa',
-    tokenProvider: () => fetchSession('aaa'), // returns { token, params? }
-  }),
-  CodatumEmbed.init({
-    container: '#support',
-    embedUrl: 'https://app.codatum.com/.../notebook/bbb',
-    tokenProvider: () => fetchSession('bbb'),
-  }),
-]);
-```
+**Server** — Same as Example A: accept `params.store_id`, validate, encode `tenant_id` + `store_id` in the token.
 
 ## CDN
 
 ```html
 <script src="https://unpkg.com/@codatum/embed/dist/index.global.min.js"></script>
 <script>
-  CodatumEmbed.init({ container: '#dashboard', embedUrl: '...', tokenProvider: async () => ({ token: '...' }) });
+  CodatumEmbed.init({ container: '#dashboard', embedUrl: '...', tokenProvider: ... });
 </script>
 ```
 

@@ -26,7 +26,8 @@ const DEFAULT_REFRESH_BUFFER = 60;
 const DEFAULT_RETRY_COUNT = 2;
 const DEFAULT_INIT_TIMEOUT = 30000;
 
-const MIN_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 min; avoid refreshing too frequently
+const SHORT_TTL_THRESHOLD = 10 * 1000;
+const SHORT_TTL_MAX_CONSECUTIVE = 3;
 
 export class CodatumEmbedInstance implements ICodatumEmbedInstance {
   private readonly iframeEl: HTMLIFrameElement;
@@ -35,6 +36,7 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
   private readonly refreshBuffer: number;
   private readonly retryCount: number;
   private readonly onRefreshError?: TokenOptions["onRefreshError"];
+  private shortTtlCount = 0;
 
   private _status: CodatumEmbedStatus = CodatumEmbedStatuses.INITIALIZING;
   private initTimeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -139,7 +141,10 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
     );
   }
 
-  /** Calls tokenProvider with context and retries with exponential backoff up to retryCount on failure, unless context.markNonRetryable() was called. On success, schedules the next token refresh. */
+  /**
+   * Calls tokenProvider with context and retries with exponential backoff up to retryCount on failure,
+   * unless context.markNonRetryable() was called. On success, schedules the next token refresh.
+   */
   private fetchSessionWithRetry(
     trigger: TokenProviderContext["trigger"],
     attempt = 0,
@@ -177,15 +182,23 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
   private scheduleRefresh(ttlMs: number): void {
     if (this.isDestroyed) return;
     this.clearRefreshTimer();
-    // avoid refreshing infinitely
-    if (ttlMs - this.refreshBuffer < MIN_REFRESH_INTERVAL) {
-      console.warn("Token TTL is too short. Auto-refresh is disabled.");
-      return;
+    // avoid infinite refreshing loop
+    const delayMs = Math.max(0, ttlMs - this.refreshBuffer);
+    if (delayMs < SHORT_TTL_THRESHOLD) {
+      this.shortTtlCount++;
+      if (this.shortTtlCount > SHORT_TTL_MAX_CONSECUTIVE) {
+        console.warn(
+          `Auto-refresh disabled: token refresh interval has been too short (< ${SHORT_TTL_THRESHOLD}ms) for ${SHORT_TTL_MAX_CONSECUTIVE} consecutive attempts.`,
+        );
+        return;
+      }
+    } else {
+      this.shortTtlCount = 0;
     }
     this.refreshTimerId = setTimeout(() => {
       this.refreshTimerId = null;
       this.runRefreshWithRetry();
-    }, ttlMs - this.refreshBuffer);
+    }, delayMs);
   }
 
   private runRefreshWithRetry(): void {

@@ -7,18 +7,21 @@ import {
   type EncodedParam,
   type DefineDecodedParams,
   type DefineParamMapper,
+  type TokenProviderContext,
 } from "@codatum/embed-vue";
 import { onMounted, ref } from "vue";
 
-const API_URL = "http://localhost:3100/scenario1";
+const API_URL = "http://localhost:3100/scenario3";
 type Config = {
   embedUrl: string;
   paramMapping: { [key: string]: string };
   userId: string;
+  storeIds: string[];
 };
 
 const embedUrl = ref<string | null>(null);
 const userId = ref<string | null>(null);
+const storeIds = ref<string[]>([]);
 const statusMessage = ref("Loading config…");
 const statusError = ref(false);
 
@@ -35,7 +38,7 @@ const paramMapper = ref<ParamMapper | null>(null);
 const paramValues = ref<ParamValues>({
   store_id: undefined,
   date_range: RESET_TO_DEFAULT,
-  product_category: [],
+  product_category: ["Electronics"],
 });
 
 onMounted(async () => {
@@ -45,6 +48,7 @@ onMounted(async () => {
     const config: Config = await configRes.json();
     embedUrl.value = config.embedUrl;
     userId.value = config.userId;
+    storeIds.value = config.storeIds;
     paramMapper.value = createParamMapper(
       config.paramMapping,
       paramDefs
@@ -63,24 +67,25 @@ const onReady = () => {
   statusError.value = false;
 };
 
-const tokenProvider = async () => {
+const tokenProvider = async (ctx: TokenProviderContext) => {
   const res = await fetch(`${API_URL}/token`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       tokenUserId: userId.value,
       params: {
-        // send server-side params to keep current values
         store_id: paramValues.value.store_id,
       },
     }),
   });
   if (!res.ok) {
     const data = (await res.json()) as { message?: string };
+    if (res.status === 400) {
+      ctx.markNonRetryable();
+    }
     throw new Error(data.message ?? "Token issuance failed");
   }
   const data = (await res.json()) as { token: string };
-  // send client-side params to keep current values
   const clientParams =
     paramMapper.value?.encode(paramValues.value, {
       only: ["date_range", "product_category"],
@@ -103,23 +108,35 @@ const onEmbedError = (err: CodatumEmbedError) => {
 
 const embedRef = ref<InstanceType<typeof CodatumEmbedVue> | null>(null);
 const reloadEmbed = async () => {
-  const success = await embedRef.value?.reload();
-  if (success) {
-    statusMessage.value = "Reloaded";
-    statusError.value = false;
-  }
+  await embedRef.value?.reload();
 };
 </script>
 
 <template>
-  <div class="mb-3 text-end">
-    <button
-      type="button"
-      @click="reloadEmbed"
-      class="btn btn-outline-secondary"
-    >
-      Reload
-    </button>
+  <div class="border rounded p-3 bg-light mb-3">
+    <h2 class="h6 mb-3">Parameters</h2>
+    <div class="mb-2">
+      <label for="store_id" class="form-label small mb-1">Store Id</label>
+      <select
+        id="store_id"
+        v-model="paramValues.store_id"
+        class="form-control form-control-sm"
+      >
+        <option v-for="storeId in storeIds" :key="storeId" :value="storeId">
+          {{ storeId }}
+        </option>
+        <option value="store3">store3(invalid)</option>
+      </select>
+    </div>
+    <div class="text-end">
+      <button
+        type="button"
+        @click="reloadEmbed"
+        class="btn btn-outline-secondary"
+      >
+        Reload
+      </button>
+    </div>
   </div>
   <div
     class="alert py-2 mb-3"
