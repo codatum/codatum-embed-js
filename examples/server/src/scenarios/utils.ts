@@ -39,3 +39,12 @@ export const issueToken = async (payload: IssueTokenPayload): Promise<{ token: s
   }
   return { token: data.token };
 };
+
+export const getIntegrationId = (embedUrl: string): string => {
+  // extract the integration id from the embed url
+  // https://app.codatum.com/protected/workspace/xxx/notebook/yyy?theme=DARK
+  // → yyy
+  const url = new URL(embedUrl);
+  const pathname = url.pathname;
+  return pathname.split("/").pop() ?? "";
+};

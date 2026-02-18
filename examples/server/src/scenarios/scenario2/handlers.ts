@@ -2,7 +2,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createParamMapper } from "@codatum/embed";
 import { type Context, Hono } from "hono";
-import { type IssueTokenPayload, issueToken, loadConfig } from "../utils.js";
+import { getIntegrationId, type IssueTokenPayload, issueToken, loadConfig } from "../utils.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CONFIG_PATH = join(__dirname, "config.jsonc");
@@ -10,7 +10,6 @@ const CONFIG_PATH = join(__dirname, "config.jsonc");
 interface Config {
   apiKey: string;
   apiSecret: string;
-  integrationId: string;
   pageId: string;
   embedUrl: string;
   paramMapping: {
@@ -57,7 +56,7 @@ app.post("/token", async (c: Context) => {
   const payload: IssueTokenPayload = {
     api_key: config.apiKey,
     api_secret: config.apiSecret,
-    integration_id: config.integrationId,
+    integration_id: getIntegrationId(config.embedUrl),
     page_id: config.pageId,
     token_user_id: tokenUserId.trim(),
     params: encodedParams,

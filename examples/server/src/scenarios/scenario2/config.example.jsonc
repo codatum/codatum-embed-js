@@ -2,9 +2,8 @@
 {
   "apiKey": "your_api_key",
   "apiSecret": "your_api_secret",
-  "integrationId": "your_integration_id",
-  "pageId": "your_page_id",
   "embedUrl": "https://app.codatum.com/protected/workspace/xxx/notebook/yyy",
+  "pageId": "your_page_id",
   "paramMapping": {
     // Fixed value for a server-side parameter
     "tenant_id": "xxxxxxxxxxxxxxxxxxxxxxxx",
