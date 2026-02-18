@@ -35,7 +35,7 @@ const paramMapper = ref<ParamMapper | null>(null);
 const paramValues = ref<ParamValues>({
   store_id: undefined,
   date_range: RESET_TO_DEFAULT,
-  product_category: ["Electronics"],
+  product_category: [],
 });
 
 onMounted(async () => {

@@ -38,7 +38,7 @@ const paramMapper = ref<ParamMapper | null>(null);
 const paramValues = ref<ParamValues>({
   store_id: undefined,
   date_range: RESET_TO_DEFAULT,
-  product_category: ["Electronics"],
+  product_category: [],
 });
 
 onMounted(async () => {
@@ -67,19 +67,28 @@ const onReady = () => {
   statusError.value = false;
 };
 
+const cachedToken = ref<string | null>(null);
+
 const tokenProvider = async (ctx: TokenProviderContext) => {
-  const res = await fetch(`${API_URL}/token`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      tokenUserId: userId.value,
-    }),
-  });
-  if (!res.ok) {
-    const data = (await res.json()) as { message?: string };
-    throw new Error(data.message ?? "Token issuance failed");
+  // When server-side params are unchanged, the token can be reused.
+  // In production: validate expiry and do not reuse across different users.
+  let token = cachedToken.value;
+  if (!token) {
+    const res = await fetch(`${API_URL}/token`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tokenUserId: userId.value,
+      }),
+    });
+    if (!res.ok) {
+      const data = (await res.json()) as { message?: string };
+      throw new Error(data.message ?? "Token issuance failed");
+    }
+    const data = (await res.json()) as { token: string };
+    token = data.token;
+    cachedToken.value = token;
   }
-  const data = (await res.json()) as { token: string };
   let clientParams: EncodedParam[] = [];
   try {
     clientParams =
@@ -92,7 +101,7 @@ const tokenProvider = async (ctx: TokenProviderContext) => {
     throw err;
   }
   return {
-    token: data.token,
+    token,
     params: clientParams,
   };
 };
