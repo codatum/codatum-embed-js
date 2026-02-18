@@ -15,7 +15,7 @@ pnpm add @codatum/embed-vue
 import { CodatumEmbedVue } from "@codatum/embed-vue";
 
 const embedUrl = "https://app.codatum.com/embed/...";
-async function tokenProvider() {
+const tokenProvider = async () => {
   const res = await fetch("/api/embed-token", { method: "POST" });
   const data = await res.json();
   return { token: data.token };

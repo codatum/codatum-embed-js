@@ -33,7 +33,7 @@ const embed = await CodatumEmbed.init({
 embed.destroy();
 ```
 
-## API overview
+## API
 
 ### Initialization
 
@@ -62,7 +62,7 @@ Required callback that issues a token from your backend and returns it (and opti
 - **`context.markNonRetryable()`** — Call on failure to skip retries (ignores `tokenOptions.retryCount`).
 - **`params`** — Optional. If returned, sent to the embed with the token; use [ParamMapper](#parammapper) `encode()` to build.
 
-**Example (token + params, with context):**
+**Example:**
 
 ```ts
 tokenProvider: async (context) => {

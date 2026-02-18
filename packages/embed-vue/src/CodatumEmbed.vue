@@ -111,7 +111,7 @@ watch(error, (err: CodatumEmbedError | null) => {
   if (err) emit("error", err);
 });
 
-async function reload(): Promise<boolean> {
+const reload = async (): Promise<boolean> => {
   const inst = instance.value;
   if (!inst) return false;
   try {
@@ -128,7 +128,7 @@ async function reload(): Promise<boolean> {
           );
     return false;
   }
-}
+};
 
 defineExpose({
   reload,
