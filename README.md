@@ -88,7 +88,7 @@ Sent to the embed with the token.
 
 | Method | Description |
 |--------|-------------|
-| `reload()` | Calls `tokenProvider` again and sends the returned token and params via `SET_TOKEN`. |
+| `async reload()` | Calls `tokenProvider` again and sends the returned token and params via `SET_TOKEN`. Throws `CodatumEmbedError` on failure. |
 | `destroy()` | Removes iframe, clears listeners and timers. No-op if already destroyed. |
 
 ### Instance properties

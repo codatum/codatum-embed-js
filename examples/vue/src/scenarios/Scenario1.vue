@@ -9,8 +9,7 @@ import {
 } from "@codatum/embed-vue";
 import { onMounted, ref } from "vue";
 
-const SERVER_URL = "http://localhost:3100";
-const SCENARIO_ID = "scenario1";
+const API_URL = "http://localhost:3100/scenario1";
 
 const embedUrl = ref<string | null>(null);
 const statusMessage = ref("Loading config…");
@@ -34,11 +33,14 @@ const paramValues = ref<ParamValues>({
 
 onMounted(async () => {
   try {
-    const configRes = await fetch(`${SERVER_URL}/${SCENARIO_ID}/config`);
+    const configRes = await fetch(`${API_URL}/config`);
     if (!configRes.ok) throw new Error(`config failed: ${configRes.status}`);
     const config = await configRes.json();
     embedUrl.value = config.embedUrl;
-    paramMapper.value = createParamMapper(config.paramMapping) as ParamMapper;
+    paramMapper.value = createParamMapper(
+      config.paramMapping,
+      paramDefs
+    ) as ParamMapper;
     statusMessage.value = "Initializing…";
   } catch (err) {
     statusMessage.value =
@@ -54,7 +56,7 @@ const onReady = () => {
 };
 
 const tokenProvider = async () => {
-  const res = await fetch(`${SERVER_URL}/${SCENARIO_ID}/token`, {
+  const res = await fetch(`${API_URL}/token`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -69,12 +71,17 @@ const tokenProvider = async () => {
     throw new Error(data.message ?? "Token issuance failed");
   }
   const data = (await res.json()) as { token: string };
+  const clientParams =
+    paramMapper.value?.encode(paramValues.value, {
+      only: ["date_range", "product_category"],
+    }) ?? [];
+  console.log("tokenProvider result:", {
+    token: data.token,
+    params: clientParams,
+  });
   return {
     token: data.token,
-    params:
-      paramMapper.value?.encode(paramValues.value, {
-        only: ["date_range", "product_category"],
-      }) ?? [],
+    params: clientParams,
   };
 };
 
