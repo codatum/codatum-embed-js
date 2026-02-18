@@ -72,7 +72,7 @@ Controls token lifetime, refresh behavior, and init timeout.
 | `refreshBuffer` | `number` | `60` | Seconds before expiry to trigger refresh |
 | `retryCount` | `number` | `2` | Number of retries on token fetch failure; `0` = no retry |
 | `initTimeout` | `number` | `30000` | Max wait in ms for embed "ready"; `0` = no timeout |
-| `onRefreshError` | `(error: Error) => void` | `undefined` | Callback when `tokenProvider` fails after all retries |
+| `onRefreshError` | `(error: Error) => void` | `undefined` | Callback invoked when token auto-refresh fails (due to `tokenProvider` failure) and does not recover after all retries |
 
 #### `DisplayOptions`
 

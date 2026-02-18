@@ -51,8 +51,10 @@ app.post("/token", async (c: Context) => {
 
   const tenantId = `tenant_${tokenUserId}`;
   const storeId = params?.store_id ?? `${tenantId}_store`;
-  const mapper = createParamMapper(config.paramMapping);
-
+  const mapper = createParamMapper(config.paramMapping, {
+    tenant_id: { datatype: "STRING", required: true },
+    store_id: { datatype: "STRING", required: true },
+  });
   const encodedParams = mapper.encode({
     tenant_id: tenantId,
     store_id: storeId,
