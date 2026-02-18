@@ -3,14 +3,16 @@ import type {
   CodatumEmbedStatus,
   EmbedEventMap,
   EmbedMessage,
-  EncodedParam,
   CodatumEmbedInstance as ICodatumEmbedInstance,
+  TokenProviderContext,
+  TokenProviderResult,
 } from "./types";
 import {
   CodatumEmbedError,
   CodatumEmbedErrorCodes,
   CodatumEmbedStatuses,
   type TokenOptions,
+  TokenProviderTriggers,
 } from "./types";
 import {
   buildIframeSrc,
@@ -117,12 +119,12 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
     }
   }
 
-  private sendSetToken(token: string, params?: EncodedParam[]): void {
+  private sendSetToken(result: TokenProviderResult): void {
     const win = this.iframeEl.contentWindow;
     if (!win || this.isDestroyed) return;
     const payload: Record<string, unknown> = {
       displayOptions: this.options.displayOptions,
-      ...(params != null && params.length > 0 ? { params } : {}),
+      ...(result.params != null && result.params.length > 0 ? { params: result.params } : {}),
     };
     const serialized = Object.keys(payload).length
       ? JSON.parse(JSON.stringify(payload))
@@ -130,37 +132,45 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
     win.postMessage(
       {
         type: "SET_TOKEN",
-        token,
+        token: result.token,
         ...serialized,
       },
       this.expectedOrigin,
     );
   }
 
-  /** Calls tokenProvider and retries with exponential backoff up to retryCount on failure. On success, schedules the next token refresh. */
+  /** Calls tokenProvider with context and retries with exponential backoff up to retryCount on failure, unless context.markNonRetryable() was called. On success, schedules the next token refresh. */
   private fetchSessionWithRetry(
+    trigger: TokenProviderContext["trigger"],
     attempt = 0,
     delayMs = 1000,
-  ): Promise<{ token: string; params?: EncodedParam[] }> {
+  ): Promise<TokenProviderResult> {
+    let nonRetryable = false;
+    const context: TokenProviderContext = {
+      trigger,
+      markNonRetryable: () => {
+        nonRetryable = true;
+      },
+    };
     return this.options
-      .tokenProvider()
-      .catch((err: unknown) => {
-        if (this.isDestroyed) return Promise.reject(err);
-        if (attempt < this.retryCount) {
-          return new Promise<{ token: string; params?: EncodedParam[] }>((resolve, reject) => {
-            setTimeout(() => {
-              this.fetchSessionWithRetry(attempt + 1, delayMs * 2).then(resolve, reject);
-            }, delayMs);
-          });
-        }
-        return Promise.reject(err);
-      })
+      .tokenProvider(context)
       .then((session) => {
         const ttlMs = getTokenTtlMs(session.token);
         if (ttlMs !== null) {
           this.scheduleRefresh(ttlMs);
         }
         return session;
+      })
+      .catch((err: unknown) => {
+        if (this.isDestroyed) return Promise.reject(err);
+        if (nonRetryable || attempt >= this.retryCount) {
+          return Promise.reject(err);
+        }
+        return new Promise<TokenProviderResult>((resolve, reject) => {
+          setTimeout(() => {
+            this.fetchSessionWithRetry(trigger, attempt + 1, delayMs * 2).then(resolve, reject);
+          }, delayMs);
+        });
       });
   }
 
@@ -180,10 +190,10 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
 
   private runRefreshWithRetry(): void {
     if (this.isDestroyed) return;
-    this.fetchSessionWithRetry()
-      .then((session) => {
+    this.fetchSessionWithRetry(TokenProviderTriggers.REFRESH)
+      .then((result) => {
         if (this.isDestroyed) return;
-        this.sendSetToken(session.token, session.params);
+        this.sendSetToken(result);
       })
       .catch((err) => {
         if (this.isDestroyed) return;
@@ -215,12 +225,12 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
   private onReadyForToken(): void {
     if (this.readyForTokenHandled || this._status !== CodatumEmbedStatuses.INITIALIZING) return;
     this.readyForTokenHandled = true;
-    this.fetchSessionWithRetry()
-      .then((session) => {
+    this.fetchSessionWithRetry(TokenProviderTriggers.INIT)
+      .then((result) => {
         if (this.isDestroyed) return;
         this._status = CodatumEmbedStatuses.READY;
         this.clearInitTimeout();
-        this.sendSetToken(session.token, session.params);
+        this.sendSetToken(result);
         this.resolveInit(this);
       })
       .catch((err) => {
@@ -239,11 +249,11 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
     if (this.isDestroyed) return Promise.resolve();
     if (this.reloadInProgress) return Promise.resolve();
     this.reloadInProgress = true;
-    return this.fetchSessionWithRetry()
+    return this.fetchSessionWithRetry(TokenProviderTriggers.RELOAD)
       .then(
-        (session) => {
+        (result) => {
           if (this.isDestroyed) return;
-          this.sendSetToken(session.token, session.params);
+          this.sendSetToken(result);
         },
         (err) => {
           if (this.isDestroyed) return;

@@ -6,6 +6,7 @@ import {
   type EncodedParam,
   type DefineDecodedParams,
   type DefineParamMapper,
+  type TokenProviderContext,
 } from "@codatum/embed-vue";
 import { onMounted, ref, computed } from "vue";
 
@@ -55,7 +56,7 @@ const onReady = () => {
   statusError.value = false;
 };
 
-const tokenProvider = async () => {
+const tokenProvider = async (ctx: TokenProviderContext) => {
   const res = await fetch(`${API_URL}/token`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -71,10 +72,17 @@ const tokenProvider = async () => {
     throw new Error(data.message ?? "Token issuance failed");
   }
   const data = (await res.json()) as { token: string };
-  const clientParams =
-    paramMapper.value?.encode(paramValues.value, {
-      only: ["store_id", "date_range", "product_category"],
-    }) ?? [];
+  let clientParams: EncodedParam[] = [];
+  try {
+    clientParams =
+      paramMapper.value?.encode(paramValues.value, {
+        only: ["store_id", "date_range", "product_category"],
+      }) ?? [];
+  } catch (err) {
+    // skip retries if params are invalid
+    ctx.markNonRetryable();
+    throw err;
+  }
   console.log("tokenProvider result:", {
     token: data.token,
     params: clientParams,

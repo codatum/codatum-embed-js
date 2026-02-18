@@ -31,10 +31,21 @@ export type TokenOptions = {
   onRefreshError?: (error: Error) => void;
 };
 
+export const TokenProviderTriggers = {
+  INIT: "INIT",
+  RELOAD: "RELOAD",
+  REFRESH: "REFRESH",
+} as const;
+
+export type TokenProviderContext = {
+  trigger: (typeof TokenProviderTriggers)[keyof typeof TokenProviderTriggers];
+  markNonRetryable: () => void;
+};
+
 export type CodatumEmbedOptions = {
   container: HTMLElement | string;
   embedUrl: string;
-  tokenProvider: () => Promise<TokenProviderResult>;
+  tokenProvider: (context: TokenProviderContext) => Promise<TokenProviderResult>;
   iframeOptions?: IframeOptions;
   tokenOptions?: TokenOptions;
   displayOptions?: DisplayOptions;

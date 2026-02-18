@@ -42,7 +42,7 @@ describe("init", () => {
       init({
         container: "#container",
         embedUrl: "https://app.codatum.com/embed",
-        tokenProvider: () => Promise.resolve({ token: TEST_JWT }),
+        tokenProvider: (_context) => Promise.resolve({ token: TEST_JWT }),
       }),
     ).rejects.toMatchObject({
       code: "INVALID_OPTIONS",
@@ -55,7 +55,7 @@ describe("init", () => {
       init({
         container: "#nonexistent",
         embedUrl: VALID_EMBED_URL,
-        tokenProvider: () => Promise.resolve({ token: TEST_JWT }),
+        tokenProvider: (_context) => Promise.resolve({ token: TEST_JWT }),
       }),
     ).rejects.toMatchObject({
       code: "CONTAINER_NOT_FOUND",
@@ -68,7 +68,7 @@ describe("init", () => {
       init({
         container: "#nonexistent",
         embedUrl: VALID_EMBED_URL,
-        tokenProvider: () => Promise.resolve({ token: TEST_JWT }),
+        tokenProvider: (_context) => Promise.resolve({ token: TEST_JWT }),
       }),
     ).rejects.toBeInstanceOf(CodatumEmbedError);
   });
@@ -79,7 +79,7 @@ describe("init", () => {
     const initPromise = init({
       container,
       embedUrl: VALID_EMBED_URL,
-      tokenProvider: () => Promise.resolve({ token: TEST_JWT }),
+      tokenProvider: (_context) => Promise.resolve({ token: TEST_JWT }),
       tokenOptions: { initTimeout: 5000 },
     });
     // Attach handler before advancing timers so the rejection is never unhandled
@@ -159,6 +159,34 @@ describe("init", () => {
       code: "TOKEN_PROVIDER_FAILED",
       message: "network error",
     });
+  });
+
+  it("does not retry when tokenProvider calls context.markNonRetryable() then throws", async () => {
+    const container = getContainer();
+    const tokenProvider = vi.fn().mockImplementation((context: { markNonRetryable: () => void }) => {
+      context.markNonRetryable();
+      return Promise.reject(new Error("auth failed"));
+    });
+    const initPromise = init({
+      container,
+      embedUrl: VALID_EMBED_URL,
+      tokenProvider,
+      tokenOptions: { retryCount: 2 },
+    });
+
+    window.dispatchEvent(
+      new MessageEvent("message", {
+        data: { type: "READY_FOR_TOKEN" },
+        origin: EMBED_ORIGIN,
+        source: container.querySelector("iframe")?.contentWindow ?? null,
+      }),
+    );
+
+    await expect(initPromise).rejects.toMatchObject({
+      code: "TOKEN_PROVIDER_FAILED",
+      message: "auth failed",
+    });
+    expect(tokenProvider).toHaveBeenCalledTimes(1);
   });
 });
 

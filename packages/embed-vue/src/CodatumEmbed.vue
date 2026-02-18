@@ -4,6 +4,7 @@ import type {
   CodatumEmbedInstance,
   DisplayOptions,
   IframeOptions,
+  TokenProviderContext,
   TokenProviderResult,
   TokenOptions,
   ParamChangedMessage,
@@ -15,7 +16,7 @@ import { onUnmounted, ref, watch } from "vue";
 const props = withDefaults(
   defineProps<{
     embedUrl: string;
-    tokenProvider: () => Promise<TokenProviderResult>;
+    tokenProvider: (context: TokenProviderContext) => Promise<TokenProviderResult>;
     iframeOptions?: IframeOptions;
     tokenOptions?: TokenOptions;
     displayOptions?: DisplayOptions;

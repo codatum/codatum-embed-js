@@ -47,10 +47,41 @@ Creates the iframe, waits for the iframe to be ready, gets a token and params fr
 |--------|----------|-------------|
 | `container` | Yes | `HTMLElement` or CSS selector where the iframe is inserted |
 | `embedUrl` | Yes | Signed embed URL from Codatum |
-| `tokenProvider` | Yes | `() => Promise<{ token: string, params?: EncodedParam[] }>`. Called on `init()`, `reload()`, and on token auto-refresh. Returned `params` are sent to the embed with the token as client-side params. |
+| `tokenProvider` | Yes | See [tokenProvider](#tokenprovider) below |
 | `iframeOptions` | No | See [IframeOptions](#iframeoptions) below |
 | `tokenOptions` | No | See [TokenOptions](#tokenoptions) below |
 | `displayOptions` | No | See [DisplayOptions](#displayoptions) below |
+
+#### `tokenProvider`
+
+Required callback that issues a token from your backend and returns it (and optionally `params`). Called on `init()`, `reload()`, and when the token is auto-refreshed — `tokenOptions.refreshBuffer` seconds before the token expires.
+
+**Signature:** `(context: TokenProviderContext) => Promise<{ token: string; params?: EncodedParam[] }>`
+
+- **`context.trigger`** — `'INIT'` | `'RELOAD'` | `'REFRESH'`.
+- **`context.markNonRetryable()`** — Call on failure to skip retries (ignores `tokenOptions.retryCount`).
+- **`params`** — Optional. If returned, sent to the embed with the token; use [ParamMapper](#parammapper) `encode()` to build.
+
+**Example (token + params, with context):**
+
+```ts
+tokenProvider: async (context) => {
+  const res = await fetch('/api/codatum/token', {
+    method: 'POST',
+    body: JSON.stringify({ tenant_id: currentUser.tenantId }),
+  });
+  if (!res.ok) {
+    if (res.status === 401) context.markNonRetryable();
+    throw new Error(`Token failed: ${res.status}`);
+  }
+  const data = await res.json();
+  const params = paramMapper.encode({ 
+    store_id: currentUser.defaultStoreId,
+    date_range: ['2025-01-01', '2025-01-31']
+  });
+  return { token: data.token, params };
+}
+```
 
 #### `IframeOptions`
 
@@ -69,7 +100,7 @@ Controls token lifetime, refresh behavior, and init timeout.
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `refreshBuffer` | `number` | `60` | Seconds before expiry to trigger refresh |
+| `refreshBuffer` | `number` | `60` | Number of seconds before the token expires when auto-refresh is triggered |
 | `retryCount` | `number` | `2` | Number of retries on token fetch failure; `0` = no retry |
 | `initTimeout` | `number` | `30000` | Max wait in ms for embed "ready"; `0` = no timeout |
 | `onRefreshError` | `(error: Error) => void` | `undefined` | Callback invoked when token auto-refresh fails (due to `tokenProvider` failure) and does not recover after all retries |
