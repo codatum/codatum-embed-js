@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import {
-  CodatumEmbed,
-  CodatumEmbedError,
-  CodatumEmbedErrorCodes,
-  CodatumEmbedStatuses,
+  createEmbed,
+  EmbedError,
+  EmbedErrorCodes,
+  EmbedStatuses,
 } from "@codatum/embed";
 import type {
-  CodatumEmbedInstance,
-  CodatumEmbedStatus,
+  EmbedInstance,
+  EmbedStatus,
   DisplayOptions,
   ExecuteSqlsTriggeredMessage,
   IframeOptions,
@@ -35,13 +35,13 @@ const emit = defineEmits<{
   paramChanged: [payload: ParamChangedMessage];
   executeSqlsTriggered: [payload: ExecuteSqlsTriggeredMessage];
   ready: [];
-  error: [err: CodatumEmbedError];
+  error: [err: EmbedError];
 }>();
 
 const containerRef = ref<HTMLElement | null>(null);
-const instance = ref<CodatumEmbedInstance | null>(null);
-const status = ref<CodatumEmbedStatus>(CodatumEmbedStatuses.INITIALIZING);
-const error = ref<CodatumEmbedError | null>(null);
+const instance = ref<EmbedInstance | null>(null);
+const status = ref<EmbedStatus>(EmbedStatuses.INITIALIZING);
+const error = ref<EmbedError | null>(null);
 
 let stopWatch: (() => void) | undefined;
 stopWatch = watch(
@@ -49,35 +49,37 @@ stopWatch = watch(
   (el: HTMLElement | null) => {
     if (!el) return;
     error.value = null;
-    status.value = CodatumEmbedStatuses.INITIALIZING;
-    CodatumEmbed.init({
+    status.value = EmbedStatuses.INITIALIZING;
+    const embed = createEmbed({
       container: el,
       embedUrl: props.embedUrl,
       tokenProvider: props.tokenProvider,
       iframeOptions: props.iframeOptions,
       tokenOptions: {
         ...props.tokenOptions,
-        onRefreshError: (err: CodatumEmbedError) => {
+        onRefreshError: (err: EmbedError) => {
           props.tokenOptions?.onRefreshError?.(err);
           emit("error", err);
         },
       },
       displayOptions: props.displayOptions,
-    })
-      .then((emb: CodatumEmbedInstance) => {
-        instance.value = emb;
-        status.value = emb.status;
+    });
+    instance.value = embed;
+    embed
+      .init()
+      .then(() => {
+        status.value = embed.status;
       })
       .catch((err: unknown) => {
         error.value =
-          err instanceof CodatumEmbedError
+          err instanceof EmbedError
             ? err
-            : new CodatumEmbedError(
-                CodatumEmbedErrorCodes.TOKEN_PROVIDER_FAILED,
+            : new EmbedError(
+                EmbedErrorCodes.TOKEN_PROVIDER_FAILED,
                 err instanceof Error ? err.message : String(err),
                 { cause: err }
               );
-        status.value = CodatumEmbedStatuses.DESTROYED;
+        status.value = EmbedStatuses.DESTROYED;
       });
   },
   { immediate: true }
@@ -89,10 +91,10 @@ onUnmounted(() => {
     instance.value.destroy();
     instance.value = null;
   }
-  status.value = CodatumEmbedStatuses.DESTROYED;
+  status.value = EmbedStatuses.DESTROYED;
 });
 
-watch(instance, (inst: CodatumEmbedInstance | null) => {
+watch(instance, (inst: EmbedInstance | null) => {
   if (!inst) return;
   const onParamChanged = (payload: ParamChangedMessage) =>
     emit("paramChanged", payload);
@@ -107,7 +109,7 @@ watch(instance, (inst: CodatumEmbedInstance | null) => {
   };
 });
 
-watch(error, (err: CodatumEmbedError | null) => {
+watch(error, (err: EmbedError | null) => {
   if (err) emit("error", err);
 });
 
@@ -119,10 +121,10 @@ const reload = async (): Promise<boolean> => {
     return true;
   } catch (err: unknown) {
     error.value =
-      err instanceof CodatumEmbedError
+      err instanceof EmbedError
         ? err
-        : new CodatumEmbedError(
-            CodatumEmbedErrorCodes.TOKEN_PROVIDER_FAILED,
+        : new EmbedError(
+            EmbedErrorCodes.TOKEN_PROVIDER_FAILED,
             err instanceof Error ? err.message : String(err),
             { cause: err }
           );

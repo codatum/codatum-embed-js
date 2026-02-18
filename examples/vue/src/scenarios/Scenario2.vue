@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import {
-  CodatumEmbedVue,
+  EmbedVue,
   createParamMapper,
   RESET_TO_DEFAULT,
-  type CodatumEmbedError,
+  type EmbedError,
   type EncodedParam,
   type DefineDecodedParams,
   type DefineParamMapper,
@@ -111,12 +111,12 @@ const onParamChanged = (ev: { params: EncodedParam[] }) => {
   paramValues.value = paramMapper.value.decode(ev.params);
 };
 
-const onEmbedError = (err: CodatumEmbedError) => {
+const onEmbedError = (err: EmbedError) => {
   statusMessage.value = err.message;
   statusError.value = true;
 };
 
-const embedRef = ref<InstanceType<typeof CodatumEmbedVue> | null>(null);
+const embedRef = ref<InstanceType<typeof EmbedVue> | null>(null);
 const reloadEmbed = async () => {
   const success = await embedRef.value?.reload();
   if (success) {
@@ -274,7 +274,7 @@ const removeProductCategory = (index: number): void => {
     {{ statusMessage }}
   </div>
   <div v-if="embedUrl" class="border bg-white">
-    <CodatumEmbedVue
+    <EmbedVue
       ref="embedRef"
       :embedUrl="embedUrl"
       :tokenProvider="tokenProvider"

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { init } from "./CodatumEmbed";
-import { CodatumEmbedError, CodatumEmbedStatuses } from "./types";
+import { createEmbed, type EmbedInstance } from "./Embed";
+import { EmbedError, EmbedStatuses } from "./types";
 
 const WORKSPACE_ID = "a".repeat(24);
 const NOTEBOOK_ID = "b".repeat(24);
@@ -28,7 +28,7 @@ function getContainer(): HTMLElement {
   return el;
 }
 
-describe("init", () => {
+describe("createEmbed and init", () => {
   beforeEach(() => {
     document.body.innerHTML = '<div id="container"></div>';
   });
@@ -37,51 +37,52 @@ describe("init", () => {
     document.body.innerHTML = "";
   });
 
-  it("throws INVALID_OPTIONS when embedUrl does not match protected/workspace/{id}/notebook/{id}", async () => {
-    await expect(
-      init({
+  it("throws INVALID_OPTIONS when embedUrl does not match protected/workspace/{id}/notebook/{id}", () => {
+    expect(() =>
+      createEmbed({
         container: "#container",
         embedUrl: "https://app.codatum.com/embed",
         tokenProvider: (_context) => Promise.resolve({ token: TEST_JWT }),
       }),
-    ).rejects.toMatchObject({
-      code: "INVALID_OPTIONS",
-      message: expect.stringContaining("embedUrl must match"),
-    });
+    ).toThrow(
+      expect.objectContaining({
+        code: "INVALID_OPTIONS",
+        message: expect.stringContaining("embedUrl must match"),
+      }),
+    );
   });
 
-  it("throws CONTAINER_NOT_FOUND when selector does not match", async () => {
-    await expect(
-      init({
-        container: "#nonexistent",
-        embedUrl: VALID_EMBED_URL,
-        tokenProvider: (_context) => Promise.resolve({ token: TEST_JWT }),
-      }),
-    ).rejects.toMatchObject({
+  it("rejects CONTAINER_NOT_FOUND from init() when selector does not match", async () => {
+    const embed = createEmbed({
+      container: "#nonexistent",
+      embedUrl: VALID_EMBED_URL,
+      tokenProvider: (_context) => Promise.resolve({ token: TEST_JWT }),
+    });
+    await expect(embed.init()).rejects.toMatchObject({
       code: "CONTAINER_NOT_FOUND",
       message: "Container element not found",
     });
   });
 
-  it("throws CONTAINER_NOT_FOUND when container element is null (querySelector)", async () => {
-    await expect(
-      init({
-        container: "#nonexistent",
-        embedUrl: VALID_EMBED_URL,
-        tokenProvider: (_context) => Promise.resolve({ token: TEST_JWT }),
-      }),
-    ).rejects.toBeInstanceOf(CodatumEmbedError);
+  it("rejects with EmbedError from init() when container element is null (querySelector)", async () => {
+    const embed = createEmbed({
+      container: "#nonexistent",
+      embedUrl: VALID_EMBED_URL,
+      tokenProvider: (_context) => Promise.resolve({ token: TEST_JWT }),
+    });
+    await expect(embed.init()).rejects.toBeInstanceOf(EmbedError);
   });
 
   it("rejects with INIT_TIMEOUT when READY_FOR_TOKEN is not received", async () => {
     vi.useFakeTimers();
     const container = getContainer();
-    const initPromise = init({
+    const embed = createEmbed({
       container,
       embedUrl: VALID_EMBED_URL,
       tokenProvider: (_context) => Promise.resolve({ token: TEST_JWT }),
       tokenOptions: { initTimeout: 5000 },
     });
+    const initPromise = embed.init();
     // Attach handler before advancing timers so the rejection is never unhandled
     let rejectedWith: unknown;
     initPromise.catch((e) => {
@@ -99,11 +100,12 @@ describe("init", () => {
     const container = getContainer();
     const myToken = TEST_JWT;
     const tokenProvider = vi.fn().mockResolvedValue({ token: myToken });
-    const initPromise = init({
+    const embed = createEmbed({
       container,
       embedUrl: VALID_EMBED_URL,
       tokenProvider,
     });
+    const initPromise = embed.init();
 
     const iframe = container.querySelector("iframe");
     expect(iframe).toBeTruthy();
@@ -122,7 +124,7 @@ describe("init", () => {
       }),
     );
 
-    const instance = await initPromise;
+    await initPromise;
     expect(tokenProvider).toHaveBeenCalledTimes(1);
     expect(postMessageSpy).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -131,21 +133,22 @@ describe("init", () => {
       }),
       EMBED_ORIGIN,
     );
-    expect(instance.status).toBe(CodatumEmbedStatuses.READY);
-    expect(instance.iframe).toBe(iframe);
+    expect(embed.status).toBe(EmbedStatuses.READY);
+    expect(embed.iframe).toBe(iframe);
 
-    instance.destroy();
+    embed.destroy();
     postMessageSpy.mockRestore();
   });
 
   it("rejects with TOKEN_PROVIDER_FAILED when tokenProvider throws", async () => {
     const container = getContainer();
     const tokenProvider = vi.fn().mockRejectedValue(new Error("network error"));
-    const initPromise = init({
+    const embed = createEmbed({
       container,
       embedUrl: VALID_EMBED_URL,
       tokenProvider,
     });
+    const initPromise = embed.init();
 
     window.dispatchEvent(
       new MessageEvent("message", {
@@ -163,16 +166,19 @@ describe("init", () => {
 
   it("does not retry when tokenProvider calls context.markNonRetryable() then throws", async () => {
     const container = getContainer();
-    const tokenProvider = vi.fn().mockImplementation((context: { markNonRetryable: () => void }) => {
-      context.markNonRetryable();
-      return Promise.reject(new Error("auth failed"));
-    });
-    const initPromise = init({
+    const tokenProvider = vi
+      .fn()
+      .mockImplementation((context: { markNonRetryable: () => void }) => {
+        context.markNonRetryable();
+        return Promise.reject(new Error("auth failed"));
+      });
+    const embed = createEmbed({
       container,
       embedUrl: VALID_EMBED_URL,
       tokenProvider,
       tokenOptions: { retryCount: 2 },
     });
+    const initPromise = embed.init();
 
     window.dispatchEvent(
       new MessageEvent("message", {
@@ -193,7 +199,7 @@ describe("init", () => {
 describe("instance", () => {
   let container: HTMLElement;
   let iframe: HTMLIFrameElement;
-  let instance: Awaited<ReturnType<typeof init>>;
+  let instance: EmbedInstance;
   const embedUrl = VALID_EMBED_URL;
   const origin = EMBED_ORIGIN;
 
@@ -201,11 +207,12 @@ describe("instance", () => {
     document.body.innerHTML = '<div id="container"></div>';
     container = getContainer();
     const tokenProvider = vi.fn().mockResolvedValue({ token: TEST_JWT });
-    const initPromise = init({
+    const embed = createEmbed({
       container,
       embedUrl,
       tokenProvider,
     });
+    const initPromise = embed.init();
     const iframeEl = container.querySelector("iframe");
     if (!iframeEl) throw new Error("Test setup: iframe not found");
     iframe = iframeEl;
@@ -216,7 +223,8 @@ describe("instance", () => {
         source: iframe.contentWindow,
       }),
     );
-    instance = await initPromise;
+    await initPromise;
+    instance = embed;
   });
 
   afterEach(() => {
@@ -257,12 +265,14 @@ describe("instance", () => {
   it("destroy removes iframe and sets status to destroyed", () => {
     expect(container.contains(iframe)).toBe(true);
     instance.destroy();
-    expect(instance.status).toBe(CodatumEmbedStatuses.DESTROYED);
+    expect(instance.status).toBe(EmbedStatuses.DESTROYED);
     expect(instance.iframe).toBeNull();
     expect(container.contains(iframe)).toBe(false);
   });
 
   it("reload calls tokenProvider and sends SET_TOKEN with returned token and params", async () => {
+    document.body.innerHTML = '<div id="container"></div>';
+    const c = getContainer();
     const now = Math.floor(Date.now() / 1000);
     const firstToken = createTestJwt(now, now + 3600);
     const newToken = createTestJwt(now, now + 7200);
@@ -273,13 +283,14 @@ describe("instance", () => {
         token: newToken,
         params: [{ param_id: "p1", param_value: '"v1"' }],
       });
-    const initPromise = init({
-      container: getContainer(),
+    const embed = createEmbed({
+      container: c,
       embedUrl,
       tokenProvider,
     });
-    const iframes = container.querySelectorAll("iframe");
-    const iframeEl = iframes[iframes.length - 1] as HTMLIFrameElement;
+    const initPromise = embed.init();
+    const iframeEl = c.querySelector("iframe") as HTMLIFrameElement;
+    if (!iframeEl) throw new Error("Test setup: iframe not found");
     window.dispatchEvent(
       new MessageEvent("message", {
         data: { type: "READY_FOR_TOKEN" },
@@ -287,13 +298,13 @@ describe("instance", () => {
         source: iframeEl.contentWindow,
       }),
     );
-    const inst = await initPromise;
+    await initPromise;
     const win = iframeEl.contentWindow;
     if (!win) throw new Error("Test setup: iframe has no contentWindow");
     const postMessageSpy = vi.spyOn(win, "postMessage");
     postMessageSpy.mockClear();
 
-    await inst.reload();
+    await embed.reload();
     expect(tokenProvider).toHaveBeenCalledTimes(2);
     expect(postMessageSpy).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -303,7 +314,7 @@ describe("instance", () => {
       }),
       origin,
     );
-    inst.destroy();
+    embed.destroy();
     postMessageSpy.mockRestore();
   });
 

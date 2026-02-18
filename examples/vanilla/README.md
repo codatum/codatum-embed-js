@@ -26,8 +26,8 @@ Then open in the browser:
 
 ## Pages
 
-- **esm.html** — Entry point is `src/main.ts`. Fetches `/config` from the examples server, then calls `CodatumEmbed.init()` with a `tokenProvider` that calls `/token`. Includes `paramChanged` / `executeSqlsTriggered` logging and commented ParamMapper usage.
-- **cdn.html** — Standalone HTML that loads the embed script from the local build (`../../packages/embed/dist/index.global.min.js`). Same flow: `/config` → init with `/token` as session provider. Can also be opened as a file or served by another static server if the script path is valid.
+- **esm.html** — Entry point is `src/main.ts`. Fetches `/config` from the examples server, then calls `createEmbed()` and `embed.init()` with a `tokenProvider` that calls `/token`. Includes `paramChanged` / `executeSqlsTriggered` logging and commented ParamMapper usage.
+- **cdn.html** — Standalone HTML that loads the embed script from the local build (`../../packages/embed/dist/index.global.min.js`). Same flow: `/config` → `CodatumEmbed.createEmbed()` then `embed.init()` with `/token` as session provider. Can also be opened as a file or served by another static server if the script path is valid.
 
 ## Notes
 

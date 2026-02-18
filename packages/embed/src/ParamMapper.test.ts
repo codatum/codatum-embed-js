@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createParamMapper, ParamMapper } from "./ParamMapper";
 import type { EncodedParam } from "./types";
-import { CodatumEmbedError, CodatumEmbedErrorCodes, RESET_TO_DEFAULT } from "./types";
+import { EmbedError, EmbedErrorCodes, RESET_TO_DEFAULT } from "./types";
 
 describe("createParamMapper", () => {
   const mapping = {
@@ -96,7 +96,7 @@ describe("createParamMapper", () => {
     expect(decoded).toEqual({ store_id: "x" });
   });
 
-  it("decode throws CodatumEmbedError with INVALID_PARAM_VALUE when param_value is not valid JSON", () => {
+  it("decode throws EmbedError with INVALID_PARAM_VALUE when param_value is not valid JSON", () => {
     const mapper = createParamMapper({ id: "id1" });
     let err: unknown;
     try {
@@ -104,8 +104,8 @@ describe("createParamMapper", () => {
     } catch (e) {
       err = e;
     }
-    expect(err).toBeInstanceOf(CodatumEmbedError);
-    expect((err as CodatumEmbedError).code).toBe(CodatumEmbedErrorCodes.INVALID_PARAM_VALUE);
-    expect((err as CodatumEmbedError).message).toContain("not-json");
+    expect(err).toBeInstanceOf(EmbedError);
+    expect((err as EmbedError).code).toBe(EmbedErrorCodes.INVALID_PARAM_VALUE);
+    expect((err as EmbedError).message).toContain("not-json");
   });
 });

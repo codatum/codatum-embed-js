@@ -1,24 +1,14 @@
-import { init } from "./CodatumEmbed";
-import { createParamMapper } from "./ParamMapper";
-import { RESET_TO_DEFAULT } from "./types";
-
-export const CodatumEmbed = {
-  init,
-  createParamMapper,
-  RESET_TO_DEFAULT,
-};
-
-export { init } from "./CodatumEmbed";
+export { createEmbed } from "./Embed";
 export { createParamMapper } from "./ParamMapper";
 
 export type {
-  CodatumEmbedErrorCode,
-  CodatumEmbedInstance,
-  CodatumEmbedOptions,
-  CodatumEmbedStatus,
   DefineDecodedParams,
   DefineParamMapper,
   DisplayOptions,
+  EmbedErrorCode,
+  EmbedInstance,
+  EmbedOptions,
+  EmbedStatus,
   EncodedParam,
   ExecuteSqlsTriggeredMessage,
   IframeOptions,
@@ -30,8 +20,8 @@ export type {
   TokenProviderResult,
 } from "./types";
 export {
-  CodatumEmbedError,
-  CodatumEmbedErrorCodes,
-  CodatumEmbedStatuses,
+  EmbedError,
+  EmbedErrorCodes,
+  EmbedStatuses,
   RESET_TO_DEFAULT,
 } from "./types";

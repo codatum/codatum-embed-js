@@ -28,7 +28,7 @@ export type TokenOptions = {
   refreshBuffer?: number;
   retryCount?: number; // if 0, no retry
   initTimeout?: number; // milliseconds; if 0, no timeout
-  onRefreshError?: (error: CodatumEmbedError) => void;
+  onRefreshError?: (error: EmbedError) => void;
 };
 
 export const TokenProviderTriggers = {
@@ -42,7 +42,7 @@ export type TokenProviderContext = {
   markNonRetryable: () => void;
 };
 
-export type CodatumEmbedOptions = {
+export type EmbedOptions = {
   container: HTMLElement | string;
   embedUrl: string;
   tokenProvider: (context: TokenProviderContext) => Promise<TokenProviderResult>;
@@ -76,7 +76,7 @@ export type EmbedEventMap = {
   executeSqlsTriggered: (payload: ExecuteSqlsTriggeredMessage) => void;
 };
 
-export const CodatumEmbedErrorCodes = {
+export const EmbedErrorCodes = {
   CONTAINER_NOT_FOUND: "CONTAINER_NOT_FOUND",
   INIT_TIMEOUT: "INIT_TIMEOUT",
   INVALID_OPTIONS: "INVALID_OPTIONS",
@@ -85,15 +85,14 @@ export const CodatumEmbedErrorCodes = {
   INVALID_PARAM_VALUE: "INVALID_PARAM_VALUE",
 } as const;
 
-export type CodatumEmbedErrorCode =
-  (typeof CodatumEmbedErrorCodes)[keyof typeof CodatumEmbedErrorCodes];
+export type EmbedErrorCode = (typeof EmbedErrorCodes)[keyof typeof EmbedErrorCodes];
 
-export class CodatumEmbedError extends Error {
-  code: CodatumEmbedErrorCode;
+export class EmbedError extends Error {
+  code: EmbedErrorCode;
   cause?: unknown;
-  constructor(code: CodatumEmbedErrorCode, message: string, options?: { cause?: unknown }) {
+  constructor(code: EmbedErrorCode, message: string, options?: { cause?: unknown }) {
     super(message);
-    this.name = "CodatumEmbedError";
+    this.name = "EmbedError";
     this.code = code;
     if (options?.cause !== undefined) {
       this.cause = options.cause;
@@ -202,19 +201,20 @@ export type DefineParamMapper<M extends Record<string, ParamMeta>> = ParamMapper
   M
 >;
 
-export const CodatumEmbedStatuses = {
+export const EmbedStatuses = {
   INITIALIZING: "INITIALIZING",
   READY: "READY",
   DESTROYED: "DESTROYED",
 } as const;
 
-export type CodatumEmbedStatus = (typeof CodatumEmbedStatuses)[keyof typeof CodatumEmbedStatuses];
+export type EmbedStatus = (typeof EmbedStatuses)[keyof typeof EmbedStatuses];
 
-export interface CodatumEmbedInstance {
+export interface EmbedInstance {
+  init(): Promise<void>;
   reload(): Promise<void>;
   on<K extends keyof EmbedEventMap>(event: K, handler: EmbedEventMap[K]): void;
   off<K extends keyof EmbedEventMap>(event: K, handler: EmbedEventMap[K]): void;
   destroy(): void;
   readonly iframe: HTMLIFrameElement | null;
-  readonly status: CodatumEmbedStatus;
+  readonly status: EmbedStatus;
 }

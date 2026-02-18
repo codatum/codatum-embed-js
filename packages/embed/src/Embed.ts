@@ -1,16 +1,16 @@
 import type {
-  CodatumEmbedOptions,
-  CodatumEmbedStatus,
   EmbedEventMap,
   EmbedMessage,
-  CodatumEmbedInstance as ICodatumEmbedInstance,
+  EmbedOptions,
+  EmbedStatus,
+  EmbedInstance as IEmbedInstance,
   TokenProviderContext,
   TokenProviderResult,
 } from "./types";
 import {
-  CodatumEmbedError,
-  CodatumEmbedErrorCodes,
-  CodatumEmbedStatuses,
+  EmbedError,
+  EmbedErrorCodes,
+  EmbedStatuses,
   type TokenOptions,
   TokenProviderTriggers,
 } from "./types";
@@ -29,20 +29,21 @@ const DEFAULT_INIT_TIMEOUT = 30000;
 const SHORT_TTL_THRESHOLD = 10 * 1000;
 const SHORT_TTL_MAX_CONSECUTIVE = 3;
 
-export class CodatumEmbedInstance implements ICodatumEmbedInstance {
-  private readonly iframeEl: HTMLIFrameElement;
-  private readonly options: CodatumEmbedOptions;
+export class EmbedInstance implements IEmbedInstance {
+  private iframeEl: HTMLIFrameElement | null = null;
+  private readonly options: EmbedOptions;
   private readonly expectedOrigin: string;
   private readonly refreshBuffer: number;
   private readonly retryCount: number;
   private readonly onRefreshError?: TokenOptions["onRefreshError"];
   private shortTtlCount = 0;
 
-  private _status: CodatumEmbedStatus = CodatumEmbedStatuses.INITIALIZING;
+  private _status: EmbedStatus = EmbedStatuses.INITIALIZING;
   private initTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private refreshTimerId: ReturnType<typeof setTimeout> | null = null;
   private reloadInProgress = false;
   private readyForTokenHandled = false;
+  private initStarted = false;
   private readonly eventHandlers: {
     [K in keyof EmbedEventMap]: EmbedEventMap[K][];
   } = {
@@ -50,48 +51,96 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
     executeSqlsTriggered: [],
   };
 
-  private readonly initPromise: Promise<ICodatumEmbedInstance>;
-  private resolveInit!: (instance: ICodatumEmbedInstance) => void;
-  private rejectInit!: (err: CodatumEmbedError) => void;
+  private readonly initPromise: Promise<void>;
+  private resolveInit!: () => void;
+  private rejectInit!: (err: EmbedError) => void;
 
   private readonly boundHandleMessage = (event: MessageEvent) => this.handleMessage(event);
 
-  constructor(iframe: HTMLIFrameElement, options: CodatumEmbedOptions) {
-    this.iframeEl = iframe;
-    this.options = options;
-    this.expectedOrigin = new URL(options.embedUrl).origin;
+  constructor(options: EmbedOptions) {
+    this.options = deepClone(options);
+    if (!isValidEmbedUrl(this.options.embedUrl)) {
+      throw new EmbedError(
+        EmbedErrorCodes.INVALID_OPTIONS,
+        "embedUrl must match https://app.codatum.com/protected/workspace/{workspaceId}/notebook/{notebookId}",
+      );
+    }
+    this.expectedOrigin = new URL(this.options.embedUrl).origin;
 
-    const tokenOptions = options.tokenOptions ?? {};
+    const tokenOptions = this.options.tokenOptions ?? {};
     this.refreshBuffer = (tokenOptions.refreshBuffer ?? DEFAULT_REFRESH_BUFFER) * 1000;
     this.retryCount = tokenOptions.retryCount ?? DEFAULT_RETRY_COUNT;
     this.onRefreshError = tokenOptions.onRefreshError;
 
-    const initTimeoutMs = tokenOptions.initTimeout ?? DEFAULT_INIT_TIMEOUT;
-
-    this.initPromise = new Promise<ICodatumEmbedInstance>((resolve, reject) => {
+    this.initPromise = new Promise<void>((resolve, reject) => {
       this.resolveInit = resolve;
       this.rejectInit = reject;
     });
 
     window.addEventListener("message", this.boundHandleMessage);
+  }
 
+  /**
+   * Creates the iframe, appends it to the container, and starts the token/connection flow.
+   * Call this after createEmbed() to complete initialization.
+   */
+  init(): Promise<void> {
+    if (this.isDestroyed) {
+      return Promise.reject(
+        new EmbedError(EmbedErrorCodes.INVALID_OPTIONS, "Instance already destroyed"),
+      );
+    }
+    if (this.initStarted) {
+      return this.initPromise;
+    }
+    this.initStarted = true;
+
+    const container =
+      typeof this.options.container === "string"
+        ? document.querySelector(this.options.container)
+        : this.options.container;
+    if (!container) {
+      this.rejectInit(
+        new EmbedError(EmbedErrorCodes.CONTAINER_NOT_FOUND, "Container element not found"),
+      );
+      return this.initPromise;
+    }
+
+    const iframeOptions = this.options.iframeOptions;
+    const iframe = document.createElement("iframe");
+    iframe.src = buildIframeSrc(this.options.embedUrl, iframeOptions);
+    iframe.className = getIframeClassName(iframeOptions);
+    iframe.setAttribute("allow", "fullscreen; clipboard-write");
+    Object.assign(iframe.style, {
+      width: "100%",
+      height: "100%",
+      border: "none",
+      ...iframeOptions?.style,
+    });
+
+    this.iframeEl = iframe;
+    container.appendChild(iframe);
+
+    const initTimeoutMs = this.options.tokenOptions?.initTimeout ?? DEFAULT_INIT_TIMEOUT;
     if (initTimeoutMs > 0) {
       this.initTimeoutId = setTimeout(() => {
         this.initTimeoutId = null;
-        if (this._status === CodatumEmbedStatuses.INITIALIZING) {
+        if (this._status === EmbedStatuses.INITIALIZING) {
           this.destroy();
           this.rejectInit(
-            new CodatumEmbedError(
-              CodatumEmbedErrorCodes.INIT_TIMEOUT,
+            new EmbedError(
+              EmbedErrorCodes.INIT_TIMEOUT,
               `Initialization did not complete within ${initTimeoutMs}ms`,
             ),
           );
         }
       }, initTimeoutMs);
     }
+
+    return this.initPromise;
   }
 
-  getInitPromise(): Promise<ICodatumEmbedInstance> {
+  getInitPromise(): Promise<void> {
     return this.initPromise;
   }
 
@@ -99,12 +148,12 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
     return this.isDestroyed ? null : this.iframeEl;
   }
 
-  get status(): CodatumEmbedStatus {
+  get status(): EmbedStatus {
     return this._status;
   }
 
   private get isDestroyed(): boolean {
-    return this._status === CodatumEmbedStatuses.DESTROYED;
+    return this._status === EmbedStatuses.DESTROYED;
   }
 
   private clearInitTimeout(): void {
@@ -122,6 +171,7 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
   }
 
   private sendSetToken(result: TokenProviderResult): void {
+    if (!this.iframeEl) return;
     const win = this.iframeEl.contentWindow;
     if (!win || this.isDestroyed) return;
     const payload: Record<string, unknown> = {
@@ -211,8 +261,8 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
       .catch((err) => {
         if (this.isDestroyed) return;
         this.onRefreshError?.(
-          new CodatumEmbedError(
-            CodatumEmbedErrorCodes.TOKEN_PROVIDER_FAILED,
+          new EmbedError(
+            EmbedErrorCodes.TOKEN_PROVIDER_FAILED,
             err instanceof Error ? err.message : String(err),
             { cause: err },
           ),
@@ -221,7 +271,11 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
   }
 
   private handleMessage(event: MessageEvent): void {
-    if (event.source !== this.iframeEl.contentWindow || event.origin !== this.expectedOrigin) {
+    if (
+      !this.iframeEl ||
+      event.source !== this.iframeEl.contentWindow ||
+      event.origin !== this.expectedOrigin
+    ) {
       return;
     }
     const data = event.data as EmbedMessage;
@@ -242,22 +296,22 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
   }
 
   private onReadyForToken(): void {
-    if (this.readyForTokenHandled || this._status !== CodatumEmbedStatuses.INITIALIZING) return;
+    if (this.readyForTokenHandled || this._status !== EmbedStatuses.INITIALIZING) return;
     this.readyForTokenHandled = true;
     this.fetchSessionWithRetry(TokenProviderTriggers.INIT)
       .then((result) => {
         if (this.isDestroyed) return;
-        this._status = CodatumEmbedStatuses.READY;
+        this._status = EmbedStatuses.READY;
         this.clearInitTimeout();
         this.sendSetToken(result);
-        this.resolveInit(this);
+        this.resolveInit();
       })
       .catch((err) => {
         if (this.isDestroyed) return;
         this.clearInitTimeout();
         this.rejectInit(
-          new CodatumEmbedError(
-            CodatumEmbedErrorCodes.TOKEN_PROVIDER_FAILED,
+          new EmbedError(
+            EmbedErrorCodes.TOKEN_PROVIDER_FAILED,
             err instanceof Error ? err.message : String(err),
             { cause: err },
           ),
@@ -277,8 +331,8 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
         },
         (err) => {
           if (this.isDestroyed) return;
-          throw new CodatumEmbedError(
-            CodatumEmbedErrorCodes.TOKEN_PROVIDER_FAILED,
+          throw new EmbedError(
+            EmbedErrorCodes.TOKEN_PROVIDER_FAILED,
             err instanceof Error ? err.message : String(err),
             { cause: err },
           );
@@ -302,49 +356,19 @@ export class CodatumEmbedInstance implements ICodatumEmbedInstance {
 
   destroy(): void {
     if (this.isDestroyed) return;
-    this._status = CodatumEmbedStatuses.DESTROYED;
+    this._status = EmbedStatuses.DESTROYED;
     this.clearInitTimeout();
     this.clearRefreshTimer();
     window.removeEventListener("message", this.boundHandleMessage);
-    this.iframeEl.remove();
+    this.iframeEl?.remove();
+    this.iframeEl = null;
   }
 }
 
-export async function init(options: CodatumEmbedOptions): Promise<ICodatumEmbedInstance> {
-  options = deepClone(options);
-
-  const container =
-    typeof options.container === "string"
-      ? document.querySelector(options.container)
-      : options.container;
-  if (!container) {
-    throw new CodatumEmbedError(
-      CodatumEmbedErrorCodes.CONTAINER_NOT_FOUND,
-      "Container element not found",
-    );
-  }
-  if (!isValidEmbedUrl(options.embedUrl)) {
-    throw new CodatumEmbedError(
-      CodatumEmbedErrorCodes.INVALID_OPTIONS,
-      "embedUrl must match https://app.codatum.com/protected/workspace/{workspaceId}/notebook/{notebookId}",
-    );
-  }
-  const embedUrl = options.embedUrl;
-  const iframeOptions = options.iframeOptions;
-
-  const iframe = document.createElement("iframe");
-  iframe.src = buildIframeSrc(embedUrl, iframeOptions);
-  iframe.className = getIframeClassName(iframeOptions);
-  iframe.setAttribute("allow", "fullscreen; clipboard-write");
-  Object.assign(iframe.style, {
-    width: "100%",
-    height: "100%",
-    border: "none",
-    ...iframeOptions?.style,
-  });
-
-  container.appendChild(iframe);
-
-  const instance = new CodatumEmbedInstance(iframe, options);
-  return instance.getInitPromise();
+/**
+ * Creates a CodatumEmbed instance without creating the iframe or connecting.
+ * Call instance.init() to create the iframe and start the token/connection flow.
+ */
+export function createEmbed(options: EmbedOptions): EmbedInstance {
+  return new EmbedInstance(options);
 }

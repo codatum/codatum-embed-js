@@ -16,9 +16,9 @@ npm install @codatum/embed
 ## Quick start
 
 ```ts
-import { CodatumEmbed } from '@codatum/embed';
+import { createEmbed } from '@codatum/embed';
 
-const embed = await CodatumEmbed.init({
+const embed = createEmbed({
   container: '#dashboard',
   embedUrl: 'https://app.codatum.com/protected/workspace/xxx/notebook/yyy',
   tokenProvider: async () => {
@@ -28,6 +28,7 @@ const embed = await CodatumEmbed.init({
     return { token: data.token };
   },
 });
+await embed.init();
 
 // cleanup
 embed.destroy();
@@ -37,11 +38,15 @@ embed.destroy();
 
 ### Initialization
 
-**`CodatumEmbed.init(options: CodatumEmbedOptions): Promise<CodatumEmbedInstance>`**
+**`createEmbed(options: EmbedOptions): EmbedInstance`**
 
-Creates the iframe, waits for the iframe to be ready, gets a token and params from `tokenProvider`, and sends token (and optional params) to the iframe. Throws `CodatumEmbedError` on failure.
+Creates an embed instance (no iframe yet). Does not throw for container/token; validation is done when you call `init()`.
 
-#### `CodatumEmbedOptions`
+**`instance.init(): Promise<void>`**
+
+Creates the iframe, waits for the iframe to be ready, gets a token and params from `tokenProvider`, and sends token (and optional params) to the iframe. Resolves when ready. Throws `EmbedError` on failure (e.g. container not found, token provider error, init timeout).
+
+#### `EmbedOptions`
 
 | Property | Required | Description |
 |--------|----------|-------------|
@@ -103,7 +108,7 @@ Controls token lifetime, refresh behavior, and init timeout.
 | `refreshBuffer` | `number` | `60` | Number of seconds before the token expires when auto-refresh is triggered |
 | `retryCount` | `number` | `2` | Number of retries on token fetch failure; `0` = no retry |
 | `initTimeout` | `number` | `30000` | Max wait in ms for embed "ready"; `0` = no timeout |
-| `onRefreshError` | `(error: CodatumEmbedError) => void` | `undefined` | Callback invoked when token auto-refresh fails (due to `tokenProvider` failure) and does not recover after all retries |
+| `onRefreshError` | `(error: EmbedError) => void` | `undefined` | Callback invoked when token auto-refresh fails (due to `tokenProvider` failure) and does not recover after all retries |
 
 #### `DisplayOptions`
 
@@ -119,7 +124,8 @@ Sent to the embed with the token.
 
 | Method | Description |
 |--------|-------------|
-| `async reload()` | Calls `tokenProvider` again and sends the returned token and params via `SET_TOKEN`. Throws `CodatumEmbedError` on failure. |
+| `async init()` | Creates the iframe and starts the token/connection flow. Resolves when the embed is ready. Call once after `createEmbed()`. |
+| `async reload()` | Calls `tokenProvider` again and sends the returned token and params via `SET_TOKEN`. Throws `EmbedError` on failure. |
 | `destroy()` | Removes iframe, clears listeners and timers. No-op if already destroyed. |
 
 ### Instance properties
@@ -147,9 +153,9 @@ The embed uses `param_id`s (IDs assigned per notebook parameter). Your app typic
 ### Basic usage
 
 ```ts
-import { CodatumEmbed } from '@codatum/embed';
+import { createParamMapper } from '@codatum/embed';
 
-const paramMapper = CodatumEmbed.createParamMapper({
+const paramMapper = createParamMapper({
   store_id: '67a1b2c3d4e5f6a7b8c9d0e1',
   date_range: '67a1b2c3d4e5f6a7b8c9d0e2',
   product_category: '67a1b2c3d4e5f6a7b8c9d0e3',
@@ -263,7 +269,7 @@ const onParamChanged = (ev: { params: EncodedParam[] }) => {
 
 ## Errors
 
-All errors are thrown/rejected as `CodatumEmbedError` with a `code` property.
+All errors are thrown/rejected as `EmbedError` with a `code` property.
 
 | Code | Thrown by | Description |
 |------|----------|-------------|
@@ -278,8 +284,10 @@ All errors are thrown/rejected as `CodatumEmbedError` with a `code` property.
 
 `init()` and `reload()` throw on failure — handle with try/catch. Auto-refresh errors are delivered via the `tokenOptions.onRefreshError` callback.
 ```ts
+import { createEmbed, EmbedError } from '@codatum/embed';
+
 try {
-  const embed = await CodatumEmbed.init({
+  const embed = createEmbed({
     container: '#dashboard',
     embedUrl: '...',
     tokenProvider: async () => { /* ... */ },
@@ -291,11 +299,12 @@ try {
       },
     },
   });
+  await embed.init();
 
   // reload() also throws on failure
   await embed.reload();
 } catch (error) {
-  if (error instanceof CodatumEmbedError) {
+  if (error instanceof EmbedError) {
       // error.cause holds the original error thrown by tokenProvider (if applicable)
     console.error(error.code, error.message);
   }
@@ -313,14 +322,16 @@ Embed shows the notebook’s parameter form. The server validates `store_id` and
 **Client**
 
 ```ts
-const paramMapper = CodatumEmbed.createParamMapper({...}, {
+import { createEmbed, createParamMapper, RESET_TO_DEFAULT } from '@codatum/embed';
+
+const paramMapper = createParamMapper({...}, {
   store_id: { datatype: 'STRING' },  // server-side param
   date_range: { datatype: '[DATE, DATE]' },  // client-side param
   product_category: { datatype: 'STRING[]' },  // client-side param
 });
 let paramValues = { store_id: undefined, date_range: RESET_TO_DEFAULT, product_category: [] };
 
-const embed = await CodatumEmbed.init({
+const embed = createEmbed({
   container: '#dashboard',
   embedUrl: '...',
   displayOptions: { expandParamsFormByDefault: true },
@@ -334,6 +345,7 @@ const embed = await CodatumEmbed.init({
     return { token, params };
   },
 });
+await embed.init();
 
 embed.on('paramChanged', (ev) => { paramValues = paramMapper.decode(ev.params); });
 embed.on('executeSqlsTriggered', (ev) => { paramValues = paramMapper.decode(ev.params); });
@@ -342,8 +354,10 @@ embed.on('executeSqlsTriggered', (ev) => { paramValues = paramMapper.decode(ev.p
 **Server** — Validate `store_id` against the tenant and encode it in the token:
 
 ```ts
+import { createParamMapper } from '@codatum/embed';
+
 // POST /token body: { tokenUserId, params?: { store_id } }
-const paramMapper = CodatumEmbed.createParamMapper({...}, {
+const paramMapper = createParamMapper({...}, {
   tenant_id: { datatype: 'STRING', required: true },  // server-side param
   store_id: { datatype: 'STRING', required: true },  // server-side param
 });
@@ -362,14 +376,16 @@ All parameters except `tenant_id` are managed by the host; the embed’s paramet
 **Client**
 
 ```ts
-const paramMapper = CodatumEmbed.createParamMapper({...}, {
+import { createEmbed, createParamMapper } from '@codatum/embed';
+
+const paramMapper = createParamMapper({...}, {
   store_id: { datatype: 'STRING' },  // client-side param
   date_range: { datatype: '[DATE, DATE]' },  // client-side param
   product_category: { datatype: 'STRING[]' },  // client-side param
 });
 let paramValues = { store_id: 'store_001', date_range: ['2025-01-01', '2025-01-31'], product_category: [] };
 
-const embed = await CodatumEmbed.init({
+const embed = createEmbed({
   container: '#dashboard',
   embedUrl: '...',
   displayOptions: { hideParamsForm: true },
@@ -380,6 +396,7 @@ const embed = await CodatumEmbed.init({
     return { token, params };
   },
 });
+await embed.init();
 
 embed.on('paramChanged', (ev) => { paramValues = paramMapper.decode(ev.params); });
 embed.on('executeSqlsTriggered', (ev) => { paramValues = paramMapper.decode(ev.params); });
@@ -394,8 +411,10 @@ async function onDashboardFilterChange(newValues: ParamValues) {
 **Server** — Token needs only tenant scope (no param in body):
 
 ```ts
+import { createParamMapper } from '@codatum/embed';
+
 // POST /token body: { tokenUserId }
-const paramMapper = CodatumEmbed.createParamMapper({...}, {
+const paramMapper = createParamMapper({...}, {
   tenant_id: { datatype: 'STRING', required: true },  // server-side param
 });
 const tenantId = await getTenantIdByUserId(tokenUserId);
@@ -410,14 +429,16 @@ const encoded = paramMapper.encode({ tenant_id: tenantId });
 **Client**
 
 ```ts
-const paramMapper = CodatumEmbed.createParamMapper({...}, {
+import { createEmbed, createParamMapper, RESET_TO_DEFAULT } from '@codatum/embed';
+
+const paramMapper = createParamMapper({...}, {
   store_id: { datatype: 'STRING' },  // server-side param
   date_range: { datatype: '[DATE, DATE]' },  // client-side param
   product_category: { datatype: 'STRING[]' },  // client-side param
 });
 let paramValues = { store_id: undefined, date_range: RESET_TO_DEFAULT, product_category: ['Electronics'] };
 
-const embed = await CodatumEmbed.init({
+const embed = createEmbed({
   container: '#dashboard',
   embedUrl: '...',
   displayOptions: { expandParamsFormByDefault: true },
@@ -431,6 +452,7 @@ const embed = await CodatumEmbed.init({
     return { token, params };
   },
 });
+await embed.init();
 
 embed.on('paramChanged', (ev) => { paramValues = paramMapper.decode(ev.params); });
 embed.on('executeSqlsTriggered', (ev) => { paramValues = paramMapper.decode(ev.params); });
@@ -445,10 +467,15 @@ async function onStoreSwitch(storeId: string) {
 
 ## CDN
 
+A separate IIFE build exposes a single global `CodatumEmbed`. Load the script and use `CodatumEmbed.createEmbed` then `embed.init()`.
+
 ```html
 <script src="https://unpkg.com/@codatum/embed/dist/index.global.min.js"></script>
 <script>
-  CodatumEmbed.init({ container: '#dashboard', embedUrl: '...', tokenProvider: ... });
+  (async function () {
+    const embed = CodatumEmbed.createEmbed({ container: '#dashboard', embedUrl: '...', tokenProvider: ... });
+    await embed.init();
+  })();
 </script>
 ```
 

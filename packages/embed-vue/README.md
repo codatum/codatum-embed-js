@@ -12,7 +12,7 @@ pnpm add @codatum/embed-vue
 ## Usage
 ```vue
 <script setup lang="ts">
-import { CodatumEmbedVue } from "@codatum/embed-vue";
+import { EmbedVue } from "@codatum/embed-vue";
 
 const embedUrl = "https://app.codatum.com/embed/...";
 const tokenProvider = async () => {
@@ -23,7 +23,7 @@ const tokenProvider = async () => {
 </script>
 
 <template>
-  <CodatumEmbedVue
+  <EmbedVue
     :embedUrl="embedUrl"
     :tokenProvider="tokenProvider"
     :iframeOptions="{ theme: 'LIGHT', locale: 'ja' }"
@@ -41,9 +41,9 @@ Use a template ref and call the exposed `reload()` method. It returns `true` on 
 ```vue
 <script setup lang="ts">
 import { ref } from "vue";
-import { CodatumEmbedVue } from "@codatum/embed-vue";
+import { EmbedVue } from "@codatum/embed-vue";
 
-const embedRef = ref<InstanceType<typeof CodatumEmbedVue> | null>(null);
+const embedRef = ref<InstanceType<typeof EmbedVue> | null>(null);
 
 async function onFilterChange() {
   const ok = await embedRef.value?.reload();
@@ -52,7 +52,7 @@ async function onFilterChange() {
 </script>
 
 <template>
-  <CodatumEmbedVue ref="embedRef" :embedUrl="..." :tokenProvider="..." @error="handleError" />
+  <EmbedVue ref="embedRef" :embedUrl="..." :tokenProvider="..." @error="handleError" />
 </template>
 ```
 
@@ -77,7 +77,7 @@ Option types and behavior (e.g. `iframeOptions`, `tokenOptions`, `displayOptions
 | `ready` | — | Embed is ready and token/params have been applied |
 | `paramChanged` | `{ type: 'PARAM_CHANGED', params: EncodedParam[] }` | User changed params in the embed |
 | `executeSqlsTriggered` | `{ type: 'EXECUTE_SQLS_TRIGGERED', params: EncodedParam[] }` | Execute SQL was triggered in the embed |
-| `error` | `CodatumEmbedError` | Init, reload, or token auto-refresh failed |
+| `error` | `EmbedError` | Init, reload, or token auto-refresh failed |
 
 ### Expose (ref)
 
