@@ -89,6 +89,7 @@ export const EmbedErrorCodes = {
   TOKEN_PROVIDER_FAILED: "TOKEN_PROVIDER_FAILED",
   MISSING_REQUIRED_PARAM: "MISSING_REQUIRED_PARAM",
   INVALID_PARAM_VALUE: "INVALID_PARAM_VALUE",
+  UNEXPECTED_ERROR: "UNEXPECTED_ERROR",
 } as const;
 
 export type EmbedErrorCode = (typeof EmbedErrorCodes)[keyof typeof EmbedErrorCodes];

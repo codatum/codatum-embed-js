@@ -167,19 +167,29 @@ export class EmbedInstance implements IEmbedInstance {
       displayOptions: this.options.displayOptions,
       ...(result.params != null && result.params.length > 0 ? { params: result.params } : {}),
     };
-    // avoid postMessage serialization error by deep cloning the payload
-    const serialized = Object.keys(payload).length
-      ? JSON.parse(JSON.stringify(payload))
-      : undefined;
-    win.postMessage(
-      {
-        type: "SET_TOKEN",
-        token: result.token,
-        sdkVersion: SDK_VERSION,
-        ...serialized,
-      },
-      this.expectedOrigin,
-    );
+    try {
+      // avoid postMessage serialization error by deep cloning the payload
+      const serialized = Object.keys(payload).length
+        ? JSON.parse(JSON.stringify(payload))
+        : undefined;
+      win.postMessage(
+        {
+          type: "SET_TOKEN",
+          token: result.token,
+          sdkVersion: SDK_VERSION,
+          ...serialized,
+        },
+        this.expectedOrigin,
+      );
+    } catch (err) {
+      // JSON: circular reference, BigInt, function, or other non-JSON-serializable in payload.
+      // postMessage: DataCloneError when structured clone fails (non-cloneable value in message).
+      throw new EmbedError(
+        EmbedErrorCodes.UNEXPECTED_ERROR,
+        err instanceof Error ? err.message : String(err),
+        { cause: err },
+      );
+    }
   }
 
   /**

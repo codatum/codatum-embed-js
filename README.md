@@ -4,6 +4,7 @@ TypeScript library for embedding Codatum Notebook with [signed embed](https://do
 
 - **Docs**: [Signed embed](https://docs.codatum.com/sharing/signed-embed) · [Integration](https://docs.codatum.com/sharing/signed-embed/integration) · [Use cases](https://docs.codatum.com/sharing/signed-embed/use-case)
 - **Vue 3**: [@codatum/embed-vue](packages/embed-vue/README.md) — component wrapper for the core SDK
+- **React**: [@codatum/embed-react](packages/embed-react/README.md) — component wrapper for the core SDK (React 18+)
 
 ## Installation
 
@@ -275,6 +276,7 @@ All errors are thrown/rejected as `EmbedError` with a `code` property.
 | `TOKEN_PROVIDER_FAILED` | `init` / `reload` | `tokenProvider` threw |
 | `MISSING_REQUIRED_PARAM` | `encode` / `decode` | Required param missing |
 | `INVALID_PARAM_VALUE` | `encode` / `decode` | Value failed validation |
+| `UNEXPECTED_ERROR` | `createEmbed` / `init` / `reload` | Unexpected error |
 
 ### Error handling
 

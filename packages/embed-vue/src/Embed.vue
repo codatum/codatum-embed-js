@@ -38,20 +38,18 @@ const emit = defineEmits<{
 const containerRef = ref<HTMLElement | null>(null);
 const instance = ref<EmbedInstance | null>(null);
 const status = ref<EmbedStatus>(EmbedStatuses.CREATED);
-const error = ref<EmbedError | null>(null);
 
 const toEmbedError = (err: unknown): EmbedError =>
   err instanceof EmbedError
     ? err
     : new EmbedError(
-        EmbedErrorCodes.TOKEN_PROVIDER_FAILED,
+        EmbedErrorCodes.UNEXPECTED_ERROR,
         err instanceof Error ? err.message : String(err),
         { cause: err }
       );
 
 const setError = (err: unknown) => {
   const embedError = toEmbedError(err);
-  error.value = embedError;
   emit("error", embedError);
 };
 
@@ -104,6 +102,7 @@ const reload = async (): Promise<boolean> => {
   if (!instance.value) return false;
   try {
     await instance.value.reload();
+    status.value = instance.value.status;
     return true;
   } catch (err: unknown) {
     setError(err);

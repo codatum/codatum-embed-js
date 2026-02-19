@@ -1,8 +1,9 @@
 import type { EmbedInstance } from "@codatum/embed";
 import { EmbedError, EmbedErrorCodes, EmbedStatuses } from "@codatum/embed";
-import { mount } from "@vue/test-utils";
+import { render, waitFor } from "@testing-library/react";
+import { createElement } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import Embed from "./Embed.vue";
+import { EmbedReact, type EmbedReactRef } from "./index";
 
 const EMBED_URL = "https://app.codatum.com/protected/workspace/ws1/notebook/nb1";
 const tokenProvider = vi.fn(() => Promise.resolve({ token: "test-token" }));
@@ -62,7 +63,6 @@ vi.mock("@codatum/embed", () => ({
     INIT_TIMEOUT: "INIT_TIMEOUT",
     MISSING_REQUIRED_PARAM: "MISSING_REQUIRED_PARAM",
     INVALID_PARAM_VALUE: "INVALID_PARAM_VALUE",
-    UNEXPECTED_ERROR: "UNEXPECTED_ERROR",
   },
   EmbedStatuses: {
     CREATED: "CREATED",
@@ -72,7 +72,7 @@ vi.mock("@codatum/embed", () => ({
   },
 }));
 
-describe("Embed.vue", () => {
+describe("EmbedReact", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -81,13 +81,10 @@ describe("Embed.vue", () => {
     const mockInst = createMockInstance();
     createEmbedMock.mockReturnValue(mockInst);
 
-    const wrapper = mount(Embed, {
-      props: { embedUrl: EMBED_URL, tokenProvider },
-    });
+    render(createElement(EmbedReact, { embedUrl: EMBED_URL, tokenProvider }));
 
-    const container = wrapper.find(".codatum-embed-vue-container");
-    expect(container.exists()).toBe(true);
-    expect(container.element.tagName).toBe("DIV");
+    const container = document.querySelector(".codatum-embed-react-container");
+    expect(container).toBeInstanceOf(HTMLDivElement);
   });
 
   it("calls createEmbed with container, embedUrl, tokenProvider and optional options", async () => {
@@ -98,17 +95,17 @@ describe("Embed.vue", () => {
     const tokenOptions = { refreshBuffer: 120 };
     const displayOptions = { sqlDisplay: "HIDE" as const };
 
-    mount(Embed, {
-      props: {
+    render(
+      createElement(EmbedReact, {
         embedUrl: EMBED_URL,
         tokenProvider,
         iframeOptions,
         tokenOptions,
         displayOptions,
-      },
-    });
+      }),
+    );
 
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(createEmbedMock).toHaveBeenCalledTimes(1);
     });
 
@@ -125,40 +122,50 @@ describe("Embed.vue", () => {
     const mockInst = createMockInstance();
     createEmbedMock.mockReturnValue(mockInst);
 
-    mount(Embed, {
-      props: { embedUrl: EMBED_URL, tokenProvider },
-    });
+    render(createElement(EmbedReact, { embedUrl: EMBED_URL, tokenProvider }));
 
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(mockInst.init).toHaveBeenCalled();
     });
   });
 
-  it("emits ready when instance is set and handlers are registered", async () => {
+  it("calls onReady when init succeeds", async () => {
     const mockInst = createMockInstance();
     createEmbedMock.mockReturnValue(mockInst);
+    const onReady = vi.fn();
 
-    const wrapper = mount(Embed, {
-      props: { embedUrl: EMBED_URL, tokenProvider },
-    });
+    render(
+      createElement(EmbedReact, {
+        embedUrl: EMBED_URL,
+        tokenProvider,
+        onReady,
+      }),
+    );
 
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(mockInst.on).toHaveBeenCalledWith("paramChanged", expect.any(Function));
       expect(mockInst.on).toHaveBeenCalledWith("executeSqlsTriggered", expect.any(Function));
     });
 
-    expect(wrapper.emitted("ready")).toHaveLength(1);
+    await waitFor(() => {
+      expect(onReady).toHaveBeenCalledTimes(1);
+    });
   });
 
-  it("emits paramChanged when instance fires paramChanged", async () => {
+  it("calls onParamChanged when instance fires paramChanged", async () => {
     const mockInst = createMockInstance();
     createEmbedMock.mockReturnValue(mockInst);
+    const onParamChanged = vi.fn();
 
-    const wrapper = mount(Embed, {
-      props: { embedUrl: EMBED_URL, tokenProvider },
-    });
+    render(
+      createElement(EmbedReact, {
+        embedUrl: EMBED_URL,
+        tokenProvider,
+        onParamChanged,
+      }),
+    );
 
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(mockInst.on).toHaveBeenCalledWith("paramChanged", expect.any(Function));
     });
 
@@ -171,18 +178,23 @@ describe("Embed.vue", () => {
     ) => void;
     handler(payload);
 
-    expect(wrapper.emitted("paramChanged")).toEqual([[payload]]);
+    expect(onParamChanged).toHaveBeenCalledWith(payload);
   });
 
-  it("emits executeSqlsTriggered when instance fires executeSqlsTriggered", async () => {
+  it("calls onExecuteSqlsTriggered when instance fires executeSqlsTriggered", async () => {
     const mockInst = createMockInstance();
     createEmbedMock.mockReturnValue(mockInst);
+    const onExecuteSqlsTriggered = vi.fn();
 
-    const wrapper = mount(Embed, {
-      props: { embedUrl: EMBED_URL, tokenProvider },
-    });
+    render(
+      createElement(EmbedReact, {
+        embedUrl: EMBED_URL,
+        tokenProvider,
+        onExecuteSqlsTriggered,
+      }),
+    );
 
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(mockInst.on).toHaveBeenCalledWith("executeSqlsTriggered", expect.any(Function));
     });
 
@@ -195,25 +207,36 @@ describe("Embed.vue", () => {
     )?.[1] as (p: typeof payload) => void;
     handler(payload);
 
-    expect(wrapper.emitted("executeSqlsTriggered")).toEqual([[payload]]);
+    expect(onExecuteSqlsTriggered).toHaveBeenCalledWith(payload);
   });
 
-  it("exposes status and reload", async () => {
+  it("exposes status and reload via ref", async () => {
     const mockInst = createMockInstance();
     createEmbedMock.mockReturnValue(mockInst);
 
-    const wrapper = mount(Embed, {
-      props: { embedUrl: EMBED_URL, tokenProvider },
-    });
+    let embedRef: EmbedReactRef | null = null;
+    function TestWrapper() {
+      return createElement(EmbedReact, {
+        ref: (r: EmbedReactRef | null) => {
+          embedRef = r;
+        },
+        embedUrl: EMBED_URL,
+        tokenProvider,
+      });
+    }
 
-    await vi.waitFor(() => {
+    render(createElement(TestWrapper));
+
+    await waitFor(() => {
       expect(mockInst.init).toHaveBeenCalled();
     });
 
-    const vm = wrapper.vm as { status: string; reload: () => Promise<boolean> };
-    expect(vm.status).toBe(EmbedStatuses.READY);
+    await waitFor(() => {
+      expect(embedRef).not.toBeNull();
+      expect(embedRef?.status).toBe(EmbedStatuses.READY);
+    });
 
-    const ok = await vm.reload();
+    const ok = await (embedRef as unknown as EmbedReactRef).reload();
     expect(ok).toBe(true);
     expect(mockInst.reload).toHaveBeenCalled();
   });
@@ -222,81 +245,89 @@ describe("Embed.vue", () => {
     const mockInst = createMockInstance();
     createEmbedMock.mockReturnValue(mockInst);
 
-    const wrapper = mount(Embed, {
-      props: { embedUrl: EMBED_URL, tokenProvider },
-    });
+    const { unmount } = render(createElement(EmbedReact, { embedUrl: EMBED_URL, tokenProvider }));
 
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(mockInst.init).toHaveBeenCalled();
     });
 
-    wrapper.unmount();
+    unmount();
 
     expect(mockInst.destroy).toHaveBeenCalled();
   });
 
-  it("emits error when init rejects with EmbedError", async () => {
+  it("calls onError when init rejects with EmbedError", async () => {
     const mockInst = createMockInstance();
     const err = new EmbedError(EmbedErrorCodes.TOKEN_PROVIDER_FAILED, "token failed");
     mockInst.init.mockRejectedValue(err);
     createEmbedMock.mockReturnValue(mockInst);
+    const onError = vi.fn();
 
-    const wrapper = mount(Embed, {
-      props: { embedUrl: EMBED_URL, tokenProvider },
-    });
+    render(
+      createElement(EmbedReact, {
+        embedUrl: EMBED_URL,
+        tokenProvider,
+        onError,
+      }),
+    );
 
-    await vi.waitFor(
+    await waitFor(
       () => {
-        expect(wrapper.emitted("error")).toBeDefined();
+        expect(onError).toHaveBeenCalled();
       },
       { timeout: 500 },
     );
 
-    const emitted = wrapper.emitted("error");
-    expect(emitted).toHaveLength(1);
-    const errPayload = emitted?.[0]?.[0];
+    expect(onError).toHaveBeenCalledTimes(1);
+    const errPayload = onError.mock.calls[0][0];
     expect(errPayload).toBeInstanceOf(EmbedError);
-    expect((errPayload as EmbedError).code).toBe(EmbedErrorCodes.TOKEN_PROVIDER_FAILED);
+    expect(errPayload.code).toBe(EmbedErrorCodes.TOKEN_PROVIDER_FAILED);
   });
 
-  it("emits error when init rejects with non-EmbedError", async () => {
+  it("calls onError when init rejects with non-EmbedError", async () => {
     const mockInst = createMockInstance();
     mockInst.init.mockRejectedValue(new Error("network error"));
     createEmbedMock.mockReturnValue(mockInst);
+    const onError = vi.fn();
 
-    const wrapper = mount(Embed, {
-      props: { embedUrl: EMBED_URL, tokenProvider },
-    });
+    render(
+      createElement(EmbedReact, {
+        embedUrl: EMBED_URL,
+        tokenProvider,
+        onError,
+      }),
+    );
 
-    await vi.waitFor(
+    await waitFor(
       () => {
-        expect(wrapper.emitted("error")).toBeDefined();
+        expect(onError).toHaveBeenCalled();
       },
       { timeout: 500 },
     );
 
-    const emitted = wrapper.emitted("error");
-    expect(emitted).toHaveLength(1);
-    const errPayload = emitted?.[0]?.[0];
+    expect(onError).toHaveBeenCalledTimes(1);
+    const errPayload = onError.mock.calls[0][0];
     expect(errPayload).toBeInstanceOf(EmbedError);
-    expect((errPayload as EmbedError).code).toBe(EmbedErrorCodes.UNEXPECTED_ERROR);
+    expect(errPayload.code).toBe(EmbedErrorCodes.UNEXPECTED_ERROR);
     expect((errPayload as Error).message).toBe("network error");
   });
 
-  it("passes tokenOptions with onRefreshError that emits error", async () => {
+  it("passes tokenOptions with onRefreshError that calls onError", async () => {
     const mockInst = createMockInstance();
     createEmbedMock.mockReturnValue(mockInst);
-
     const onRefreshError = vi.fn();
-    const wrapper = mount(Embed, {
-      props: {
+    const onError = vi.fn();
+
+    render(
+      createElement(EmbedReact, {
         embedUrl: EMBED_URL,
         tokenProvider,
         tokenOptions: { onRefreshError },
-      },
-    });
+        onError,
+      }),
+    );
 
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(createEmbedMock).toHaveBeenCalled();
     });
 
@@ -307,6 +338,6 @@ describe("Embed.vue", () => {
     call.tokenOptions.onRefreshError(refreshErr);
 
     expect(onRefreshError).toHaveBeenCalledWith(refreshErr);
-    expect(wrapper.emitted("error")).toEqual([[refreshErr]]);
+    expect(onError).toHaveBeenCalledWith(refreshErr);
   });
 });
