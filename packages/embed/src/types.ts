@@ -25,9 +25,9 @@ export type IframeOptions = {
 };
 
 export type TokenOptions = {
-  refreshBuffer?: number;
+  refreshBuffer?: number; // seconds
   retryCount?: number; // if 0, no retry
-  initTimeout?: number; // milliseconds; if 0, no timeout
+  initTimeout?: number; // seconds; if 0, no timeout
   onRefreshError?: (error: EmbedError) => void;
 };
 

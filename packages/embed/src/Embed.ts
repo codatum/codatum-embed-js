@@ -24,7 +24,7 @@ import {
 
 const DEFAULT_REFRESH_BUFFER = 60;
 const DEFAULT_RETRY_COUNT = 2;
-const DEFAULT_INIT_TIMEOUT = 30000;
+const DEFAULT_INIT_TIMEOUT = 30;
 
 const SHORT_TTL_THRESHOLD = 10 * 1000;
 const SHORT_TTL_MAX_CONSECUTIVE = 3;
@@ -118,7 +118,7 @@ export class EmbedInstance implements IEmbedInstance {
     this.iframeEl = iframe;
     container.appendChild(iframe);
 
-    const initTimeoutMs = this.options.tokenOptions?.initTimeout ?? DEFAULT_INIT_TIMEOUT;
+    const initTimeoutMs = (this.options.tokenOptions?.initTimeout ?? DEFAULT_INIT_TIMEOUT) * 1000;
     if (initTimeoutMs > 0) {
       this.initTimeoutId = setTimeout(() => {
         this.initTimeoutId = null;
