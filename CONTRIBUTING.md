@@ -2,6 +2,8 @@
 
 This document describes how to set up the repository and run development commands. For SDK usage and API, see [README.md](README.md).
 
+By contributing, you agree that your contributions will be licensed under the Apache License 2.0.
+
 ## Documentation language
 
 **Documentation in this repository should preferably be written in English** where practical. This includes (but is not limited to):
