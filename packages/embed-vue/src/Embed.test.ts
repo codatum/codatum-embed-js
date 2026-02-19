@@ -62,6 +62,7 @@ vi.mock("@codatum/embed", () => ({
     INIT_TIMEOUT: "INIT_TIMEOUT",
     MISSING_REQUIRED_PARAM: "MISSING_REQUIRED_PARAM",
     INVALID_PARAM_VALUE: "INVALID_PARAM_VALUE",
+    UNEXPECTED_ERROR: "UNEXPECTED_ERROR",
   },
   EmbedStatuses: {
     CREATED: "CREATED",
@@ -278,7 +279,7 @@ describe("Embed.vue", () => {
     expect(emitted).toHaveLength(1);
     const errPayload = emitted?.[0]?.[0];
     expect(errPayload).toBeInstanceOf(EmbedError);
-    expect((errPayload as EmbedError).code).toBe(EmbedErrorCodes.TOKEN_PROVIDER_FAILED);
+    expect((errPayload as EmbedError).code).toBe(EmbedErrorCodes.UNEXPECTED_ERROR);
     expect((errPayload as Error).message).toBe("network error");
   });
 

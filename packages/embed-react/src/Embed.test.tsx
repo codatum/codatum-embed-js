@@ -308,7 +308,7 @@ describe("EmbedReact", () => {
     expect(onError).toHaveBeenCalledTimes(1);
     const errPayload = onError.mock.calls[0][0];
     expect(errPayload).toBeInstanceOf(EmbedError);
-    expect(errPayload.code).toBe(EmbedErrorCodes.TOKEN_PROVIDER_FAILED);
+    expect(errPayload.code).toBe(EmbedErrorCodes.UNEXPECTED_ERROR);
     expect((errPayload as Error).message).toBe("network error");
   });
 
