@@ -236,7 +236,7 @@ describe("EmbedReact", () => {
       expect(embedRef?.status).toBe(EmbedStatuses.READY);
     });
 
-    const ok = await embedRef?.reload();
+    const ok = await (embedRef as unknown as EmbedReactRef).reload();
     expect(ok).toBe(true);
     expect(mockInst.reload).toHaveBeenCalled();
   });
