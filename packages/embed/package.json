@@ -25,10 +25,10 @@
     "clean": "rm -rf dist"
   },
   "devDependencies": {
-    "jsdom": "^25.0.1",
-    "tsup": "^8.5.0",
-    "typescript": "^5.0.0",
-    "vitest": "^3.2.0"
+    "jsdom": "catalog:",
+    "tsup": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   },
   "engines": {
     "node": ">=18"
