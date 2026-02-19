@@ -4,7 +4,7 @@ Minimal browser demo for `@codatum/embed`: ESM and CDN (IIFE) usage.
 
 ## Prerequisites
 
-1. **Examples server** must be running with a valid `config.json` (see [examples/server/README.md](../server/README.md)).
+1. Start the [examples server](../server/README.md) first (see its README for setup).
 2. **@codatum/embed** must be built (required for the CDN page and for ESM resolution):
 
    ```bash
@@ -26,8 +26,8 @@ Then open in the browser:
 
 ## Pages
 
-- **esm.html** — Entry point is `src/main.ts`. Fetches `/config` from the examples server, then calls `createEmbed()` and `embed.init()` with a `tokenProvider` that calls `/token`. Includes `paramChanged` / `executeSqlsTriggered` logging and commented ParamMapper usage.
-- **cdn.html** — Standalone HTML that loads the embed script from the local build (`../../packages/embed/dist/index.global.min.js`). Same flow: `/config` → `CodatumEmbed.createEmbed()` then `embed.init()` with `/token` as session provider. Can also be opened as a file or served by another static server if the script path is valid.
+- **esm.html** — Entry point is `src/main.ts`. Fetches `/scenario1/config` from the examples server, then calls `createEmbed()` and `embed.init()` with a `tokenProvider` that calls `/scenario1/token`. Includes `paramChanged` / `executeSqlsTriggered` logging and commented ParamMapper usage.
+- **cdn.html** — Standalone HTML that loads the embed script from the local build (`../../packages/embed/dist/index.global.min.js`). Same flow: `/scenario1/config` → `CodatumEmbed.createEmbed()` then `embed.init()` with `/scenario1/token` as token provider. Can also be opened as a file or served by another static server if the script path is valid.
 
 ## Notes
 

@@ -4,7 +4,7 @@ Minimal Vue 3 demo for `@codatum/embed-vue`: single-page app with `<EmbedVue>` a
 
 ## Prerequisites
 
-1. **Examples server** must be running with a valid `config.json` (see [examples/server/README.md](../server/README.md)).
+1. Start the [examples server](../server/README.md) first (see its README for setup).
 2. **@codatum/embed** and **@codatum/embed-vue** must be built:
 
    ```bash
@@ -23,5 +23,5 @@ Then open http://localhost:5174 in the browser.
 
 ## Notes
 
-- Fetches `/config` from the examples server (localhost:3100), then renders `<EmbedVue>` with a `tokenProvider` that calls `/token`.
+- Fetches config from the examples server (localhost:3100) per scenario (e.g. `/scenario1/config`, `/scenario1/token`), then renders `<EmbedVue>` with a `tokenProvider` that calls the same scenario’s token endpoint.
 - Events `paramChanged` and `executeSqlsTriggered` are logged to the console.

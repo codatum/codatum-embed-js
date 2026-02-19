@@ -4,13 +4,13 @@ This document describes how to set up the repository and run development command
 
 ## Documentation language
 
-**All documentation in this repository must be written in English.** This includes (but is not limited to):
+**Documentation in this repository should preferably be written in English** where practical. This includes (but is not limited to):
 
 - README.md and CONTRIBUTING.md
 - Inline comments and JSDoc that are part of the public API or intended for contributors
-- Commit messages and PR descriptions are recommended to be in English for consistency
+- Commit messages and PR descriptions are also preferred in English for consistency
 
-Code (variable names, types, user-facing strings in the SDK) follows the existing codebase; documentation and contributor-facing text use English only.
+Code (variable names, types, user-facing strings in the SDK) follows the existing codebase; for docs and contributor-facing text, English is preferred but not strictly required.
 
 ## Prerequisites
 
@@ -99,7 +99,7 @@ codatum-embed-js/
 
 The `examples/` directory contains runnable demos for the SDK. Each subfolder has its own setup and run instructions:
 
-- **[examples/server/README.md](examples/server/README.md)** — Hono server that issues signed-embed tokens. Many examples depend on this; run it first and configure `config.json` with your Codatum API credentials.
+- **[examples/server/README.md](examples/server/README.md)** — Hono server that issues signed-embed tokens. Start it first; see its README for per-scenario config (`config.jsonc`).
 - **[examples/vanilla/README.md](examples/vanilla/README.md)** — Minimal browser demo (ESM and CDN). Requires the examples server and a built `@codatum/embed` package.
 - **[examples/vue/README.md](examples/vue/README.md)** — Vue 3 demo using `@codatum/embed-vue`. Requires the examples server and built `@codatum/embed` and `@codatum/embed-vue` packages.
 
@@ -115,7 +115,7 @@ This uses Turborepo to start all dev tasks in parallel:
 
 | Target              | Port  | URL / note |
 |---------------------|-------|------------|
-| **examples/server** | 3100  | `http://localhost:3100` — token API (`/config`, `/token`). Requires `examples/server/config.json` (copy from `config.example.json`) for real token issuance. |
+| **examples/server** | 3100  | `http://localhost:3100` — token API per scenario (e.g. `/scenario1/config`, `/scenario1/token`). See [examples/server/README.md](examples/server/README.md) for per-scenario `config.jsonc` setup. |
 | **examples/vanilla**| 5173  | `http://localhost:5173` — index lists [ESM](http://localhost:5173/esm.html) and [CDN](http://localhost:5173/cdn.html) examples. |
 | **examples/vue**    | 5174  | `http://localhost:5174` — Vue 3 example. |
 | **packages/embed**  | —     | Watch build (no HTTP server). |
@@ -134,25 +134,3 @@ pnpm build
 pnpm test
 pnpm run test:watch   # Watch mode
 ```
-
-## Troubleshooting
-
-### mise versions not active
-
-- Ensure your shell runs `mise activate` (e.g. add `eval "$(mise activate zsh)"` to `.zshrc` or equivalent).
-- Run `mise install` again in this directory and confirm `mise.toml` (or `.mise.toml`) is being read.
-
-### Build or test failures
-
-- Run `pnpm install` again, then `pnpm build` and `pnpm test`.
-- Check Node.js with `node -v` and ensure it is 18 or higher.
-
-## Design and testing
-
-- **Internal flow**: Init resolves container → creates iframe → listens for `READY_FOR_TOKEN` → calls `tokenProvider` → sends `SET_TOKEN`; then message handler relays `PARAM_CHANGED` / `EXECUTE_SQLS_TRIGGERED`. Auto-refresh re-calls `tokenProvider` and re-sends `SET_TOKEN`. `reload()` does the same and resets the refresh timer. See the implementation in `packages/embed/src` for details.
-- **Tests**: Vitest with jsdom. Use spies on `iframe.contentWindow.postMessage` and simulate iframe → parent messages with `window.dispatchEvent(new MessageEvent(...))`. Use `vi.useFakeTimers()` for init timeout and auto-refresh. E2E against a real Codatum iframe is out of scope.
-
-## References
-
-- SDK usage and API: [README.md](README.md)
-- Signed embed (Codatum docs): https://docs.codatum.com/sharing/signed-embed
