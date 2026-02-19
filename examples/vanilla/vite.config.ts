@@ -26,7 +26,10 @@ export default defineConfig({
       name: "serve-embed-iife",
       configureServer(server) {
         server.middlewares.use((req, res, next) => {
-          if (req.url === "/embed.global.min.js" || req.url === "/packages/embed/dist/index.global.min.js") {
+          if (
+            req.url === "/embed.global.min.js" ||
+            req.url === "/packages/embed/dist/index.global.min.js"
+          ) {
             if (fs.existsSync(embedIifePath)) {
               res.setHeader("Content-Type", "application/javascript");
               res.end(fs.readFileSync(embedIifePath));

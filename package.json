@@ -1,6 +1,7 @@
 {
   "name": "codatum-embed-js",
   "private": true,
+  "license": "Apache-2.0",
   "packageManager": "pnpm@10.17.0",
   "scripts": {
     "build": "turbo run build",
@@ -15,8 +16,7 @@
     "clean": "turbo run clean"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.0.0",
-    "jsdom": "^25.0.0",
-    "turbo": "^2.3.0"
+    "@biomejs/biome": "catalog:",
+    "turbo": "catalog:"
   }
 }
