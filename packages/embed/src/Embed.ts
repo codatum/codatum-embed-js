@@ -11,6 +11,7 @@ import {
   EmbedError,
   EmbedErrorCodes,
   EmbedStatuses,
+  SDK_VERSION,
   type TokenOptions,
   TokenProviderTriggers,
 } from "./types";
@@ -162,10 +163,11 @@ export class EmbedInstance implements IEmbedInstance {
     if (!this.iframeEl) return;
     const win = this.iframeEl.contentWindow;
     if (!win || this.isDestroyed) return;
-    const payload: Record<string, unknown> = {
+    const payload = {
       displayOptions: this.options.displayOptions,
       ...(result.params != null && result.params.length > 0 ? { params: result.params } : {}),
     };
+    // avoid postMessage serialization error by deep cloning the payload
     const serialized = Object.keys(payload).length
       ? JSON.parse(JSON.stringify(payload))
       : undefined;
@@ -173,6 +175,7 @@ export class EmbedInstance implements IEmbedInstance {
       {
         type: "SET_TOKEN",
         token: result.token,
+        sdkVersion: SDK_VERSION,
         ...serialized,
       },
       this.expectedOrigin,

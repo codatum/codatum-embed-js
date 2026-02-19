@@ -24,4 +24,5 @@ export {
   EmbedErrorCodes,
   EmbedStatuses,
   RESET_TO_DEFAULT,
+  SDK_VERSION,
 } from "./types";

@@ -1,4 +1,5 @@
 import { defineConfig } from "tsup";
+import pkg from "./package.json" with { type: "json" };
 
 /** CDN build: single IIFE that assigns to global CodatumEmbed (e.g. CodatumEmbed.createEmbed). */
 export default defineConfig({
@@ -10,6 +11,9 @@ export default defineConfig({
   clean: false,
   minify: false,
   globalName: "CodatumEmbed",
+  define: {
+    __CODATUM_EMBED_JS_VERSION__: JSON.stringify(pkg.version),
+  },
   outExtension() {
     return { js: ".min.js" };
   },
