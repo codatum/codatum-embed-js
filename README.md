@@ -276,6 +276,7 @@ All errors are thrown/rejected as `EmbedError` with a `code` property.
 | `TOKEN_PROVIDER_FAILED` | `init` / `reload` | `tokenProvider` threw |
 | `MISSING_REQUIRED_PARAM` | `encode` / `decode` | Required param missing |
 | `INVALID_PARAM_VALUE` | `encode` / `decode` | Value failed validation |
+| `UNEXPECTED_ERROR` | `createEmbed` / `init` / `reload` | Unexpected error |
 
 ### Error handling
 

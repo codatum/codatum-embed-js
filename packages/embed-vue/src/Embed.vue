@@ -44,7 +44,7 @@ const toEmbedError = (err: unknown): EmbedError =>
   err instanceof EmbedError
     ? err
     : new EmbedError(
-        EmbedErrorCodes.TOKEN_PROVIDER_FAILED,
+        EmbedErrorCodes.UNEXPECTED_ERROR,
         err instanceof Error ? err.message : String(err),
         { cause: err }
       );
