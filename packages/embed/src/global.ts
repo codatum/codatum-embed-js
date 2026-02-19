@@ -3,7 +3,7 @@
  */
 import { createEmbed } from "./Embed";
 import { createParamMapper } from "./ParamMapper";
-import { EmbedError, EmbedErrorCodes, EmbedStatuses, RESET_TO_DEFAULT } from "./types";
+import { EmbedError, EmbedErrorCodes, EmbedStatuses, RESET_TO_DEFAULT, SDK_VERSION } from "./types";
 
 export {
   createEmbed,
@@ -12,4 +12,5 @@ export {
   EmbedErrorCodes,
   EmbedStatuses,
   RESET_TO_DEFAULT,
+  SDK_VERSION,
 };
