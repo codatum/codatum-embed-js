@@ -3,7 +3,7 @@ packages:
   - 'examples/*'
 
 catalog:
-  "@biomejs/biome": ^2.4.2
+  "@biomejs/biome": ^2.4.3
   "@vitejs/plugin-vue": ^6.0.4
   "@vue/test-utils": ^2.4.6
   jsdom: ^28.1.0
