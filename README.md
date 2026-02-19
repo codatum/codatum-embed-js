@@ -84,7 +84,7 @@ Options applied to the iframe element and passed to the embed via URL/search par
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `theme` | `'LIGHT'` \| `'DARK'` | System default | UI theme of the embedded notebook |
+| `theme` | `'LIGHT'` \| `'DARK'`\| `'SYSTEM'` | `'SYSTEM'` | UI theme of the embedded notebook |
 | `locale` | `string` | Browser's locale | Locale code (e.g. `'en'`, `'ja'`) for the embed UI |
 | `className` | `string` | - | CSS class name(s) applied to the iframe element |
 | `style` | `object` | `{width: '100%', height: '100%', border: 'none'}` | Inline styles for the iframe; overrides the default styles |

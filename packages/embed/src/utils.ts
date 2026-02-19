@@ -45,7 +45,7 @@ export const getTokenTtlMs = (token: string): number | null => {
     return payload.exp * 1000 - Date.now();
   } catch (error: unknown) {
     // Unexpected behavior
-    console.error(`Failed to get token TTL: ${token}`, error);
+    console.error(`Failed to parse token. Auto-refresh is disabled.`, error);
     return null;
   }
 };
