@@ -5,8 +5,10 @@ export type EncodedParam = {
   is_hidden?: boolean;
 };
 
+export const SqlDisplayValues = ["SHOW", "RESULT_ONLY", "HIDE"] as const;
+
 export type DisplayOptions = {
-  sqlDisplay?: "SHOW" | "RESULT_ONLY" | "HIDE";
+  sqlDisplay?: (typeof SqlDisplayValues)[number];
   hideParamsForm?: boolean;
   expandParamsFormByDefault?: boolean;
 };
@@ -17,8 +19,10 @@ export type TokenProviderResult = {
   params?: EncodedParam[];
 };
 
+export const ThemeValues = ["LIGHT", "DARK", "SYSTEM"] as const;
+
 export type IframeOptions = {
-  theme?: "LIGHT" | "DARK";
+  theme?: (typeof ThemeValues)[number];
   locale?: string;
   className?: string;
   style?: Partial<CSSStyleDeclaration>;

@@ -19,7 +19,7 @@ import {
   deepClone,
   getIframeClassName,
   getTokenTtlMs,
-  isValidEmbedUrl,
+  validateEmbedOptions,
 } from "./utils";
 
 const DEFAULT_REFRESH_BUFFER = 60;
@@ -57,13 +57,8 @@ export class EmbedInstance implements IEmbedInstance {
   private readonly boundHandleMessage = (event: MessageEvent) => this.handleMessage(event);
 
   constructor(options: EmbedOptions) {
+    validateEmbedOptions(options);
     this.options = deepClone(options);
-    if (!isValidEmbedUrl(this.options.embedUrl)) {
-      throw new EmbedError(
-        EmbedErrorCodes.INVALID_OPTIONS,
-        "embedUrl must match https://app.codatum.com/protected/workspace/{workspaceId}/notebook/{notebookId}",
-      );
-    }
     this.expectedOrigin = new URL(this.options.embedUrl).origin;
 
     const tokenOptions = this.options.tokenOptions ?? {};
