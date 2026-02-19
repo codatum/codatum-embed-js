@@ -14,7 +14,7 @@ pnpm add @codatum/embed-vue
 <script setup lang="ts">
 import { EmbedVue } from "@codatum/embed-vue";
 
-const embedUrl = "https://app.codatum.com/embed/...";
+const embedUrl = "https://app.codatum.com/protected/workspace/xxx/notebook/yyy";
 const tokenProvider = async () => {
   const res = await fetch("/api/embed-token", { method: "POST" });
   const data = await res.json();
@@ -56,27 +56,35 @@ async function onFilterChange() {
 </template>
 ```
 
+### Changing props at runtime
+
+Props are read once at mount. To apply new values (e.g. a different `embedUrl` or `iframeOptions`), use `:key` to force a remount:
+
+```vue
+<EmbedVue :key="embedUrl" :embedUrl="embedUrl" :tokenProvider="tokenProvider" />
+```
+
 ## API
 
 Option types and behavior (e.g. `iframeOptions`, `tokenOptions`, `displayOptions`) are the same as in [@codatum/embed](/README.md). The component uses its root element as the iframe container (no `container` prop).
 
 ### Props
 
-| Prop | Required | Type | Description |
-|------|----------|------|-------------|
-| `embedUrl` | Yes | `string` | Signed embed URL from Codatum |
-| `tokenProvider` | Yes | `(context: TokenProviderContext) => Promise<TokenProviderResult>` | Called on init, reload, and token refresh; see [@codatum/embed](/README.md) |
-| `iframeOptions` | No | `IframeOptions` | theme, locale, className, style |
-| `tokenOptions` | No | `TokenOptions` | refreshBuffer, retryCount, initTimeout, onRefreshError |
-| `displayOptions` | No | `DisplayOptions` | sqlDisplay, hideParamsForm, expandParamsFormByDefault |
+| Prop | Required | Type |
+|------|----------|------|
+| `embedUrl` | Yes | `string` |
+| `tokenProvider` | Yes | `(context: TokenProviderContext) => Promise<TokenProviderResult>` |
+| `iframeOptions` | No | `IframeOptions` |
+| `tokenOptions` | No | `TokenOptions` |
+| `displayOptions` | No | `DisplayOptions` |
 
 ### Events
 
 | Event | Payload | When |
 |-------|---------|------|
 | `ready` | — | Embed is ready and token/params have been applied |
-| `paramChanged` | `{ type: 'PARAM_CHANGED', params: EncodedParam[] }` | User changed params in the embed |
-| `executeSqlsTriggered` | `{ type: 'EXECUTE_SQLS_TRIGGERED', params: EncodedParam[] }` | Execute SQL was triggered in the embed |
+| `paramChanged` | `{ type: 'PARAM_CHANGED', params: EncodedParam[] }` | See core SDK |
+| `executeSqlsTriggered` | `{ type: 'EXECUTE_SQLS_TRIGGERED', params: EncodedParam[] }` | See core SDK |
 | `error` | `EmbedError` | Init, reload, or token auto-refresh failed |
 
 ### Expose (ref)
@@ -86,4 +94,4 @@ Option types and behavior (e.g. `iframeOptions`, `tokenOptions`, `displayOptions
 | `reload()` | `() => Promise<boolean>` | Re-fetches token and params; returns `false` on failure (error emitted via `@error`) |
 | `status` | `'CREATED' \| 'INITIALIZING' \| 'READY' \| 'DESTROYED'` | Current embed state |
 
-Need a custom container or full control? Use `CodatumEmbed.init()` from this package (or [@codatum/embed](/README.md)) in `onMounted` and `instance.destroy()` in `onUnmounted`.
+Need a custom container or full control? Use `createEmbed()` from this package (or [@codatum/embed](/README.md)) in `onMounted` and `instance.destroy()` in `onUnmounted`.

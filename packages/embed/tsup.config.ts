@@ -1,4 +1,5 @@
 import { defineConfig } from "tsup";
+import pkg from "./package.json" with { type: "json" };
 
 export default defineConfig({
   entry: ["src/index.ts"],
@@ -8,6 +9,9 @@ export default defineConfig({
   sourcemap: true,
   clean: false,
   minify: false,
+  define: {
+    __CODATUM_EMBED_JS_VERSION__: JSON.stringify(pkg.version),
+  },
   outExtension({ format }) {
     if (format === "cjs") return { js: ".cjs" };
     return { js: ".js" };

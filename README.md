@@ -84,7 +84,7 @@ Options applied to the iframe element and passed to the embed via URL/search par
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `theme` | `'LIGHT'` \| `'DARK'` | System default | UI theme of the embedded notebook |
+| `theme` | `'LIGHT'` \| `'DARK'`\| `'SYSTEM'` | `'SYSTEM'` | UI theme of the embedded notebook |
 | `locale` | `string` | Browser's locale | Locale code (e.g. `'en'`, `'ja'`) for the embed UI |
 | `className` | `string` | - | CSS class name(s) applied to the iframe element |
 | `style` | `object` | `{width: '100%', height: '100%', border: 'none'}` | Inline styles for the iframe; overrides the default styles |
@@ -97,7 +97,7 @@ Controls token lifetime, refresh behavior, and init timeout.
 |----------|------|---------|-------------|
 | `refreshBuffer` | `number` | `60` | Number of seconds before the token expires when auto-refresh is triggered |
 | `retryCount` | `number` | `2` | Number of retries on token fetch failure; `0` = no retry |
-| `initTimeout` | `number` | `30000` | Max wait in ms for embed "ready"; `0` = no timeout |
+| `initTimeout` | `number` | `30` | Max wait in seconds for embed "ready"; `0` = no timeout |
 | `onRefreshError` | `(error: EmbedError) => void` | `undefined` | Callback invoked when token auto-refresh fails (due to `tokenProvider` failure) and does not recover after all retries |
 
 #### `DisplayOptions`

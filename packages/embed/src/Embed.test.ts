@@ -131,14 +131,14 @@ describe("init()", () => {
       container,
       embedUrl: VALID_EMBED_URL,
       tokenProvider: () => Promise.resolve({ token: TEST_JWT }),
-      tokenOptions: { initTimeout: 5000 },
+      tokenOptions: { initTimeout: 3 },
     });
     const initPromise = embed.init();
     let rejected: unknown;
     initPromise.catch((e) => {
       rejected = e;
     });
-    await vi.advanceTimersByTimeAsync(6000);
+    await vi.advanceTimersByTimeAsync(4 * 1000);
     await Promise.resolve();
     expect(rejected).toMatchObject({ code: EmbedErrorCodes.INIT_TIMEOUT });
     vi.useRealTimers();

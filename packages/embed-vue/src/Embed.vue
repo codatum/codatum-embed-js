@@ -16,20 +16,17 @@ import type {
   TokenProviderContext,
   TokenProviderResult,
 } from "@codatum/embed";
-import { onUnmounted, ref, watch } from "vue";
+import { onMounted, onUnmounted, ref } from "vue";
 
-const props = withDefaults(
-  defineProps<{
-    embedUrl: string;
-    tokenProvider: (
-      context: TokenProviderContext
-    ) => Promise<TokenProviderResult>;
-    iframeOptions?: IframeOptions;
-    tokenOptions?: TokenOptions;
-    displayOptions?: DisplayOptions;
-  }>(),
-  {}
-);
+const props = defineProps<{
+  embedUrl: string;
+  tokenProvider: (
+    context: TokenProviderContext
+  ) => Promise<TokenProviderResult>;
+  iframeOptions?: IframeOptions;
+  tokenOptions?: TokenOptions;
+  displayOptions?: DisplayOptions;
+}>();
 
 const emit = defineEmits<{
   paramChanged: [payload: ParamChangedMessage];
@@ -41,54 +38,61 @@ const emit = defineEmits<{
 const containerRef = ref<HTMLElement | null>(null);
 const instance = ref<EmbedInstance | null>(null);
 const status = ref<EmbedStatus>(EmbedStatuses.CREATED);
-
-// gather errors from init(), reload(), and token auto-refresh
 const error = ref<EmbedError | null>(null);
 
-let stopWatch: (() => void) | undefined;
-stopWatch = watch(
-  containerRef,
-  (el: HTMLElement | null) => {
-    if (!el) return;
-    error.value = null;
-    const embed = createEmbed({
-      container: el,
-      embedUrl: props.embedUrl,
-      tokenProvider: props.tokenProvider,
-      iframeOptions: props.iframeOptions,
-      tokenOptions: {
-        ...props.tokenOptions,
-        onRefreshError: (err: EmbedError) => {
-          props.tokenOptions?.onRefreshError?.(err);
-          emit("error", err);
-        },
+const toEmbedError = (err: unknown): EmbedError =>
+  err instanceof EmbedError
+    ? err
+    : new EmbedError(
+        EmbedErrorCodes.TOKEN_PROVIDER_FAILED,
+        err instanceof Error ? err.message : String(err),
+        { cause: err }
+      );
+
+const setError = (err: unknown) => {
+  const embedError = toEmbedError(err);
+  error.value = embedError;
+  emit("error", embedError);
+};
+
+onMounted(async () => {
+  const el = containerRef.value;
+  if (!el) return;
+
+  const embed = createEmbed({
+    container: el,
+    embedUrl: props.embedUrl,
+    tokenProvider: props.tokenProvider,
+    iframeOptions: props.iframeOptions,
+    tokenOptions: {
+      ...props.tokenOptions,
+      onRefreshError: (err: EmbedError) => {
+        props.tokenOptions?.onRefreshError?.(err);
+        setError(err);
       },
-      displayOptions: props.displayOptions,
-    });
-    instance.value = embed;
-    status.value = EmbedStatuses.INITIALIZING;
-    embed
-      .init()
-      .then(() => {
-        status.value = embed.status;
-      })
-      .catch((err: unknown) => {
-        error.value =
-          err instanceof EmbedError
-            ? err
-            : new EmbedError(
-                EmbedErrorCodes.TOKEN_PROVIDER_FAILED,
-                err instanceof Error ? err.message : String(err),
-                { cause: err }
-              );
-        status.value = EmbedStatuses.DESTROYED;
-      });
-  },
-  { immediate: true }
-);
+    },
+    displayOptions: props.displayOptions,
+  });
+
+  instance.value = embed;
+  status.value = EmbedStatuses.INITIALIZING;
+
+  embed.on("paramChanged", (payload) => emit("paramChanged", payload));
+  embed.on("executeSqlsTriggered", (payload) =>
+    emit("executeSqlsTriggered", payload)
+  );
+
+  try {
+    await embed.init();
+    status.value = embed.status;
+    emit("ready");
+  } catch (err: unknown) {
+    setError(err);
+    status.value = EmbedStatuses.DESTROYED;
+  }
+});
 
 onUnmounted(() => {
-  stopWatch?.();
   if (instance.value) {
     instance.value.destroy();
     instance.value = null;
@@ -96,40 +100,13 @@ onUnmounted(() => {
   status.value = EmbedStatuses.DESTROYED;
 });
 
-watch(instance, (inst: EmbedInstance | null) => {
-  if (!inst) return;
-  const onParamChanged = (payload: ParamChangedMessage) =>
-    emit("paramChanged", payload);
-  const onExecuteSqlsTriggered = (payload: ExecuteSqlsTriggeredMessage) =>
-    emit("executeSqlsTriggered", payload);
-  inst.on("paramChanged", onParamChanged);
-  inst.on("executeSqlsTriggered", onExecuteSqlsTriggered);
-  emit("ready");
-  return () => {
-    inst.off("paramChanged", onParamChanged);
-    inst.off("executeSqlsTriggered", onExecuteSqlsTriggered);
-  };
-});
-
-watch(error, (err: EmbedError | null) => {
-  if (err) emit("error", err);
-});
-
 const reload = async (): Promise<boolean> => {
-  const inst = instance.value;
-  if (!inst) return false;
+  if (!instance.value) return false;
   try {
-    await inst.reload();
+    await instance.value.reload();
     return true;
   } catch (err: unknown) {
-    error.value =
-      err instanceof EmbedError
-        ? err
-        : new EmbedError(
-            EmbedErrorCodes.TOKEN_PROVIDER_FAILED,
-            err instanceof Error ? err.message : String(err),
-            { cause: err }
-          );
+    setError(err);
     return false;
   }
 };

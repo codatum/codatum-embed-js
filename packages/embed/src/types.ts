@@ -1,3 +1,5 @@
+export const SDK_VERSION = __CODATUM_EMBED_JS_VERSION__;
+
 /** Parameter shape used in postMessage */
 export type EncodedParam = {
   param_id: string;
@@ -5,8 +7,10 @@ export type EncodedParam = {
   is_hidden?: boolean;
 };
 
+export const SqlDisplayValues = ["SHOW", "RESULT_ONLY", "HIDE"] as const;
+
 export type DisplayOptions = {
-  sqlDisplay?: "SHOW" | "RESULT_ONLY" | "HIDE";
+  sqlDisplay?: (typeof SqlDisplayValues)[number];
   hideParamsForm?: boolean;
   expandParamsFormByDefault?: boolean;
 };
@@ -17,17 +21,19 @@ export type TokenProviderResult = {
   params?: EncodedParam[];
 };
 
+export const ThemeValues = ["LIGHT", "DARK", "SYSTEM"] as const;
+
 export type IframeOptions = {
-  theme?: "LIGHT" | "DARK";
+  theme?: (typeof ThemeValues)[number];
   locale?: string;
   className?: string;
   style?: Partial<CSSStyleDeclaration>;
 };
 
 export type TokenOptions = {
-  refreshBuffer?: number;
+  refreshBuffer?: number; // seconds
   retryCount?: number; // if 0, no retry
-  initTimeout?: number; // milliseconds; if 0, no timeout
+  initTimeout?: number; // seconds; if 0, no timeout
   onRefreshError?: (error: EmbedError) => void;
 };
 

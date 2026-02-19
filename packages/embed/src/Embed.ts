@@ -11,6 +11,7 @@ import {
   EmbedError,
   EmbedErrorCodes,
   EmbedStatuses,
+  SDK_VERSION,
   type TokenOptions,
   TokenProviderTriggers,
 } from "./types";
@@ -19,12 +20,12 @@ import {
   deepClone,
   getIframeClassName,
   getTokenTtlMs,
-  isValidEmbedUrl,
+  validateEmbedOptions,
 } from "./utils";
 
 const DEFAULT_REFRESH_BUFFER = 60;
 const DEFAULT_RETRY_COUNT = 2;
-const DEFAULT_INIT_TIMEOUT = 30000;
+const DEFAULT_INIT_TIMEOUT = 30;
 
 const SHORT_TTL_THRESHOLD = 10 * 1000;
 const SHORT_TTL_MAX_CONSECUTIVE = 3;
@@ -57,13 +58,8 @@ export class EmbedInstance implements IEmbedInstance {
   private readonly boundHandleMessage = (event: MessageEvent) => this.handleMessage(event);
 
   constructor(options: EmbedOptions) {
+    validateEmbedOptions(options);
     this.options = deepClone(options);
-    if (!isValidEmbedUrl(this.options.embedUrl)) {
-      throw new EmbedError(
-        EmbedErrorCodes.INVALID_OPTIONS,
-        "embedUrl must match https://app.codatum.com/protected/workspace/{workspaceId}/notebook/{notebookId}",
-      );
-    }
     this.expectedOrigin = new URL(this.options.embedUrl).origin;
 
     const tokenOptions = this.options.tokenOptions ?? {};
@@ -118,7 +114,7 @@ export class EmbedInstance implements IEmbedInstance {
     this.iframeEl = iframe;
     container.appendChild(iframe);
 
-    const initTimeoutMs = this.options.tokenOptions?.initTimeout ?? DEFAULT_INIT_TIMEOUT;
+    const initTimeoutMs = (this.options.tokenOptions?.initTimeout ?? DEFAULT_INIT_TIMEOUT) * 1000;
     if (initTimeoutMs > 0) {
       this.initTimeoutId = setTimeout(() => {
         this.initTimeoutId = null;
@@ -167,10 +163,11 @@ export class EmbedInstance implements IEmbedInstance {
     if (!this.iframeEl) return;
     const win = this.iframeEl.contentWindow;
     if (!win || this.isDestroyed) return;
-    const payload: Record<string, unknown> = {
+    const payload = {
       displayOptions: this.options.displayOptions,
       ...(result.params != null && result.params.length > 0 ? { params: result.params } : {}),
     };
+    // avoid postMessage serialization error by deep cloning the payload
     const serialized = Object.keys(payload).length
       ? JSON.parse(JSON.stringify(payload))
       : undefined;
@@ -178,6 +175,7 @@ export class EmbedInstance implements IEmbedInstance {
       {
         type: "SET_TOKEN",
         token: result.token,
+        sdkVersion: SDK_VERSION,
         ...serialized,
       },
       this.expectedOrigin,
@@ -317,24 +315,22 @@ export class EmbedInstance implements IEmbedInstance {
     if (this._status !== EmbedStatuses.READY) return Promise.resolve();
     if (this.reloadInProgress) return Promise.resolve();
     this.reloadInProgress = true;
-    return this.fetchSessionWithRetry(TokenProviderTriggers.RELOAD)
-      .then(
-        (result) => {
-          if (this.isDestroyed) return;
-          this.sendSetToken(result);
-        },
-        (err) => {
-          if (this.isDestroyed) return;
-          throw new EmbedError(
-            EmbedErrorCodes.TOKEN_PROVIDER_FAILED,
-            err instanceof Error ? err.message : String(err),
-            { cause: err },
-          );
-        },
-      )
-      .finally(() => {
+    return this.fetchSessionWithRetry(TokenProviderTriggers.RELOAD).then(
+      (result) => {
         this.reloadInProgress = false;
-      });
+        if (this.isDestroyed) return;
+        this.sendSetToken(result);
+      },
+      (err) => {
+        this.reloadInProgress = false;
+        if (this.isDestroyed) return;
+        throw new EmbedError(
+          EmbedErrorCodes.TOKEN_PROVIDER_FAILED,
+          err instanceof Error ? err.message : String(err),
+          { cause: err },
+        );
+      },
+    );
   }
 
   on<K extends keyof EmbedEventMap>(event: K, handler: EmbedEventMap[K]): void {
