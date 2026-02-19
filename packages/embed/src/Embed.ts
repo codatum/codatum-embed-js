@@ -317,24 +317,22 @@ export class EmbedInstance implements IEmbedInstance {
     if (this._status !== EmbedStatuses.READY) return Promise.resolve();
     if (this.reloadInProgress) return Promise.resolve();
     this.reloadInProgress = true;
-    return this.fetchSessionWithRetry(TokenProviderTriggers.RELOAD)
-      .then(
-        (result) => {
-          if (this.isDestroyed) return;
-          this.sendSetToken(result);
-        },
-        (err) => {
-          if (this.isDestroyed) return;
-          throw new EmbedError(
-            EmbedErrorCodes.TOKEN_PROVIDER_FAILED,
-            err instanceof Error ? err.message : String(err),
-            { cause: err },
-          );
-        },
-      )
-      .finally(() => {
+    return this.fetchSessionWithRetry(TokenProviderTriggers.RELOAD).then(
+      (result) => {
         this.reloadInProgress = false;
-      });
+        if (this.isDestroyed) return;
+        this.sendSetToken(result);
+      },
+      (err) => {
+        this.reloadInProgress = false;
+        if (this.isDestroyed) return;
+        throw new EmbedError(
+          EmbedErrorCodes.TOKEN_PROVIDER_FAILED,
+          err instanceof Error ? err.message : String(err),
+          { cause: err },
+        );
+      },
+    );
   }
 
   on<K extends keyof EmbedEventMap>(event: K, handler: EmbedEventMap[K]): void {
