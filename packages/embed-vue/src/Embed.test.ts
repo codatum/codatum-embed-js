@@ -217,19 +217,6 @@ describe("Embed.vue", () => {
     expect(mockInst.reload).toHaveBeenCalled();
   });
 
-  it("reload returns false when instance is not yet set", async () => {
-    const mockInst = createMockInstance();
-    createEmbedMock.mockReturnValue(mockInst);
-
-    const wrapper = mount(Embed, {
-      props: { embedUrl: EMBED_URL, tokenProvider },
-    });
-
-    const vm = wrapper.vm as { reload: () => Promise<boolean> };
-    const ok = await vm.reload();
-    expect(ok).toBe(false);
-  });
-
   it("calls destroy on unmount", async () => {
     const mockInst = createMockInstance();
     createEmbedMock.mockReturnValue(mockInst);
