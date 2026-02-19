@@ -4,6 +4,7 @@ TypeScript library for embedding Codatum Notebook with [signed embed](https://do
 
 - **Docs**: [Signed embed](https://docs.codatum.com/sharing/signed-embed) · [Integration](https://docs.codatum.com/sharing/signed-embed/integration) · [Use cases](https://docs.codatum.com/sharing/signed-embed/use-case)
 - **Vue 3**: [@codatum/embed-vue](packages/embed-vue/README.md) — component wrapper for the core SDK
+- **React**: [@codatum/embed-react](packages/embed-react/README.md) — component wrapper for the core SDK (React 18+)
 
 ## Installation
 
