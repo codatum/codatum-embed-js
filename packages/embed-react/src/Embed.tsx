@@ -1,8 +1,7 @@
-import { createEmbed, EmbedError, EmbedErrorCodes, EmbedStatuses } from "@codatum/embed";
 import type {
+  DisplayOptions,
   EmbedInstance,
   EmbedStatus,
-  DisplayOptions,
   ExecuteSqlsTriggeredMessage,
   IframeOptions,
   ParamChangedMessage,
@@ -10,6 +9,7 @@ import type {
   TokenProviderContext,
   TokenProviderResult,
 } from "@codatum/embed";
+import { createEmbed, EmbedError, EmbedErrorCodes, EmbedStatuses } from "@codatum/embed";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 
 const toEmbedError = (err: unknown): EmbedError =>
@@ -56,13 +56,23 @@ export const Embed = forwardRef<EmbedReactRef, EmbedReactProps>(function Embed(
   const instanceRef = useRef<EmbedInstance | null>(null);
   const [status, setStatus] = useState<EmbedStatus>(EmbedStatuses.CREATED);
 
-  const setError = useCallback(
-    (err: unknown) => {
-      const embedError = toEmbedError(err);
-      onError?.(embedError);
-    },
-    [onError],
-  );
+  const callbacksRef = useRef({
+    onParamChanged,
+    onExecuteSqlsTriggered,
+    onReady,
+    onError,
+  });
+  callbacksRef.current = {
+    onParamChanged,
+    onExecuteSqlsTriggered,
+    onReady,
+    onError,
+  };
+
+  const setError = useCallback((err: unknown) => {
+    const embedError = toEmbedError(err);
+    callbacksRef.current.onError?.(embedError);
+  }, []);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional mount-only init, same as embed-vue
   useEffect(() => {
@@ -87,8 +97,10 @@ export const Embed = forwardRef<EmbedReactRef, EmbedReactProps>(function Embed(
     instanceRef.current = embed;
     setStatus(EmbedStatuses.INITIALIZING);
 
-    embed.on("paramChanged", (payload) => onParamChanged?.(payload));
-    embed.on("executeSqlsTriggered", (payload) => onExecuteSqlsTriggered?.(payload));
+    embed.on("paramChanged", (payload) => callbacksRef.current.onParamChanged?.(payload));
+    embed.on("executeSqlsTriggered", (payload) =>
+      callbacksRef.current.onExecuteSqlsTriggered?.(payload),
+    );
 
     let cancelled = false;
     embed
@@ -96,7 +108,7 @@ export const Embed = forwardRef<EmbedReactRef, EmbedReactProps>(function Embed(
       .then(() => {
         if (!cancelled && instanceRef.current === embed) {
           setStatus(embed.status);
-          onReady?.();
+          callbacksRef.current.onReady?.();
         }
       })
       .catch((err: unknown) => {

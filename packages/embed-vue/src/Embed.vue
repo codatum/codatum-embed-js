@@ -104,6 +104,7 @@ const reload = async (): Promise<boolean> => {
   if (!instance.value) return false;
   try {
     await instance.value.reload();
+    status.value = instance.value.status;
     return true;
   } catch (err: unknown) {
     setError(err);
