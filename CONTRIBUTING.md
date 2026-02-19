@@ -4,6 +4,11 @@ This document describes how to set up the repository and run development command
 
 By contributing, you agree that your contributions will be licensed under the Apache License 2.0.
 
+## External contributions
+
+This SDK is developed and maintained by the Codatum team. We do not currently accept pull requests from external contributors.
+If you find a bug or have a feature request, please open an **[Issue](https://github.com/codatum/codatum-embed-js/issues)** — we appreciate the feedback.
+
 ## Documentation language
 
 **Documentation in this repository should preferably be written in English** where practical. This includes (but is not limited to):
