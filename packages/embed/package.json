@@ -19,12 +19,13 @@
   "scripts": {
     "build": "tsup && tsup --config tsup.global.config.ts",
     "dev": "tsup --watch",
-    "test": "vitest run",
+    "test": "vitest run --coverage",
     "test:watch": "vitest",
     "lint": "biome lint .",
     "clean": "rm -rf dist"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "catalog:",
     "jsdom": "catalog:",
     "tsup": "catalog:",
     "typescript": "catalog:",

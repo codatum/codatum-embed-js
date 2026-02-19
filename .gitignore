@@ -6,3 +6,4 @@ dist/
 .mise.local.*
 .turbo
 .vite/
+coverage

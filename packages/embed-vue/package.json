@@ -21,7 +21,7 @@
     "dev": "vite build --watch",
     "lint": "biome lint .",
     "clean": "rm -rf dist",
-    "test": "vitest run",
+    "test": "vitest run --coverage",
     "test:watch": "vitest"
   },
   "peerDependencies": {
@@ -31,6 +31,7 @@
     "@codatum/embed": "workspace:*"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
     "@vue/test-utils": "catalog:",
     "jsdom": "catalog:",
