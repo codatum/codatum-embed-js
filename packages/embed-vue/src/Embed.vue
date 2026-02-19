@@ -38,7 +38,6 @@ const emit = defineEmits<{
 const containerRef = ref<HTMLElement | null>(null);
 const instance = ref<EmbedInstance | null>(null);
 const status = ref<EmbedStatus>(EmbedStatuses.CREATED);
-const error = ref<EmbedError | null>(null);
 
 const toEmbedError = (err: unknown): EmbedError =>
   err instanceof EmbedError
@@ -51,7 +50,6 @@ const toEmbedError = (err: unknown): EmbedError =>
 
 const setError = (err: unknown) => {
   const embedError = toEmbedError(err);
-  error.value = embedError;
   emit("error", embedError);
 };
 
