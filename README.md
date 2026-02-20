@@ -482,6 +482,10 @@ A separate IIFE build exposes a single global `CodatumEmbed`. Load the script an
 - **CSP**: If your app sets Content-Security-Policy, allow `frame-src https://app.codatum.com`.
 - **iframe**: The SDK sets `allow="fullscreen; clipboard-write"` on the iframe. Styling defaults to 100% width/height; override with `iframeOptions.style`.
 
+## Versioning
+
+We follow [Semantic Versioning](https://semver.org/). See [CHANGELOG](packages/embed/CHANGELOG.md) for release notes.
+
 ## Supported environments
 
 - Browsers: ES2017+ (Chrome 63+, Firefox 57+, Safari 12+, iOS Safari 12+)

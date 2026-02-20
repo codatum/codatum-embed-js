@@ -84,6 +84,10 @@ Formatting and linting use [Biome](https://biomejs.dev/). Run these from the **r
 | `pnpm check:fix`  | Lint (with fixes) + format in one run |
 | `pnpm clean`      | Remove build outputs                 |
 
+## Versioning and change management
+
+We use **[Changesets](https://github.com/changesets/changesets)** for versioning and release notes. When you change something that should be reflected in a release, add a changeset with `pnpm changeset` and follow the prompts (choose affected packages and change type: patch / minor / major). The maintainers will run `changeset version` and publish when cutting a release.
+
 ## Package layout
 
 ```
