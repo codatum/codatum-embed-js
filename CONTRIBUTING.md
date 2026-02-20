@@ -89,6 +89,7 @@ Formatting and linting use [Biome](https://biomejs.dev/). Run these from the **r
 1. Add changesets with `pnpm changeset` and commit.
 2. Run `pnpm changeset version` to bump versions and update CHANGELOGs, then commit and push.
 3. In GitHub: **Actions** → **Release to npm** → **Run workflow** to publish to npm.
+4. Create a new release in GitHub: New tag version and release title should be the same as the version in the changeset with prefix `v`. (e.g. `v1.2.3`)
 
 ## Package layout
 
