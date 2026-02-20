@@ -52,5 +52,7 @@
     "analytics",
     "notebook"
   ],
-  "publishConfig": { "access": "public" }
+  "publishConfig": {
+    "access": "public"
+  }
 }
