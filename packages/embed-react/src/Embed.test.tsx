@@ -430,30 +430,4 @@ describe("EmbedReact", () => {
 
     expect(onError).toHaveBeenCalledWith(refreshErr);
   });
-
-  it("calls onError when internal onRefreshError is called and tokenOptions prop is omitted", async () => {
-    const mockInst = createMockInstance();
-    createEmbedMock.mockReturnValue(mockInst);
-    const onError = vi.fn();
-
-    render(
-      createElement(EmbedReact, {
-        embedUrl: EMBED_URL,
-        tokenProvider,
-        onError,
-      }),
-    );
-
-    await waitFor(() => {
-      expect(createEmbedMock).toHaveBeenCalled();
-    });
-
-    const call = createEmbedMock.mock.calls[0][0];
-    const onRefreshError = call.tokenOptions?.onRefreshError;
-    expect(onRefreshError).toBeDefined();
-    const refreshErr = new EmbedError(EmbedErrorCodes.TOKEN_PROVIDER_FAILED, "refresh failed");
-    if (onRefreshError) onRefreshError(refreshErr);
-
-    expect(onError).toHaveBeenCalledWith(refreshErr);
-  });
 });

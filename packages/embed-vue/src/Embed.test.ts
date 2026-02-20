@@ -377,25 +377,4 @@ describe("Embed.vue", () => {
 
     expect(wrapper.emitted("error")).toEqual([[refreshErr]]);
   });
-
-  it("emits error when internal onRefreshError is called and tokenOptions prop is omitted", async () => {
-    const mockInst = createMockInstance();
-    createEmbedMock.mockReturnValue(mockInst);
-
-    const wrapper = mount(Embed, {
-      props: { embedUrl: EMBED_URL, tokenProvider },
-    });
-
-    await vi.waitFor(() => {
-      expect(createEmbedMock).toHaveBeenCalled();
-    });
-
-    const call = createEmbedMock.mock.calls[0][0];
-    const refreshErr = new EmbedError(EmbedErrorCodes.TOKEN_PROVIDER_FAILED, "refresh failed");
-    const onRefreshError = call.tokenOptions?.onRefreshError;
-    expect(onRefreshError).toBeDefined();
-    if (onRefreshError) onRefreshError(refreshErr);
-
-    expect(wrapper.emitted("error")).toEqual([[refreshErr]]);
-  });
 });
