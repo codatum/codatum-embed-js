@@ -332,12 +332,128 @@ describe("EmbedReact", () => {
     });
 
     const call = createEmbedMock.mock.calls[0][0];
-    expect(call.tokenOptions?.onRefreshError).toBeDefined();
-
+    const onRefreshErrorFromCall = call.tokenOptions?.onRefreshError;
+    expect(onRefreshErrorFromCall).toBeDefined();
     const refreshErr = new EmbedError(EmbedErrorCodes.TOKEN_PROVIDER_FAILED, "refresh failed");
-    call.tokenOptions.onRefreshError(refreshErr);
+    if (onRefreshErrorFromCall) onRefreshErrorFromCall(refreshErr);
 
     expect(onRefreshError).toHaveBeenCalledWith(refreshErr);
+    expect(onError).toHaveBeenCalledWith(refreshErr);
+  });
+
+  it("reload returns false and calls onError when instance.reload() rejects", async () => {
+    const mockInst = createMockInstance();
+    mockInst.reload.mockRejectedValue(new Error("reload failed"));
+    createEmbedMock.mockReturnValue(mockInst);
+    const onError = vi.fn();
+
+    let embedRef: EmbedReactRef | null = null;
+    render(
+      createElement(EmbedReact, {
+        ref: (r: EmbedReactRef | null) => {
+          embedRef = r;
+        },
+        embedUrl: EMBED_URL,
+        tokenProvider,
+        onError,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(mockInst.init).toHaveBeenCalled();
+    });
+    await waitFor(() => {
+      expect(embedRef).not.toBeNull();
+    });
+
+    const result = await (embedRef as unknown as EmbedReactRef).reload();
+
+    expect(result).toBe(false);
+    expect(onError).toHaveBeenCalledTimes(1);
+    const errPayload = onError.mock.calls[0][0];
+    expect(errPayload).toBeInstanceOf(EmbedError);
+    expect((errPayload as Error).message).toBe("reload failed");
+  });
+
+  it("reload returns false when instance is null (e.g. after unmount)", async () => {
+    const mockInst = createMockInstance();
+    createEmbedMock.mockReturnValue(mockInst);
+
+    let embedRef: EmbedReactRef | null = null;
+    const { unmount } = render(
+      createElement(EmbedReact, {
+        ref: (r: EmbedReactRef | null) => {
+          embedRef = r;
+        },
+        embedUrl: EMBED_URL,
+        tokenProvider,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(mockInst.init).toHaveBeenCalled();
+    });
+    await waitFor(() => {
+      expect(embedRef).not.toBeNull();
+    });
+
+    const reloadFn = (embedRef as unknown as EmbedReactRef).reload;
+    unmount();
+
+    const result = await reloadFn();
+    expect(result).toBe(false);
+  });
+
+  it("calls onError on refresh when tokenOptions has no onRefreshError", async () => {
+    const mockInst = createMockInstance();
+    createEmbedMock.mockReturnValue(mockInst);
+    const onError = vi.fn();
+
+    render(
+      createElement(EmbedReact, {
+        embedUrl: EMBED_URL,
+        tokenProvider,
+        tokenOptions: {},
+        onError,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(createEmbedMock).toHaveBeenCalled();
+    });
+
+    const call = createEmbedMock.mock.calls[0][0];
+    const onRefreshError = call.tokenOptions?.onRefreshError;
+    expect(onRefreshError).toBeDefined();
+    const refreshErr = new EmbedError(EmbedErrorCodes.TOKEN_PROVIDER_FAILED, "refresh failed");
+    if (onRefreshError) onRefreshError(refreshErr);
+
+    expect(onError).toHaveBeenCalledWith(refreshErr);
+  });
+
+  it("calls onError when internal onRefreshError is called and tokenOptions prop is omitted", async () => {
+    const mockInst = createMockInstance();
+    createEmbedMock.mockReturnValue(mockInst);
+    const onError = vi.fn();
+
+    render(
+      createElement(EmbedReact, {
+        embedUrl: EMBED_URL,
+        tokenProvider,
+        onError,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(createEmbedMock).toHaveBeenCalled();
+    });
+
+    const call = createEmbedMock.mock.calls[0][0];
+    const onRefreshError = call.tokenOptions?.onRefreshError;
+    expect(onRefreshError).toBeDefined();
+    const refreshErr = new EmbedError(EmbedErrorCodes.TOKEN_PROVIDER_FAILED, "refresh failed");
+    if (onRefreshError) onRefreshError(refreshErr);
+
     expect(onError).toHaveBeenCalledWith(refreshErr);
   });
 });
