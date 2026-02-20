@@ -44,5 +44,26 @@
   "engines": {
     "node": ">=18"
   },
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/codatum/codatum-embed-js.git",
+    "directory": "packages/embed-vue"
+  },
+  "homepage": "https://github.com/codatum/codatum-embed-js/tree/main/packages/embed-vue#readme",
+  "bugs": {
+    "url": "https://github.com/codatum/codatum-embed-js/issues"
+  },
+  "keywords": [
+    "codatum",
+    "embed",
+    "vue",
+    "vue3",
+    "signed-embed",
+    "analytics",
+    "notebook"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
 }

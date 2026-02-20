@@ -1,13 +1,16 @@
 # @codatum/embed-vue
 
-Vue 3 integration for Codatum Signed Embed. Provides a single component that wraps the core SDK. All of [@codatum/embed](/README.md) is re-exported so you can use this package as a single entry point (one version, no split).
+Vue 3 integration for Codatum Signed Embed. Provides a single component that wraps the core SDK. All of [@codatum/embed](https://github.com/codatum/codatum-embed-js/tree/main/packages/embed#readme) is re-exported so you can use this package as a single entry point (one version, no split).
 
-For options, types, events, and programmatic API details, see **[@codatum/embed](/README.md)**.
+For options, types, events, and programmatic API details, see **[@codatum/embed](https://github.com/codatum/codatum-embed-js/tree/main/packages/embed#readme)**.
 
 ## Installation
+
 ```bash
 pnpm add @codatum/embed-vue
 ```
+
+Requires **Vue 3** (peer dependency).
 
 ## Usage
 ```vue
@@ -66,7 +69,7 @@ Props are read once at mount. To apply new values (e.g. a different `embedUrl` o
 
 ## API
 
-Option types and behavior (e.g. `iframeOptions`, `tokenOptions`, `displayOptions`) are the same as in [@codatum/embed](/README.md). The component uses its root element as the iframe container (no `container` prop).
+Option types and behavior (e.g. `iframeOptions`, `tokenOptions`, `displayOptions`) are the same as in [@codatum/embed](https://github.com/codatum/codatum-embed-js/tree/main/packages/embed#readme). The component uses its root element as the iframe container (no `container` prop).
 
 ### Props
 
@@ -94,4 +97,10 @@ Option types and behavior (e.g. `iframeOptions`, `tokenOptions`, `displayOptions
 | `reload()` | `() => Promise<boolean>` | Re-fetches token and params; returns `false` on failure (error emitted via `@error`) |
 | `status` | `'CREATED' \| 'INITIALIZING' \| 'READY' \| 'DESTROYED'` | Current embed state |
 
-Need a custom container or full control? Use `createEmbed()` from this package (or [@codatum/embed](/README.md)) in `onMounted` and `instance.destroy()` in `onUnmounted`.
+Need a custom container or full control? Use `createEmbed()` from this package (or [@codatum/embed](https://github.com/codatum/codatum-embed-js/tree/main/packages/embed#readme)) in `onMounted` and `instance.destroy()` in `onUnmounted`.
+
+## See also
+
+- **Versioning and changelog**: [Versioning](https://github.com/codatum/codatum-embed-js#versioning)
+- **Security and deployment**: [Security and deployment](https://github.com/codatum/codatum-embed-js#security-and-deployment)
+- **Supported environments**: [Supported environments](https://github.com/codatum/codatum-embed-js#supported-environments)

@@ -34,5 +34,25 @@
   "engines": {
     "node": ">=18"
   },
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/codatum/codatum-embed-js.git",
+    "directory": "packages/embed"
+  },
+  "homepage": "https://github.com/codatum/codatum-embed-js/tree/main/packages/embed#readme",
+  "bugs": {
+    "url": "https://github.com/codatum/codatum-embed-js/issues"
+  },
+  "keywords": [
+    "codatum",
+    "embed",
+    "iframe",
+    "signed-embed",
+    "analytics",
+    "notebook"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
 }
