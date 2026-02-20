@@ -197,13 +197,15 @@ describe("ParamMapper#encode", () => {
   it("validates DATE and throws when value is not string", () => {
     const mapper = createParamMapper({ day: "p1" }, { day: { datatype: "DATE" } });
     expect(() => mapper.encode({ day: 20250101 as unknown as string })).toThrow(EmbedError);
-    expect((() => {
-      try {
-        mapper.encode({ day: 20250101 as unknown as string });
-      } catch (e) {
-        return (e as EmbedError).message;
-      }
-    })()).toContain("date string");
+    expect(
+      (() => {
+        try {
+          mapper.encode({ day: 20250101 as unknown as string });
+        } catch (e) {
+          return (e as EmbedError).message;
+        }
+      })(),
+    ).toContain("date string");
   });
 
   it("validates STRING[] and throws when not string array", () => {
@@ -214,12 +216,12 @@ describe("ParamMapper#encode", () => {
 
   it("validates [DATE, DATE] and throws when not tuple of two strings", () => {
     const mapper = createParamMapper({ range: "p1" }, { range: { datatype: "[DATE, DATE]" } });
-    expect(() =>
-      mapper.encode({ range: ["2025-01-01"] as unknown as [string, string] }),
-    ).toThrow(EmbedError);
-    expect(() => mapper.encode({ range: [1, "2025-01-31"] as unknown as [string, string] })).toThrow(
+    expect(() => mapper.encode({ range: ["2025-01-01"] as unknown as [string, string] })).toThrow(
       EmbedError,
     );
+    expect(() =>
+      mapper.encode({ range: [1, "2025-01-31"] as unknown as [string, string] }),
+    ).toThrow(EmbedError);
   });
 
   it("validates [DATE, DATE] and throws when date format invalid", () => {
