@@ -6,7 +6,7 @@ Monorepo for the Codatum [signed embed](https://docs.codatum.com/sharing/signed-
 
 | Package | Description |
 |---------|-------------|
-| [**@codatum/embed**](packages/embed/README.md) | Core TypeScript SDK — `createEmbed()`, `createParamMapper()`, events. Use in the browser or with any framework. |
+| [**@codatum/embed**](packages/embed/README.md) | Core TypeScript SDK. Use in the browser or with any framework. |
 | [**@codatum/embed-react**](packages/embed-react/README.md) | React 18+ component wrapper for the core SDK. |
 | [**@codatum/embed-vue**](packages/embed-vue/README.md) | Vue 3 component wrapper for the core SDK. |
 
