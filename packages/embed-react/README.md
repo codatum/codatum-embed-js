@@ -8,6 +8,8 @@ For options, types, events, and programmatic API details, see **[@codatum/embed]
 
 ```bash
 pnpm add @codatum/embed-react
+# or
+npm install @codatum/embed-react
 ```
 
 Requires **React 18+** (peer dependency).

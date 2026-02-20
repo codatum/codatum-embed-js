@@ -8,6 +8,8 @@ For options, types, events, and programmatic API details, see **[@codatum/embed]
 
 ```bash
 pnpm add @codatum/embed-vue
+# or
+npm install @codatum/embed-vue
 ```
 
 Requires **Vue 3** (peer dependency).
