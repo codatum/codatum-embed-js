@@ -181,6 +181,53 @@ describe("ParamMapper#encode", () => {
     expect(result2).toHaveLength(1);
     expect(result2[0].param_value).toBe("999");
   });
+
+  it("validates NUMBER and throws on NaN", () => {
+    const mapper = createParamMapper({ n: "p1" }, { n: { datatype: "NUMBER" } });
+    expect(() => mapper.encode({ n: Number.NaN })).toThrow(EmbedError);
+    expect(() => mapper.encode({ n: "1" as unknown as number })).toThrow(EmbedError);
+  });
+
+  it("validates BOOLEAN and throws on non-boolean", () => {
+    const mapper = createParamMapper({ flag: "p1" }, { flag: { datatype: "BOOLEAN" } });
+    expect(() => mapper.encode({ flag: 1 as unknown as boolean })).toThrow(EmbedError);
+    expect(() => mapper.encode({ flag: "true" as unknown as boolean })).toThrow(EmbedError);
+  });
+
+  it("validates DATE and throws when value is not string", () => {
+    const mapper = createParamMapper({ day: "p1" }, { day: { datatype: "DATE" } });
+    expect(() => mapper.encode({ day: 20250101 as unknown as string })).toThrow(EmbedError);
+    expect((() => {
+      try {
+        mapper.encode({ day: 20250101 as unknown as string });
+      } catch (e) {
+        return (e as EmbedError).message;
+      }
+    })()).toContain("date string");
+  });
+
+  it("validates STRING[] and throws when not string array", () => {
+    const mapper = createParamMapper({ ids: "p1" }, { ids: { datatype: "STRING[]" } });
+    expect(() => mapper.encode({ ids: [1, 2] as unknown as string[] })).toThrow(EmbedError);
+    expect(() => mapper.encode({ ids: "x" as unknown as string[] })).toThrow(EmbedError);
+  });
+
+  it("validates [DATE, DATE] and throws when not tuple of two strings", () => {
+    const mapper = createParamMapper({ range: "p1" }, { range: { datatype: "[DATE, DATE]" } });
+    expect(() =>
+      mapper.encode({ range: ["2025-01-01"] as unknown as [string, string] }),
+    ).toThrow(EmbedError);
+    expect(() => mapper.encode({ range: [1, "2025-01-31"] as unknown as [string, string] })).toThrow(
+      EmbedError,
+    );
+  });
+
+  it("validates [DATE, DATE] and throws when date format invalid", () => {
+    const mapper = createParamMapper({ range: "p1" }, { range: { datatype: "[DATE, DATE]" } });
+    expect(() =>
+      mapper.encode({ range: ["2025-01-01", "2025/01/31"] as [string, string] }),
+    ).toThrow(EmbedError);
+  });
 });
 
 describe("ParamMapper#decode", () => {
