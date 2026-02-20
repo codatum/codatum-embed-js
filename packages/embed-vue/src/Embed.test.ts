@@ -309,4 +309,72 @@ describe("Embed.vue", () => {
     expect(onRefreshError).toHaveBeenCalledWith(refreshErr);
     expect(wrapper.emitted("error")).toEqual([[refreshErr]]);
   });
+
+  it("reload returns false and emits error when instance.reload() rejects", async () => {
+    const mockInst = createMockInstance();
+    mockInst.reload.mockRejectedValue(new Error("reload failed"));
+    createEmbedMock.mockReturnValue(mockInst);
+
+    const wrapper = mount(Embed, {
+      props: { embedUrl: EMBED_URL, tokenProvider },
+    });
+
+    await vi.waitFor(() => {
+      expect(mockInst.init).toHaveBeenCalled();
+    });
+
+    const vm = wrapper.vm as { reload: () => Promise<boolean> };
+    const result = await vm.reload();
+
+    expect(result).toBe(false);
+    expect(wrapper.emitted("error")).toHaveLength(1);
+    const errPayload = wrapper.emitted("error")?.[0]?.[0];
+    expect(errPayload).toBeInstanceOf(EmbedError);
+    expect((errPayload as EmbedError).message).toBe("reload failed");
+  });
+
+  it("reload returns false when instance is null (e.g. after unmount)", async () => {
+    const mockInst = createMockInstance();
+    createEmbedMock.mockReturnValue(mockInst);
+
+    const wrapper = mount(Embed, {
+      props: { embedUrl: EMBED_URL, tokenProvider },
+    });
+
+    await vi.waitFor(() => {
+      expect(mockInst.init).toHaveBeenCalled();
+    });
+
+    const vm = wrapper.vm as { reload: () => Promise<boolean> };
+    const reloadFn = vm.reload;
+    wrapper.unmount();
+
+    const result = await reloadFn();
+    expect(result).toBe(false);
+  });
+
+  it("emits error on refresh when tokenOptions has no onRefreshError", async () => {
+    const mockInst = createMockInstance();
+    createEmbedMock.mockReturnValue(mockInst);
+
+    const wrapper = mount(Embed, {
+      props: {
+        embedUrl: EMBED_URL,
+        tokenProvider,
+        tokenOptions: {},
+      },
+    });
+
+    await vi.waitFor(() => {
+      expect(createEmbedMock).toHaveBeenCalled();
+    });
+
+    const call = createEmbedMock.mock.calls[0][0];
+    const refreshErr = new EmbedError(EmbedErrorCodes.TOKEN_PROVIDER_FAILED, "refresh failed");
+    const onRefreshError = call.tokenOptions?.onRefreshError;
+    expect(onRefreshError).toBeDefined();
+    if (onRefreshError) onRefreshError(refreshErr);
+
+    expect(wrapper.emitted("error")).toEqual([[refreshErr]]);
+  });
 });

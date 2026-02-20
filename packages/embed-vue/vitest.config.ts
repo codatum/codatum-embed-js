@@ -6,5 +6,17 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     globals: false,
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "text-summary", "html", "lcov"],
+      include: ["src/**/*.{ts,vue}"],
+      exclude: ["src/**/*.test.ts", "src/index.ts"],
+      thresholds: {
+        statements: 80,
+        branches: 70,
+        functions: 80,
+        lines: 80,
+      },
+    },
   },
 });

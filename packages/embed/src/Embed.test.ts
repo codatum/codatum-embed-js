@@ -575,4 +575,64 @@ describe("EmbedInstance (after init)", () => {
     );
     expect(handler).not.toHaveBeenCalled();
   });
+
+  it("ignores message when data is null or not object", () => {
+    const handler = vi.fn();
+    instance.on("paramChanged", handler);
+    window.dispatchEvent(
+      new MessageEvent("message", {
+        data: null,
+        origin: EMBED_ORIGIN,
+        source: iframe.contentWindow,
+      }),
+    );
+    window.dispatchEvent(
+      new MessageEvent("message", {
+        data: "string",
+        origin: EMBED_ORIGIN,
+        source: iframe.contentWindow,
+      }),
+    );
+    window.dispatchEvent(
+      new MessageEvent("message", {
+        data: { notType: "x" },
+        origin: EMBED_ORIGIN,
+        source: iframe.contentWindow,
+      }),
+    );
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it("calls onRefreshError when refresh fails after init", async () => {
+    vi.useFakeTimers();
+    const onRefreshError = vi.fn();
+    const nowSec = Math.floor(Date.now() / 1000);
+    const shortTtlToken = createTestJwt(nowSec, nowSec + 2);
+    const tokenProvider = vi
+      .fn()
+      .mockResolvedValueOnce({ token: shortTtlToken })
+      .mockRejectedValue(new Error("refresh failed"));
+    instance.destroy();
+    document.body.innerHTML = '<div id="container"></div>';
+    const c = getContainer();
+    const embed = createEmbed({
+      container: c,
+      embedUrl: VALID_EMBED_URL,
+      tokenProvider,
+      tokenOptions: { refreshBuffer: 0, onRefreshError },
+    });
+    const initPromise = embed.init();
+    dispatchReadyForToken(c.querySelector("iframe") as HTMLIFrameElement);
+    await initPromise;
+    await vi.advanceTimersByTimeAsync(5 * 1000);
+    await Promise.resolve();
+    expect(onRefreshError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        code: EmbedErrorCodes.TOKEN_PROVIDER_FAILED,
+        message: "refresh failed",
+      }),
+    );
+    embed.destroy();
+    vi.useRealTimers();
+  });
 });
