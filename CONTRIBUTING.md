@@ -84,9 +84,11 @@ Formatting and linting use [Biome](https://biomejs.dev/). Run these from the **r
 | `pnpm check:fix`  | Lint (with fixes) + format in one run |
 | `pnpm clean`      | Remove build outputs                 |
 
-## Versioning and change management
+### Releasing to npm (maintainers)
 
-We use **[Changesets](https://github.com/changesets/changesets)** for versioning and release notes. When you change something that should be reflected in a release, add a changeset with `pnpm changeset` and follow the prompts (choose affected packages and change type: patch / minor / major). The maintainers will run `changeset version` and publish when cutting a release.
+1. Add changesets with `pnpm changeset` and commit.
+2. Run `pnpm changeset version` to bump versions and update CHANGELOGs, then commit and push.
+3. In GitHub: **Actions** → **Release to npm** → **Run workflow** to publish to npm.
 
 ## Package layout
 
