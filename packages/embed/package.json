@@ -1,6 +1,6 @@
 {
   "name": "@codatum/embed",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "TypeScript library for Codatum signed embedding",
   "type": "module",
   "main": "./dist/index.cjs",
