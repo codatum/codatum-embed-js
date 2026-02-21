@@ -34,6 +34,6 @@ jobs:
         run: pnpm build
 
       - name: Publish to npm
-        run: pnpm changeset publish
+        run: pnpm publish -r --no-git-checks
         env:
           NPM_CONFIG_PROVENANCE: "true"
