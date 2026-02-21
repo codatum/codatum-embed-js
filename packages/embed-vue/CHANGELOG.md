@@ -1,5 +1,13 @@
 # @codatum/embed-vue
 
+## 0.1.2
+
+### Patch Changes
+
+- use pnpm publish not pnpm changeset publish
+- Updated dependencies
+  - @codatum/embed@0.1.2
+
 ## 0.1.1
 
 ### Patch Changes
