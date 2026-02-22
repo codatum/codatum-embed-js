@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Mock from "./scenarios/Mock";
 import Scenario1 from "./scenarios/Scenario1";
 import Scenario2 from "./scenarios/Scenario2";
 import Scenario3 from "./scenarios/Scenario3";
@@ -7,6 +8,7 @@ const scenarios = [
   { id: "scenario1", label: "Scenario1", component: Scenario1 },
   { id: "scenario2", label: "Scenario2", component: Scenario2 },
   { id: "scenario3", label: "Scenario3", component: Scenario3 },
+  { id: "mock", label: "Mock", component: Mock },
 ];
 
 export default function App() {

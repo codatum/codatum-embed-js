@@ -199,4 +199,84 @@ describe("validateEmbedOptions", () => {
       }),
     ).toThrow(/displayOptions.expandParamsFormByDefault must be a boolean/);
   });
+
+  describe("devOptions", () => {
+    it("throws when devOptions is not object", () => {
+      expect(() =>
+        validateEmbedOptions({
+          ...validBase,
+          devOptions: "x" as unknown as Parameters<typeof validateEmbedOptions>[0]["devOptions"],
+        }),
+      ).toThrow(/devOptions must be an object/);
+    });
+
+    it("throws when devOptions.debug is not boolean", () => {
+      expect(() =>
+        validateEmbedOptions({
+          ...validBase,
+          devOptions: { debug: 1 as unknown as boolean },
+        }),
+      ).toThrow(/devOptions.debug must be a boolean/);
+    });
+
+    it("throws when devOptions.disableValidateUrl is not boolean", () => {
+      expect(() =>
+        validateEmbedOptions({
+          ...validBase,
+          devOptions: { disableValidateUrl: "yes" as unknown as boolean },
+        }),
+      ).toThrow(/devOptions.disableValidateUrl must be a boolean/);
+    });
+
+    it("accepts non-standard embedUrl when devOptions.disableValidateUrl is true", () => {
+      expect(() =>
+        validateEmbedOptions({
+          container: "#container",
+          embedUrl: "https://localhost:3000/embed",
+          tokenProvider: () => Promise.resolve({ token: "x" }),
+          devOptions: { disableValidateUrl: true },
+        }),
+      ).not.toThrow();
+    });
+
+    it("throws when devOptions.mock is not boolean or object", () => {
+      expect(() =>
+        validateEmbedOptions({
+          ...validBase,
+          devOptions: { mock: "yes" as unknown as boolean },
+        }),
+      ).toThrow(/devOptions.mock must be a boolean or an object/);
+    });
+
+    it("throws when devOptions.mock is object and label is not string", () => {
+      expect(() =>
+        validateEmbedOptions({
+          ...validBase,
+          devOptions: { mock: { label: 123 as unknown as string } },
+        }),
+      ).toThrow(/devOptions.mock.label must be a string/);
+    });
+
+    it("throws when devOptions.mock is object and callTokenProvider is not boolean", () => {
+      expect(() =>
+        validateEmbedOptions({
+          ...validBase,
+          devOptions: { mock: { callTokenProvider: "yes" as unknown as boolean } },
+        }),
+      ).toThrow(/devOptions.mock.callTokenProvider must be a boolean/);
+    });
+
+    it("accepts valid devOptions with mock object", () => {
+      expect(() =>
+        validateEmbedOptions({
+          ...validBase,
+          devOptions: {
+            debug: true,
+            disableValidateUrl: false,
+            mock: { label: "Test", callTokenProvider: true },
+          },
+        }),
+      ).not.toThrow();
+    });
+  });
 });

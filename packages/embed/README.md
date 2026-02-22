@@ -45,6 +45,7 @@ embed.destroy();
 | `iframeOptions` | No | See [IframeOptions](#iframeoptions) below |
 | `tokenOptions` | No | See [TokenOptions](#tokenoptions) below |
 | `displayOptions` | No | See [DisplayOptions](#displayoptions) below |
+| `devOptions` | No | See [DevOptions](#devoptions) below |
 
 #### `tokenProvider`
 
@@ -108,6 +109,23 @@ Sent to the embed with the token.
 | `sqlDisplay` | `'SHOW'` \| `'RESULT_ONLY'` \| `'HIDE'` | `'SHOW'` | Whether to show SQL Blocks, results only, or hide |
 | `hideParamsForm` | `boolean` | `false` | Hide the parameter form in the embed (e.g. when your app owns the filters) |
 | `expandParamsFormByDefault` | `boolean` | `false` | Whether the parameter form is expanded by default |
+
+#### `DevOptions`
+
+Development and testing only. Not intended for production.
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `debug` | `boolean` | `false` | When `true`, logs SDK lifecycle: postMessage (in/out), tokenProvider calls/refresh/retries, status transitions (CREATED → INITIALIZING → READY → DESTROYED). |
+| `disableValidateUrl` | `boolean` | `false` | When `true`, skips `embedUrl` format validation (domain/path). Use for local or staging URLs that don't match the production pattern. |
+| `mock` | `boolean` \| `MockOptions` | - | Enables mock mode: no real embed load, no network. iframe uses `srcdoc` with a styled placeholder. |
+
+**MockOptions** (when `mock` is an object):
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `label` | `string` | `embedUrl` | Text shown in the mock iframe placeholder. Useful when multiple embeds are on the page. |
+| `callTokenProvider` | `boolean` | `false` | When `true`, calls `tokenProvider` on `init()`, `reload()`, and auto-refresh. |
 
 ### Creating an embed instance
 

@@ -1,4 +1,5 @@
 import type {
+  DevOptions,
   DisplayOptions,
   EmbedInstance,
   EmbedStatus,
@@ -27,6 +28,7 @@ export interface EmbedReactProps {
   iframeOptions?: IframeOptions;
   tokenOptions?: TokenOptions;
   displayOptions?: DisplayOptions;
+  devOptions?: DevOptions;
   onReady?: () => void;
   onParamChanged?: (payload: ParamChangedMessage) => void;
   onExecuteSqlsTriggered?: (payload: ExecuteSqlsTriggeredMessage) => void;
@@ -45,6 +47,7 @@ export const Embed = forwardRef<EmbedReactRef, EmbedReactProps>(function Embed(
     iframeOptions,
     tokenOptions,
     displayOptions,
+    devOptions,
     onReady,
     onParamChanged,
     onExecuteSqlsTriggered,
@@ -92,6 +95,7 @@ export const Embed = forwardRef<EmbedReactRef, EmbedReactProps>(function Embed(
         },
       },
       displayOptions,
+      devOptions,
     });
 
     instanceRef.current = embed;

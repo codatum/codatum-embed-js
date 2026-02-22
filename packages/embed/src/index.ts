@@ -4,6 +4,7 @@ export { createParamMapper } from "./ParamMapper";
 export type {
   DefineDecodedParams,
   DefineParamMapper,
+  DevOptions,
   DisplayOptions,
   EmbedErrorCode,
   EmbedInstance,
