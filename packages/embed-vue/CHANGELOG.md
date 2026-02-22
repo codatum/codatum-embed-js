@@ -1,5 +1,16 @@
 # @codatum/embed-vue
 
+## 0.2.0
+
+### Minor Changes
+
+- Add devOptions
+
+### Patch Changes
+
+- Updated dependencies
+  - @codatum/embed@0.2.0
+
 ## 0.1.2
 
 ### Patch Changes
