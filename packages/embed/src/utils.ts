@@ -61,9 +61,13 @@ export const validateEmbedOptions = (options: EmbedOptions): void => {
   ) {
     throwError("container must be an HTMLElement or a string selector");
   }
-  if (!options.embedUrl || !isValidEmbedUrl(options.embedUrl)) {
+  const skipUrlValidation = !!options.devOptions?.disableValidateUrl;
+  if (!options.embedUrl) {
+    throwError("embedUrl is required");
+  }
+  if (!skipUrlValidation && !isValidEmbedUrl(options.embedUrl)) {
     throwError(
-      "embedUrl must match https://app.codatum.com/protected/workspace/{workspaceId}/notebook/{notebookId}",
+      "embedUrl must match https://app.codatum.com/protected/workspace/{workspaceId}/notebook/{notebookId}. Use devOptions.disableValidateUrl to skip (e.g. for local/staging).",
     );
   }
   if (!options.tokenProvider || typeof options.tokenProvider !== "function") {
@@ -128,4 +132,64 @@ export const validateEmbedOptions = (options: EmbedOptions): void => {
       throwError("displayOptions.expandParamsFormByDefault must be a boolean");
     }
   }
+  if (options.devOptions !== undefined) {
+    if (typeof options.devOptions !== "object") {
+      throwError("devOptions must be an object");
+    }
+    const debug = options.devOptions.debug;
+    if (debug !== undefined && typeof debug !== "boolean") {
+      throwError("devOptions.debug must be a boolean");
+    }
+    const disableValidateUrl = options.devOptions.disableValidateUrl;
+    if (disableValidateUrl !== undefined && typeof disableValidateUrl !== "boolean") {
+      throwError("devOptions.disableValidateUrl must be a boolean");
+    }
+    const mock = options.devOptions.mock;
+    if (
+      mock !== undefined &&
+      mock !== null &&
+      typeof mock !== "boolean" &&
+      typeof mock !== "object"
+    ) {
+      throwError("devOptions.mock must be a boolean or an object");
+    }
+    if (mock !== undefined && mock !== null && typeof mock === "object") {
+      const label = mock.label;
+      if (label !== undefined && typeof label !== "string") {
+        throwError("devOptions.mock.label must be a string");
+      }
+      const callTokenProvider = mock.callTokenProvider;
+      if (callTokenProvider !== undefined && typeof callTokenProvider !== "boolean") {
+        throwError("devOptions.mock.callTokenProvider must be a boolean");
+      }
+    }
+  }
+};
+
+/** Builds mock iframe srcdoc HTML (placeholder). theme/locale passed as data attributes. */
+export const buildMockSrcdoc = (
+  label: string,
+  theme?: IframeOptions["theme"],
+  locale?: string,
+): string => {
+  const themeAttr = theme ? ` data-theme="${theme}"` : "";
+  const localeAttr = locale ? ` data-locale="${escapeHtml(locale)}"` : "";
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+    body { margin: 0; font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #f5f5f5; color: #666; }
+    .placeholder { padding: 1rem 1.5rem; background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-size: 14px; }
+  </style></head><body${themeAttr}${localeAttr}><div class="placeholder">${escapeHtml(label)}</div></body></html>`;
+};
+
+const escapeHtml = (s: string): string => {
+  const el = typeof document !== "undefined" ? document.createElement("div") : null;
+  if (el) {
+    el.textContent = s;
+    return el.innerHTML;
+  }
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 };

@@ -8,6 +8,7 @@ import {
 import type {
   EmbedInstance,
   EmbedStatus,
+  DevOptions,
   DisplayOptions,
   ExecuteSqlsTriggeredMessage,
   IframeOptions,
@@ -26,6 +27,7 @@ const props = defineProps<{
   iframeOptions?: IframeOptions;
   tokenOptions?: TokenOptions;
   displayOptions?: DisplayOptions;
+  devOptions?: DevOptions;
 }>();
 
 const emit = defineEmits<{
@@ -70,6 +72,7 @@ onMounted(async () => {
       },
     },
     displayOptions: props.displayOptions,
+    devOptions: props.devOptions,
   });
 
   instance.value = embed;

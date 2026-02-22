@@ -83,7 +83,7 @@ Props are read once at mount. To apply new values (e.g. a different `embedUrl` o
 
 ## API
 
-Option types and behavior (e.g. `iframeOptions`, `tokenOptions`, `displayOptions`) are the same as in [@codatum/embed](https://github.com/codatum/codatum-embed-js/tree/main/packages/embed#readme). The component uses its root element as the iframe container (no `container` prop).
+Option types and behavior (e.g. `iframeOptions`, `tokenOptions`, `displayOptions`, `devOptions`) are the same as in [@codatum/embed](https://github.com/codatum/codatum-embed-js/tree/main/packages/embed#readme). The component uses its root element as the iframe container (no `container` prop).
 
 ### Props
 
@@ -94,6 +94,7 @@ Option types and behavior (e.g. `iframeOptions`, `tokenOptions`, `displayOptions
 | `iframeOptions` | No | `IframeOptions` |
 | `tokenOptions` | No | `TokenOptions` |
 | `displayOptions` | No | `DisplayOptions` |
+| `devOptions` | No | `DevOptions` |
 
 ### Callbacks
 

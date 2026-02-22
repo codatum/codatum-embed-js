@@ -48,6 +48,17 @@ export type TokenProviderContext = {
   markNonRetryable: () => void;
 };
 
+export type DevOptions = {
+  debug?: boolean;
+  mock?: boolean | MockOptions;
+  disableValidateUrl?: boolean;
+};
+
+export type MockOptions = {
+  label?: string;
+  callTokenProvider?: boolean;
+};
+
 export type EmbedOptions = {
   container: HTMLElement | string;
   embedUrl: string;
@@ -55,6 +66,7 @@ export type EmbedOptions = {
   iframeOptions?: IframeOptions;
   tokenOptions?: TokenOptions;
   displayOptions?: DisplayOptions;
+  devOptions?: DevOptions;
 };
 
 export const EmbedMessageTypes = {

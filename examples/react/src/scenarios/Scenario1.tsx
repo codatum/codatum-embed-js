@@ -150,6 +150,7 @@ export default function Scenario1() {
               style: { height: "600px" },
             }}
             displayOptions={{ expandParamsFormByDefault: true }}
+            devOptions={{ debug: true }}
             onReady={onReady}
             onParamChanged={onParamChanged}
             onExecuteSqlsTriggered={onParamChanged}
