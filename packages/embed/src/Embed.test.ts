@@ -83,6 +83,92 @@ describe("createEmbed", () => {
   });
 });
 
+// --- devOptions ---------------------------------------------------------------
+
+describe("devOptions", () => {
+  beforeEach(() => {
+    document.body.innerHTML = '<div id="container"></div>';
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("with debug: true calls console.log on status change and destroy", () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const embed = createEmbed({
+      container: "#container",
+      embedUrl: VALID_EMBED_URL,
+      tokenProvider: () => Promise.resolve({ token: TEST_JWT }),
+      devOptions: { debug: true },
+    });
+    embed.init();
+    embed.destroy();
+    expect(logSpy).toHaveBeenCalledWith("[Embed]", "status", expect.any(String), "→", expect.any(String));
+    expect(logSpy).toHaveBeenCalledWith("[Embed]", "destroy triggered");
+    logSpy.mockRestore();
+  });
+
+  it("with mock: true creates iframe with srcdoc and resolves init without tokenProvider", async () => {
+    const tokenProvider = vi.fn();
+    const embed = createEmbed({
+      container: "#container",
+      embedUrl: VALID_EMBED_URL,
+      tokenProvider,
+      devOptions: { mock: true },
+    });
+    await embed.init();
+    expect(embed.status).toBe(EmbedStatuses.READY);
+    expect(tokenProvider).not.toHaveBeenCalled();
+    const iframe = getContainer().querySelector("iframe") as HTMLIFrameElement;
+    expect(iframe.srcdoc).toBeTruthy();
+    expect(iframe.srcdoc).toContain("Mock Embed");
+    embed.destroy();
+  });
+
+  it("with mock: { label } uses custom label in srcdoc", async () => {
+    const embed = createEmbed({
+      container: "#container",
+      embedUrl: VALID_EMBED_URL,
+      tokenProvider: () => Promise.resolve({ token: TEST_JWT }),
+      devOptions: { mock: { label: "Custom Label" } },
+    });
+    await embed.init();
+    const iframe = getContainer().querySelector("iframe") as HTMLIFrameElement;
+    expect(iframe.srcdoc).toContain("Custom Label");
+    embed.destroy();
+  });
+
+  it("with mock: { callTokenProvider: true } calls tokenProvider on init", async () => {
+    const tokenProvider = vi.fn().mockResolvedValue({ token: TEST_JWT });
+    const embed = createEmbed({
+      container: "#container",
+      embedUrl: VALID_EMBED_URL,
+      tokenProvider,
+      devOptions: { mock: { callTokenProvider: true } },
+    });
+    await embed.init();
+    expect(embed.status).toBe(EmbedStatuses.READY);
+    expect(tokenProvider).toHaveBeenCalledTimes(1);
+    expect(tokenProvider).toHaveBeenCalledWith(expect.objectContaining({ trigger: "INIT" }));
+    embed.destroy();
+  });
+
+  it("with mock: { label, callTokenProvider: false } resolves init without calling tokenProvider", async () => {
+    const tokenProvider = vi.fn();
+    const embed = createEmbed({
+      container: "#container",
+      embedUrl: VALID_EMBED_URL,
+      tokenProvider,
+      devOptions: { mock: { label: "No Token", callTokenProvider: false } },
+    });
+    await embed.init();
+    expect(embed.status).toBe(EmbedStatuses.READY);
+    expect(tokenProvider).not.toHaveBeenCalled();
+    embed.destroy();
+  });
+});
+
 // --- init() ------------------------------------------------------------------
 
 describe("init()", () => {
