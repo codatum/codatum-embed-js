@@ -104,7 +104,13 @@ describe("devOptions", () => {
     });
     embed.init();
     embed.destroy();
-    expect(logSpy).toHaveBeenCalledWith("[Embed]", "status", expect.any(String), "→", expect.any(String));
+    expect(logSpy).toHaveBeenCalledWith(
+      "[Embed]",
+      "status",
+      expect.any(String),
+      "→",
+      expect.any(String),
+    );
     expect(logSpy).toHaveBeenCalledWith("[Embed]", "destroy triggered");
     logSpy.mockRestore();
   });
