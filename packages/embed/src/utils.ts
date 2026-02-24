@@ -149,11 +149,7 @@ export const validateEmbedOptions = (options: EmbedOptions): void => {
       throwError("devOptions.disableValidateUrl must be a boolean");
     }
     const mock = options.devOptions.mock;
-    if (
-      mock != null &&
-      typeof mock !== "boolean" &&
-      typeof mock !== "object"
-    ) {
+    if (mock != null && typeof mock !== "boolean" && typeof mock !== "object") {
       throwError("devOptions.mock must be a boolean or an object");
     }
     if (mock != null && typeof mock === "object") {
