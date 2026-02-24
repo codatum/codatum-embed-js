@@ -242,7 +242,7 @@ export class EmbedInstance implements IEmbedInstance {
     const win = this.iframeEl.contentWindow;
     if (!win || this.isDestroyed) return;
     const payload = {
-      displayOptions: this.options.displayOptions,
+      displayOptions: this.options.displayOptions ?? undefined,
       ...(result.params != null && result.params.length > 0 ? { params: result.params } : {}),
     };
     try {
