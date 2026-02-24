@@ -49,7 +49,7 @@ embed.destroy();
 
 #### `tokenProvider`
 
-Required callback that issues a token from your backend and returns it (and optionally `params`). Called on `init()`, `reload()`, and when the token is auto-refreshed — `tokenOptions.refreshBuffer` seconds before the token expires.
+Required callback that issues a token from your backend and returns it (and optionally `params`). Called on `init()`, `reload()`, and when the token is about to expire (unless `tokenOptions.disableRefresh` is `true`).
 
 **Signature:** `(context: TokenProviderContext) => Promise<{ token: string; params?: EncodedParam[] }>`
 
@@ -95,6 +95,7 @@ Controls token lifetime, refresh behavior, and init timeout.
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
+| `disableRefresh` | `boolean` | `false` | When `true`, disables automatic token refresh before the token expires |
 | `refreshBuffer` | `number` | `60` | Number of seconds before the token expires when auto-refresh is triggered |
 | `retryCount` | `number` | `2` | Number of retries on token fetch failure; `0` = no retry |
 | `initTimeout` | `number` | `30` | Max wait in seconds for embed "ready"; `0` = no timeout |

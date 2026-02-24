@@ -31,6 +31,7 @@ export type IframeOptions = {
 };
 
 export type TokenOptions = {
+  disableRefresh?: boolean;
   refreshBuffer?: number; // seconds
   retryCount?: number; // if 0, no retry
   initTimeout?: number; // seconds; if 0, no timeout

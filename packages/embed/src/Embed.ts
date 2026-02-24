@@ -36,6 +36,7 @@ export class EmbedInstance implements IEmbedInstance {
   private iframeEl: HTMLIFrameElement | null = null;
   private readonly options: EmbedOptions;
   private readonly expectedOrigin: string;
+  private readonly disableRefresh: boolean;
   private readonly refreshBuffer: number;
   private readonly retryCount: number;
   private readonly onRefreshError?: TokenOptions["onRefreshError"];
@@ -79,6 +80,7 @@ export class EmbedInstance implements IEmbedInstance {
       : undefined;
 
     const tokenOptions = this.options.tokenOptions ?? {};
+    this.disableRefresh = tokenOptions.disableRefresh === true;
     this.refreshBuffer = (tokenOptions.refreshBuffer ?? DEFAULT_REFRESH_BUFFER) * 1000;
     this.retryCount = tokenOptions.retryCount ?? DEFAULT_RETRY_COUNT;
     this.onRefreshError = tokenOptions.onRefreshError;
@@ -314,7 +316,7 @@ export class EmbedInstance implements IEmbedInstance {
   }
 
   private scheduleRefresh(ttlMs: number): void {
-    if (this.isDestroyed) return;
+    if (this.isDestroyed || this.disableRefresh) return;
     this.clearRefreshTimer();
     const delayMs = Math.max(0, ttlMs - this.refreshBuffer);
     this.debugLog("schedule auto-refresh", { ttlMs, refreshBuffer: this.refreshBuffer, delayMs });
@@ -336,7 +338,7 @@ export class EmbedInstance implements IEmbedInstance {
   }
 
   private runRefreshWithRetry(): void {
-    if (this.isDestroyed) return;
+    if (this.isDestroyed || this.disableRefresh) return;
     this.debugLog("auto-refresh triggered");
     this.fetchSessionWithRetry(TokenProviderTriggers.REFRESH)
       .then((result) => {

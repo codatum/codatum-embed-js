@@ -727,4 +727,34 @@ describe("EmbedInstance (after init)", () => {
     embed.destroy();
     vi.useRealTimers();
   });
+
+  it("with tokenOptions.disableRefresh: true, advancing time does not trigger auto-refresh (tokenProvider not called with REFRESH)", async () => {
+    vi.useFakeTimers();
+    const nowSec = Math.floor(Date.now() / 1000);
+    const shortTtlToken = createTestJwt(nowSec, nowSec + 2);
+    const tokenProvider = vi.fn().mockResolvedValue({ token: shortTtlToken });
+    instance.destroy();
+    document.body.innerHTML = '<div id="container"></div>';
+    const c = getContainer();
+    const embed = createEmbed({
+      container: c,
+      embedUrl: VALID_EMBED_URL,
+      tokenProvider,
+      tokenOptions: { disableRefresh: true, refreshBuffer: 0 },
+    });
+    const initPromise = embed.init();
+    dispatchReadyForToken(c.querySelector("iframe") as HTMLIFrameElement);
+    await initPromise;
+    expect(tokenProvider).toHaveBeenCalledTimes(1);
+    expect(tokenProvider).toHaveBeenCalledWith(expect.objectContaining({ trigger: "INIT" }));
+
+    await vi.advanceTimersByTimeAsync(5 * 1000);
+    await Promise.resolve();
+
+    expect(tokenProvider).toHaveBeenCalledTimes(1);
+    const triggers = tokenProvider.mock.calls.map((call) => call[0].trigger);
+    expect(triggers).toEqual(["INIT"]);
+    embed.destroy();
+    vi.useRealTimers();
+  });
 });
