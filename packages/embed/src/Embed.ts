@@ -36,6 +36,7 @@ export class EmbedInstance implements IEmbedInstance {
   private iframeEl: HTMLIFrameElement | null = null;
   private readonly options: EmbedOptions;
   private readonly expectedOrigin: string;
+  private readonly disableRefresh: boolean;
   private readonly refreshBuffer: number;
   private readonly retryCount: number;
   private readonly onRefreshError?: TokenOptions["onRefreshError"];
@@ -79,6 +80,7 @@ export class EmbedInstance implements IEmbedInstance {
       : undefined;
 
     const tokenOptions = this.options.tokenOptions ?? {};
+    this.disableRefresh = tokenOptions.disableRefresh === true;
     this.refreshBuffer = (tokenOptions.refreshBuffer ?? DEFAULT_REFRESH_BUFFER) * 1000;
     this.retryCount = tokenOptions.retryCount ?? DEFAULT_RETRY_COUNT;
     this.onRefreshError = tokenOptions.onRefreshError;
@@ -123,8 +125,15 @@ export class EmbedInstance implements IEmbedInstance {
     } else {
       iframe.src = buildIframeSrc(this.options.embedUrl, iframeOptions);
     }
-    iframe.className = getIframeClassName(iframeOptions);
+    // allow can be overridden by attrs
     iframe.setAttribute("allow", "fullscreen; clipboard-write");
+    if (iframeOptions?.attrs) {
+      for (const [key, value] of Object.entries(iframeOptions.attrs)) {
+        iframe.setAttribute(key, value);
+      }
+    }
+    // className and style take precedence over attrs
+    iframe.className = getIframeClassName(iframeOptions);
     Object.assign(iframe.style, {
       width: "100%",
       height: "100%",
@@ -233,7 +242,7 @@ export class EmbedInstance implements IEmbedInstance {
     const win = this.iframeEl.contentWindow;
     if (!win || this.isDestroyed) return;
     const payload = {
-      displayOptions: this.options.displayOptions,
+      displayOptions: this.options.displayOptions ?? undefined,
       ...(result.params != null && result.params.length > 0 ? { params: result.params } : {}),
     };
     try {
@@ -314,7 +323,7 @@ export class EmbedInstance implements IEmbedInstance {
   }
 
   private scheduleRefresh(ttlMs: number): void {
-    if (this.isDestroyed) return;
+    if (this.isDestroyed || this.disableRefresh) return;
     this.clearRefreshTimer();
     const delayMs = Math.max(0, ttlMs - this.refreshBuffer);
     this.debugLog("schedule auto-refresh", { ttlMs, refreshBuffer: this.refreshBuffer, delayMs });
@@ -336,7 +345,7 @@ export class EmbedInstance implements IEmbedInstance {
   }
 
   private runRefreshWithRetry(): void {
-    if (this.isDestroyed) return;
+    if (this.isDestroyed || this.disableRefresh) return;
     this.debugLog("auto-refresh triggered");
     this.fetchSessionWithRetry(TokenProviderTriggers.REFRESH)
       .then((result) => {

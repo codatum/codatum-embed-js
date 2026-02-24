@@ -49,7 +49,7 @@ embed.destroy();
 
 #### `tokenProvider`
 
-Required callback that issues a token from your backend and returns it (and optionally `params`). Called on `init()`, `reload()`, and when the token is auto-refreshed — `tokenOptions.refreshBuffer` seconds before the token expires.
+Required callback that issues a token from your backend and returns it (and optionally `params`). Called on `init()`, `reload()`, and when the token is about to expire (unless `tokenOptions.disableRefresh` is `true`).
 
 **Signature:** `(context: TokenProviderContext) => Promise<{ token: string; params?: EncodedParam[] }>`
 
@@ -88,6 +88,7 @@ Options applied to the iframe element and passed to the embed via URL/search par
 | `locale` | `string` | Browser's locale | Locale code (e.g. `'en'`, `'ja'`) for the embed UI |
 | `className` | `string` | - | CSS class name(s) applied to the iframe element |
 | `style` | `object` | `{width: '100%', height: '100%', border: 'none'}` | Inline styles for the iframe; overrides the default styles |
+| `attrs` | `Record<string, string>` | - | Additional HTML attributes for the iframe (e.g. `{ title: 'Dashboard', 'data-testid': 'embed-iframe' }`) |
 
 #### `TokenOptions`
 
@@ -95,6 +96,7 @@ Controls token lifetime, refresh behavior, and init timeout.
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
+| `disableRefresh` | `boolean` | `false` | When `true`, disables automatic token refresh before the token expires |
 | `refreshBuffer` | `number` | `60` | Number of seconds before the token expires when auto-refresh is triggered |
 | `retryCount` | `number` | `2` | Number of retries on token fetch failure; `0` = no retry |
 | `initTimeout` | `number` | `30` | Max wait in seconds for embed "ready"; `0` = no timeout |

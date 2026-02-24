@@ -11,6 +11,7 @@ import type {
   TokenProviderResult,
 } from "@codatum/embed";
 import { createEmbed, EmbedError, EmbedErrorCodes, EmbedStatuses } from "@codatum/embed";
+import type { ComponentPropsWithoutRef } from "react";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 
 const toEmbedError = (err: unknown): EmbedError =>
@@ -22,7 +23,7 @@ const toEmbedError = (err: unknown): EmbedError =>
         { cause: err },
       );
 
-export interface EmbedReactProps {
+export type EmbedReactProps = Omit<ComponentPropsWithoutRef<"div">, "children"> & {
   embedUrl: string;
   tokenProvider: (context: TokenProviderContext) => Promise<TokenProviderResult>;
   iframeOptions?: IframeOptions;
@@ -33,12 +34,14 @@ export interface EmbedReactProps {
   onParamChanged?: (payload: ParamChangedMessage) => void;
   onExecuteSqlsTriggered?: (payload: ExecuteSqlsTriggeredMessage) => void;
   onError?: (err: EmbedError) => void;
-}
+};
 
 export interface EmbedReactRef {
   reload: () => Promise<boolean>;
   status: EmbedStatus;
 }
+
+const defaultClassName = "codatum-embed-react-container";
 
 export const Embed = forwardRef<EmbedReactRef, EmbedReactProps>(function Embed(
   {
@@ -52,6 +55,9 @@ export const Embed = forwardRef<EmbedReactRef, EmbedReactProps>(function Embed(
     onParamChanged,
     onExecuteSqlsTriggered,
     onError,
+    className,
+    style,
+    ...rest
   },
   ref,
 ) {
@@ -154,5 +160,17 @@ export const Embed = forwardRef<EmbedReactRef, EmbedReactProps>(function Embed(
     [status, setError],
   );
 
-  return <div ref={containerRef} className="codatum-embed-react-container" />;
+  const mergedClassName =
+    className !== undefined && className !== ""
+      ? `${defaultClassName} ${className}`.trim()
+      : defaultClassName;
+
+  return (
+    <div
+      ref={containerRef}
+      className={mergedClassName}
+      style={{ display: "contents", ...style }}
+      {...rest}
+    />
+  );
 });

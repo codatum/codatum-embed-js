@@ -3,6 +3,9 @@
   "private": true,
   "license": "Apache-2.0",
   "packageManager": "pnpm@10.17.0",
+  "engines": {
+    "node": ">=20.12"
+  },
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",

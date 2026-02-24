@@ -1,6 +1,6 @@
 {
   "name": "@codatum/embed",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "TypeScript library for Codatum signed embedding",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -32,7 +32,7 @@
     "vitest": "catalog:"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20.12"
   },
   "license": "Apache-2.0",
   "repository": {

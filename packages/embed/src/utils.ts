@@ -78,20 +78,24 @@ export const validateEmbedOptions = (options: EmbedOptions): void => {
       throwError("iframeOptions must be an object");
     }
     const theme = options.iframeOptions.theme;
-    if (theme !== undefined && !ThemeValues.includes(theme)) {
+    if (theme != null && !ThemeValues.includes(theme)) {
       throwError(`iframeOptions.theme must be one of ${ThemeValues.join(", ")}`);
     }
     const locale = options.iframeOptions.locale;
-    if (locale !== undefined && typeof locale !== "string") {
+    if (locale != null && typeof locale !== "string") {
       throwError("iframeOptions.locale must be a string");
     }
     const className = options.iframeOptions.className;
-    if (className !== undefined && typeof className !== "string") {
+    if (className != null && typeof className !== "string") {
       throwError("iframeOptions.className must be a string");
     }
     const style = options.iframeOptions.style;
-    if (style !== undefined && typeof style !== "object") {
+    if (style != null && typeof style !== "object") {
       throwError("iframeOptions.style must be a CSSStyleDeclaration");
+    }
+    const attrs = options.iframeOptions.attrs;
+    if (attrs != null && (typeof attrs !== "object" || Array.isArray(attrs))) {
+      throwError("iframeOptions.attrs must be an object");
     }
   }
   if (options.tokenOptions) {
@@ -99,19 +103,19 @@ export const validateEmbedOptions = (options: EmbedOptions): void => {
       throwError("tokenOptions must be an object");
     }
     const refreshBuffer = options.tokenOptions.refreshBuffer;
-    if (refreshBuffer !== undefined && (typeof refreshBuffer !== "number" || refreshBuffer < 0)) {
+    if (refreshBuffer != null && (typeof refreshBuffer !== "number" || refreshBuffer < 0)) {
       throwError("tokenOptions.refreshBuffer must be a non-negative number");
     }
     const retryCount = options.tokenOptions.retryCount;
-    if (retryCount !== undefined && (typeof retryCount !== "number" || retryCount < 0)) {
+    if (retryCount != null && (typeof retryCount !== "number" || retryCount < 0)) {
       throwError("tokenOptions.retryCount must be a non-negative number");
     }
     const initTimeout = options.tokenOptions.initTimeout;
-    if (initTimeout !== undefined && (typeof initTimeout !== "number" || initTimeout < 0)) {
+    if (initTimeout != null && (typeof initTimeout !== "number" || initTimeout < 0)) {
       throwError("tokenOptions.initTimeout must be a non-negative number");
     }
     const onRefreshError = options.tokenOptions.onRefreshError;
-    if (onRefreshError !== undefined && typeof onRefreshError !== "function") {
+    if (onRefreshError != null && typeof onRefreshError !== "function") {
       throwError("tokenOptions.onRefreshError must be a function");
     }
   }
@@ -120,46 +124,41 @@ export const validateEmbedOptions = (options: EmbedOptions): void => {
       throwError("displayOptions must be an object");
     }
     const sqlDisplay = options.displayOptions.sqlDisplay;
-    if (sqlDisplay !== undefined && !SqlDisplayValues.includes(sqlDisplay)) {
+    if (sqlDisplay != null && !SqlDisplayValues.includes(sqlDisplay)) {
       throwError(`displayOptions.sqlDisplay must be one of ${SqlDisplayValues.join(", ")}`);
     }
     const hideParamsForm = options.displayOptions.hideParamsForm;
-    if (hideParamsForm !== undefined && typeof hideParamsForm !== "boolean") {
+    if (hideParamsForm != null && typeof hideParamsForm !== "boolean") {
       throwError("displayOptions.hideParamsForm must be a boolean");
     }
     const expandParamsFormByDefault = options.displayOptions.expandParamsFormByDefault;
-    if (expandParamsFormByDefault !== undefined && typeof expandParamsFormByDefault !== "boolean") {
+    if (expandParamsFormByDefault != null && typeof expandParamsFormByDefault !== "boolean") {
       throwError("displayOptions.expandParamsFormByDefault must be a boolean");
     }
   }
-  if (options.devOptions !== undefined) {
+  if (options.devOptions != null) {
     if (typeof options.devOptions !== "object") {
       throwError("devOptions must be an object");
     }
     const debug = options.devOptions.debug;
-    if (debug !== undefined && typeof debug !== "boolean") {
+    if (debug != null && typeof debug !== "boolean") {
       throwError("devOptions.debug must be a boolean");
     }
     const disableValidateUrl = options.devOptions.disableValidateUrl;
-    if (disableValidateUrl !== undefined && typeof disableValidateUrl !== "boolean") {
+    if (disableValidateUrl != null && typeof disableValidateUrl !== "boolean") {
       throwError("devOptions.disableValidateUrl must be a boolean");
     }
     const mock = options.devOptions.mock;
-    if (
-      mock !== undefined &&
-      mock !== null &&
-      typeof mock !== "boolean" &&
-      typeof mock !== "object"
-    ) {
+    if (mock != null && typeof mock !== "boolean" && typeof mock !== "object") {
       throwError("devOptions.mock must be a boolean or an object");
     }
-    if (mock !== undefined && mock !== null && typeof mock === "object") {
+    if (mock != null && typeof mock === "object") {
       const label = mock.label;
-      if (label !== undefined && typeof label !== "string") {
+      if (label != null && typeof label !== "string") {
         throwError("devOptions.mock.label must be a string");
       }
       const callTokenProvider = mock.callTokenProvider;
-      if (callTokenProvider !== undefined && typeof callTokenProvider !== "boolean") {
+      if (callTokenProvider != null && typeof callTokenProvider !== "boolean") {
         throwError("devOptions.mock.callTokenProvider must be a boolean");
       }
     }

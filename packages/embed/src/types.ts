@@ -28,9 +28,11 @@ export type IframeOptions = {
   locale?: string;
   className?: string;
   style?: Partial<CSSStyleDeclaration>;
+  attrs?: Record<string, string>;
 };
 
 export type TokenOptions = {
+  disableRefresh?: boolean;
   refreshBuffer?: number; // seconds
   retryCount?: number; // if 0, no retry
   initTimeout?: number; // seconds; if 0, no timeout
@@ -59,10 +61,12 @@ export type MockOptions = {
   callTokenProvider?: boolean;
 };
 
+export type TokenProvider = (context: TokenProviderContext) => Promise<TokenProviderResult>;
+
 export type EmbedOptions = {
   container: HTMLElement | string;
   embedUrl: string;
-  tokenProvider: (context: TokenProviderContext) => Promise<TokenProviderResult>;
+  tokenProvider: TokenProvider;
   iframeOptions?: IframeOptions;
   tokenOptions?: TokenOptions;
   displayOptions?: DisplayOptions;

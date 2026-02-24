@@ -1,5 +1,26 @@
 # @codatum/embed-vue
 
+## 0.3.0
+
+### Patch Changes
+
+- dc61a7b: Relax validation: allow `null` for optional options (treated same as undefined).
+- a496e63: Add `tokenOptions.disableRefresh` to disable automatic token refresh.
+- 1bc90b0: Add `TokenProvider` type to the core SDK.
+- 12f4ec1: Add `iframeOptions.attrs` option to set additional HTML attributes on the iframe element.
+- 0ee36ad: Add SSR/Node compatibility tests and .nvmrc
+
+  - Add `node.test.ts` in `@codatum/embed` to ensure the package can be imported in Node without `window`/`document` (SSR-safe).
+  - Add `Embed.ssr.test.ts` in `@codatum/embed-vue` to verify the Vue component renders with `createSSRApp` + `renderToString` (e.g. Nuxt).
+  - Add `.nvmrc` (20.12) to pin Node version for the repo.
+
+- Updated dependencies [dc61a7b]
+- Updated dependencies [a496e63]
+- Updated dependencies [1bc90b0]
+- Updated dependencies [12f4ec1]
+- Updated dependencies [0ee36ad]
+  - @codatum/embed@0.3.0
+
 ## 0.2.0
 
 ### Minor Changes

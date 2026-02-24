@@ -323,7 +323,7 @@ describe("init()", () => {
     postMessageSpy.mockRestore();
   });
 
-  it("applies iframeOptions to iframe src, className, and style", async () => {
+  it("applies iframeOptions to iframe src, className, style, and attrs", async () => {
     const container = getContainer();
     const tokenProvider = vi.fn().mockResolvedValue({ token: TEST_JWT });
     const embed = createEmbed({
@@ -335,6 +335,7 @@ describe("init()", () => {
         locale: "ja",
         className: "my-embed",
         style: { minHeight: "400px" },
+        attrs: { title: "My embed", "data-testid": "embed-iframe" },
       },
     });
     embed.init();
@@ -344,6 +345,9 @@ describe("init()", () => {
     expect(iframe.className).toContain("codatum-embed-iframe");
     expect(iframe.className).toContain("my-embed");
     expect(iframe.style.minHeight).toBe("400px");
+    expect(iframe.getAttribute("title")).toBe("My embed");
+    expect(iframe.getAttribute("data-testid")).toBe("embed-iframe");
+    expect(iframe.getAttribute("allow")).toBe("fullscreen; clipboard-write"); // allow can be overridden by attrs
     dispatchReadyForToken(iframe);
     await embed.init();
     embed.destroy();
@@ -724,6 +728,36 @@ describe("EmbedInstance (after init)", () => {
         message: "refresh failed",
       }),
     );
+    embed.destroy();
+    vi.useRealTimers();
+  });
+
+  it("with tokenOptions.disableRefresh: true, advancing time does not trigger auto-refresh (tokenProvider not called with REFRESH)", async () => {
+    vi.useFakeTimers();
+    const nowSec = Math.floor(Date.now() / 1000);
+    const shortTtlToken = createTestJwt(nowSec, nowSec + 2);
+    const tokenProvider = vi.fn().mockResolvedValue({ token: shortTtlToken });
+    instance.destroy();
+    document.body.innerHTML = '<div id="container"></div>';
+    const c = getContainer();
+    const embed = createEmbed({
+      container: c,
+      embedUrl: VALID_EMBED_URL,
+      tokenProvider,
+      tokenOptions: { disableRefresh: true, refreshBuffer: 0 },
+    });
+    const initPromise = embed.init();
+    dispatchReadyForToken(c.querySelector("iframe") as HTMLIFrameElement);
+    await initPromise;
+    expect(tokenProvider).toHaveBeenCalledTimes(1);
+    expect(tokenProvider).toHaveBeenCalledWith(expect.objectContaining({ trigger: "INIT" }));
+
+    await vi.advanceTimersByTimeAsync(5 * 1000);
+    await Promise.resolve();
+
+    expect(tokenProvider).toHaveBeenCalledTimes(1);
+    const triggers = tokenProvider.mock.calls.map((call) => call[0].trigger);
+    expect(triggers).toEqual(["INIT"]);
     embed.destroy();
     vi.useRealTimers();
   });

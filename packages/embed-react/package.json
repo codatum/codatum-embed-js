@@ -1,6 +1,6 @@
 {
   "name": "@codatum/embed-react",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "React integration for Codatum signed embedding",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -34,6 +34,7 @@
     "@vitest/coverage-v8": "catalog:",
     "@testing-library/react": "catalog:",
     "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "jsdom": "catalog:",
     "react": "catalog:",
@@ -44,7 +45,7 @@
     "vitest": "catalog:"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20.12"
   },
   "license": "Apache-2.0",
   "repository": {
