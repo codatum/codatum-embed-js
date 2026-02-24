@@ -10,7 +10,7 @@ export const loadConfig = <T>(path: string): T => {
   return JSON5.parse(raw) as T;
 };
 
-const CODATUM_ISSUE_TOKEN_URL = "https://api.codatum.com/api/notebook/issueToken";
+const CODATUM_ISSUE_TOKEN_PATH = "/api/notebook/issueToken";
 
 export type IssueTokenPayload = {
   api_key: string;
@@ -23,21 +23,30 @@ export type IssueTokenPayload = {
   cache_max_age?: number;
 };
 
-export const issueToken = async (payload: IssueTokenPayload): Promise<{ token: string }> => {
-  const res = await fetch(CODATUM_ISSUE_TOKEN_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+export const issueToken = async (
+  origin: string,
+  payload: IssueTokenPayload,
+): Promise<{ token: string }> => {
+  try {
+    const res = await fetch(`${origin}${CODATUM_ISSUE_TOKEN_PATH}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
 
-  const data = (await res.json()) as { token?: string; message?: string };
-  if (!res.ok) {
-    throw new Error(data.message ?? "Failed to issue token");
+    const data = (await res.json()) as { token?: string; message?: string };
+
+    if (!res.ok) {
+      throw new Error(data.message ?? "Failed to issue token");
+    }
+    if (!data.token) {
+      throw new Error("No token in response");
+    }
+    return { token: data.token };
+  } catch (error) {
+    console.error("Failed to issue token", error);
+    throw error;
   }
-  if (!data.token) {
-    throw new Error("No token in response");
-  }
-  return { token: data.token };
 };
 
 export const getIntegrationId = (embedUrl: string): string => {

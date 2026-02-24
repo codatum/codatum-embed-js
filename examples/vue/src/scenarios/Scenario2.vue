@@ -285,7 +285,7 @@ const removeProductCategory = (index: number): void => {
         style: { height: '600px' },
       }"
       :displayOptions="{ hideParamsForm: true }"
-      :devOptions="{ debug: true }"
+      :devOptions="{ debug: true, disableValidateUrl: true }"
       @ready="onReady"
       @paramChanged="onParamChanged"
       @executeSqlsTriggered="onParamChanged"

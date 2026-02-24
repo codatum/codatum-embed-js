@@ -285,7 +285,7 @@ export default function Scenario2() {
               style: { height: "600px" },
             }}
             displayOptions={{ hideParamsForm: true }}
-            devOptions={{ debug: true }}
+            devOptions={{ debug: true, disableValidateUrl: true }}
             onReady={onReady}
             onParamChanged={onParamChanged}
             onExecuteSqlsTriggered={onParamChanged}

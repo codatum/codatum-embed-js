@@ -11,6 +11,7 @@ const CONFIG_PATH = join(__dirname, "config.jsonc");
 interface Config {
   apiKey: string;
   apiSecret: string;
+  apiOrigin: string;
   pageId: string;
   embedUrl: string;
   paramMapping: {
@@ -72,7 +73,7 @@ app.post("/token", async (c: Context) => {
     params: encodedParams,
   };
 
-  const { token } = await issueToken(payload);
+  const { token } = await issueToken(config.apiOrigin, payload);
   return c.json({ token });
 });
 

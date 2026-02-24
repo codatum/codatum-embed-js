@@ -139,7 +139,7 @@ const reloadEmbed = async () => {
         style: { height: '600px' },
       }"
       :displayOptions="{ expandParamsFormByDefault: true }"
-      :devOptions="{ debug: true }"
+      :devOptions="{ debug: true, disableValidateUrl: true }"
       @ready="onReady"
       @paramChanged="onParamChanged"
       @executeSqlsTriggered="onParamChanged"

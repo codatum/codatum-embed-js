@@ -179,7 +179,7 @@ export default function Scenario3() {
               style: { height: "600px" },
             }}
             displayOptions={{ expandParamsFormByDefault: true }}
-            devOptions={{ debug: true }}
+            devOptions={{ debug: true, disableValidateUrl: true }}
             onReady={onReady}
             onParamChanged={onParamChanged}
             onExecuteSqlsTriggered={onParamChanged}
