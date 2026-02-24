@@ -1,6 +1,7 @@
 import type { EmbedInstance } from "@codatum/embed";
 import { EmbedError, EmbedErrorCodes, EmbedStatuses } from "@codatum/embed";
 import { render, waitFor } from "@testing-library/react";
+import type { ComponentProps } from "react";
 import { createElement } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { EmbedReact, type EmbedReactRef } from "./index";
@@ -85,6 +86,67 @@ describe("EmbedReact", () => {
 
     const container = document.querySelector(".codatum-embed-react-container");
     expect(container).toBeInstanceOf(HTMLDivElement);
+  });
+
+  it("merges custom className with default container class", () => {
+    const mockInst = createMockInstance();
+    createEmbedMock.mockReturnValue(mockInst);
+
+    const { container: wrapper } = render(
+      createElement(EmbedReact, {
+        embedUrl: EMBED_URL,
+        tokenProvider,
+        className: "my-wrapper",
+      }),
+    );
+
+    const container = wrapper.querySelector(".codatum-embed-react-container.my-wrapper");
+    expect(container).toBeInstanceOf(HTMLDivElement);
+    expect(container?.className).toBe("codatum-embed-react-container my-wrapper");
+  });
+
+  it("passes through custom style and keeps display:contents", () => {
+    const mockInst = createMockInstance();
+    createEmbedMock.mockReturnValue(mockInst);
+
+    const customStyle = { width: "100%", minHeight: "400px" };
+    const { container: wrapper } = render(
+      createElement(EmbedReact, {
+        embedUrl: EMBED_URL,
+        tokenProvider,
+        style: customStyle,
+      }),
+    );
+
+    const container = wrapper.querySelector(".codatum-embed-react-container");
+    expect(container).toBeInstanceOf(HTMLDivElement);
+    expect((container as HTMLElement).style.display).toBe("contents");
+    expect((container as HTMLElement).style.width).toBe("100%");
+    expect((container as HTMLElement).style.minHeight).toBe("400px");
+  });
+
+  it("passes through div attributes (id, data-*, role, etc.)", () => {
+    const mockInst = createMockInstance();
+    createEmbedMock.mockReturnValue(mockInst);
+
+    const props = {
+      embedUrl: EMBED_URL,
+      tokenProvider,
+      id: "embed-root",
+      role: "region",
+      "aria-label": "Embedded notebook",
+      "data-testid": "codatum-embed",
+      "data-embed-id": "nb1",
+    } as ComponentProps<typeof EmbedReact>;
+    const { container: wrapper } = render(createElement(EmbedReact, props));
+
+    const container = wrapper.querySelector(".codatum-embed-react-container");
+    expect(container).toBeInstanceOf(HTMLDivElement);
+    expect((container as HTMLElement).id).toBe("embed-root");
+    expect((container as HTMLElement).getAttribute("data-testid")).toBe("codatum-embed");
+    expect((container as HTMLElement).getAttribute("data-embed-id")).toBe("nb1");
+    expect((container as HTMLElement).getAttribute("role")).toBe("region");
+    expect((container as HTMLElement).getAttribute("aria-label")).toBe("Embedded notebook");
   });
 
   it("calls createEmbed with container, embedUrl, tokenProvider and optional options", async () => {
