@@ -125,8 +125,15 @@ export class EmbedInstance implements IEmbedInstance {
     } else {
       iframe.src = buildIframeSrc(this.options.embedUrl, iframeOptions);
     }
-    iframe.className = getIframeClassName(iframeOptions);
+    // allow can be overridden by attrs
     iframe.setAttribute("allow", "fullscreen; clipboard-write");
+    if (iframeOptions?.attrs) {
+      for (const [key, value] of Object.entries(iframeOptions.attrs)) {
+        iframe.setAttribute(key, value);
+      }
+    }
+    // className and style take precedence over attrs
+    iframe.className = getIframeClassName(iframeOptions);
     Object.assign(iframe.style, {
       width: "100%",
       height: "100%",

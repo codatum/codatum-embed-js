@@ -93,6 +93,10 @@ export const validateEmbedOptions = (options: EmbedOptions): void => {
     if (style !== undefined && typeof style !== "object") {
       throwError("iframeOptions.style must be a CSSStyleDeclaration");
     }
+    const attrs = options.iframeOptions.attrs;
+    if (attrs !== undefined && (typeof attrs !== "object" || attrs === null || Array.isArray(attrs))) {
+      throwError("iframeOptions.attrs must be an object");
+    }
   }
   if (options.tokenOptions) {
     if (typeof options.tokenOptions !== "object") {

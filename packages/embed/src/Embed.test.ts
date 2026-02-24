@@ -323,7 +323,7 @@ describe("init()", () => {
     postMessageSpy.mockRestore();
   });
 
-  it("applies iframeOptions to iframe src, className, and style", async () => {
+  it("applies iframeOptions to iframe src, className, style, and attrs", async () => {
     const container = getContainer();
     const tokenProvider = vi.fn().mockResolvedValue({ token: TEST_JWT });
     const embed = createEmbed({
@@ -335,6 +335,7 @@ describe("init()", () => {
         locale: "ja",
         className: "my-embed",
         style: { minHeight: "400px" },
+        attrs: { title: "My embed", "data-testid": "embed-iframe" },
       },
     });
     embed.init();
@@ -344,6 +345,9 @@ describe("init()", () => {
     expect(iframe.className).toContain("codatum-embed-iframe");
     expect(iframe.className).toContain("my-embed");
     expect(iframe.style.minHeight).toBe("400px");
+    expect(iframe.getAttribute("title")).toBe("My embed");
+    expect(iframe.getAttribute("data-testid")).toBe("embed-iframe");
+    expect(iframe.getAttribute("allow")).toBe("fullscreen; clipboard-write"); // allow can be overridden by attrs
     dispatchReadyForToken(iframe);
     await embed.init();
     embed.destroy();

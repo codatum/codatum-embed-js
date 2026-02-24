@@ -28,6 +28,7 @@ export type IframeOptions = {
   locale?: string;
   className?: string;
   style?: Partial<CSSStyleDeclaration>;
+  attrs?: Record<string, string>;
 };
 
 export type TokenOptions = {

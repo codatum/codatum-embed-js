@@ -4,4 +4,4 @@
 "@codatum/embed-vue": patch
 ---
 
-Add `TokenProvider` type
+Add `TokenProvider` type to the core SDK.

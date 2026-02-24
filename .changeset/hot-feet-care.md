@@ -4,4 +4,4 @@
 "@codatum/embed-vue": patch
 ---
 
-Add `tokenOptions.disableRefresh` to disable automatic token refresh.
+Add `iframeOptions.attrs` option to set additional HTML attributes on the iframe element.
