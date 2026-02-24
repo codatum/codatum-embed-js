@@ -23,7 +23,10 @@ const toEmbedError = (err: unknown): EmbedError =>
         { cause: err },
       );
 
-export type EmbedReactProps = Omit<ComponentPropsWithoutRef<"div">, "children"> & {
+export type EmbedReactProps = Omit<
+  ComponentPropsWithoutRef<"div">,
+  "children" | "onError"
+> & {
   embedUrl: string;
   tokenProvider: (context: TokenProviderContext) => Promise<TokenProviderResult>;
   iframeOptions?: IframeOptions;
