@@ -1,7 +1,0 @@
----
-"@codatum/embed": minor
-"@codatum/embed-react": patch
-"@codatum/embed-vue": patch
----
-
-Add `tokenOptions.disableRefresh` to disable automatic token refresh.
