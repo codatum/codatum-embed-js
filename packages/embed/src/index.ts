@@ -17,6 +17,7 @@ export type {
   ParamMapper,
   ReadyForTokenMessage,
   TokenOptions,
+  TokenProvider,
   TokenProviderContext,
   TokenProviderResult,
 } from "./types";

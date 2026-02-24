@@ -59,10 +59,12 @@ export type MockOptions = {
   callTokenProvider?: boolean;
 };
 
+export type TokenProvider = (context: TokenProviderContext) => Promise<TokenProviderResult>;
+
 export type EmbedOptions = {
   container: HTMLElement | string;
   embedUrl: string;
-  tokenProvider: (context: TokenProviderContext) => Promise<TokenProviderResult>;
+  tokenProvider: TokenProvider;
   iframeOptions?: IframeOptions;
   tokenOptions?: TokenOptions;
   displayOptions?: DisplayOptions;
