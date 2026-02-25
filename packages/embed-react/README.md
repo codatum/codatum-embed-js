@@ -110,7 +110,7 @@ Option types and behavior (e.g. `iframeOptions`, `tokenOptions`, `displayOptions
 | Property | Type | Description |
 |----------|------|-------------|
 | `reload()` | `() => Promise<boolean>` | Re-fetches token and params; returns `false` on failure (error reported via `onError`) |
-| `status` | `'CREATED' \| 'INITIALIZING' \| 'READY' \| 'DESTROYED'` | Current embed state |
+| `status` | `'CREATED' \| 'LOADING' \| 'READY' \| 'DESTROYED'` | Current embed state |
 
 Need a custom container or full control? Use `createEmbed()` from this package (or [@codatum/embed](https://github.com/codatum/codatum-embed-js/tree/main/packages/embed#readme)) inside a `useEffect` and call `instance.destroy()` in the cleanup.
 

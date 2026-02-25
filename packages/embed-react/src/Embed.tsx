@@ -23,10 +23,7 @@ const toEmbedError = (err: unknown): EmbedError =>
         { cause: err },
       );
 
-export type EmbedReactProps = Omit<
-  ComponentPropsWithoutRef<"div">,
-  "children" | "onError"
-> & {
+export type EmbedReactProps = Omit<ComponentPropsWithoutRef<"div">, "children" | "onError"> & {
   embedUrl: string;
   tokenProvider: (context: TokenProviderContext) => Promise<TokenProviderResult>;
   iframeOptions?: IframeOptions;
@@ -108,7 +105,7 @@ export const Embed = forwardRef<EmbedReactRef, EmbedReactProps>(function Embed(
     });
 
     instanceRef.current = embed;
-    setStatus(EmbedStatuses.INITIALIZING);
+    setStatus(EmbedStatuses.LOADING);
 
     embed.on("paramChanged", (payload) => callbacksRef.current.onParamChanged?.(payload));
     embed.on("executeSqlsTriggered", (payload) =>

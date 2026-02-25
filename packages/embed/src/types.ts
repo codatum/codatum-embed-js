@@ -35,7 +35,7 @@ export type TokenOptions = {
   disableRefresh?: boolean;
   refreshBuffer?: number; // seconds
   retryCount?: number; // if 0, no retry
-  initTimeout?: number; // seconds; if 0, no timeout
+  loadingTimeout?: number; // seconds; if 0, no timeout
   onRefreshError?: (error: EmbedError) => void;
 };
 
@@ -45,8 +45,11 @@ export const TokenProviderTriggers = {
   REFRESH: "REFRESH",
 } as const;
 
+export type TokenProviderTrigger =
+  (typeof TokenProviderTriggers)[keyof typeof TokenProviderTriggers];
+
 export type TokenProviderContext = {
-  trigger: (typeof TokenProviderTriggers)[keyof typeof TokenProviderTriggers];
+  trigger: TokenProviderTrigger;
   markNonRetryable: () => void;
 };
 
@@ -75,12 +78,18 @@ export type EmbedOptions = {
 
 export const EmbedMessageTypes = {
   READY_FOR_TOKEN: "READY_FOR_TOKEN",
+  CONTENT_READY: "CONTENT_READY",
   PARAM_CHANGED: "PARAM_CHANGED",
   EXECUTE_SQLS_TRIGGERED: "EXECUTE_SQLS_TRIGGERED",
+  EXECUTION_SUCCEEDED: "EXECUTION_SUCCEEDED",
+  EXECUTION_FAILED: "EXECUTION_FAILED",
 } as const;
 
 export type ReadyForTokenMessage = {
   type: typeof EmbedMessageTypes.READY_FOR_TOKEN;
+};
+export type ContentReadyMessage = {
+  type: typeof EmbedMessageTypes.CONTENT_READY;
 };
 export type ParamChangedMessage = {
   type: typeof EmbedMessageTypes.PARAM_CHANGED;
@@ -90,8 +99,20 @@ export type ExecuteSqlsTriggeredMessage = {
   type: typeof EmbedMessageTypes.EXECUTE_SQLS_TRIGGERED;
   params: EncodedParam[];
 };
+export type ExecutionSucceededMessage = {
+  type: typeof EmbedMessageTypes.EXECUTION_SUCCEEDED;
+};
+export type ExecutionFailedMessage = {
+  type: typeof EmbedMessageTypes.EXECUTION_FAILED;
+};
 
-export type EmbedMessage = ReadyForTokenMessage | ParamChangedMessage | ExecuteSqlsTriggeredMessage;
+export type EmbedMessage =
+  | ReadyForTokenMessage
+  | ContentReadyMessage
+  | ParamChangedMessage
+  | ExecuteSqlsTriggeredMessage
+  | ExecutionSucceededMessage
+  | ExecutionFailedMessage;
 
 export type EmbedEventMap = {
   paramChanged: (payload: ParamChangedMessage) => void;
@@ -101,7 +122,7 @@ export type EmbedEventMap = {
 export const EmbedErrorCodes = {
   INVALID_OPTIONS: "INVALID_OPTIONS",
   CONTAINER_NOT_FOUND: "CONTAINER_NOT_FOUND",
-  INIT_TIMEOUT: "INIT_TIMEOUT",
+  LOADING_TIMEOUT: "LOADING_TIMEOUT",
   TOKEN_PROVIDER_FAILED: "TOKEN_PROVIDER_FAILED",
   MISSING_REQUIRED_PARAM: "MISSING_REQUIRED_PARAM",
   INVALID_PARAM_VALUE: "INVALID_PARAM_VALUE",
@@ -226,7 +247,7 @@ export type DefineParamMapper<M extends Record<string, ParamMeta>> = ParamMapper
 
 export const EmbedStatuses = {
   CREATED: "CREATED",
-  INITIALIZING: "INITIALIZING",
+  LOADING: "LOADING",
   READY: "READY",
   DESTROYED: "DESTROYED",
 } as const;

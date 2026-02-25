@@ -40,6 +40,23 @@ function dispatchReadyForToken(iframe: HTMLIFrameElement): void {
   );
 }
 
+function dispatchContentReady(iframe: HTMLIFrameElement): void {
+  window.dispatchEvent(
+    new MessageEvent("message", {
+      data: { type: "CONTENT_READY" },
+      origin: EMBED_ORIGIN,
+      source: iframe.contentWindow,
+    }),
+  );
+}
+
+/** Waits for tokenProvider's then (sendSetToken) to run, then dispatches CONTENT_READY so init can resolve. */
+async function dispatchReadyForTokenThenContentReady(iframe: HTMLIFrameElement): Promise<void> {
+  dispatchReadyForToken(iframe);
+  await Promise.resolve();
+  dispatchContentReady(iframe);
+}
+
 // --- createEmbed -------------------------------------------------------------
 
 describe("createEmbed", () => {
@@ -208,22 +225,22 @@ describe("init()", () => {
       tokenProvider,
     });
     const initPromise = embed.init();
-    const iframe = container.querySelector("iframe");
+    const iframe = container.querySelector("iframe") as HTMLIFrameElement;
     expect(iframe).toBeTruthy();
-    dispatchReadyForToken(iframe as HTMLIFrameElement);
+    await dispatchReadyForTokenThenContentReady(iframe);
     await initPromise;
     expect(tokenProvider).toHaveBeenCalledTimes(1);
     embed.destroy();
   });
 
-  it("rejects with INIT_TIMEOUT when READY_FOR_TOKEN is not received within initTimeout", async () => {
+  it("rejects with LOADING_TIMEOUT when READY_FOR_TOKEN is not received within loadingTimeout", async () => {
     vi.useFakeTimers();
     const container = getContainer();
     const embed = createEmbed({
       container,
       embedUrl: VALID_EMBED_URL,
       tokenProvider: () => Promise.resolve({ token: TEST_JWT }),
-      tokenOptions: { initTimeout: 3 },
+      tokenOptions: { loadingTimeout: 3 },
     });
     const initPromise = embed.init();
     let rejected: unknown;
@@ -232,7 +249,7 @@ describe("init()", () => {
     });
     await vi.advanceTimersByTimeAsync(4 * 1000);
     await Promise.resolve();
-    expect(rejected).toMatchObject({ code: EmbedErrorCodes.INIT_TIMEOUT });
+    expect(rejected).toMatchObject({ code: EmbedErrorCodes.LOADING_TIMEOUT });
     vi.useRealTimers();
   });
 
@@ -253,7 +270,7 @@ describe("init()", () => {
 
     const postMessageSpy = vi.spyOn(iframe.contentWindow as Window, "postMessage");
 
-    dispatchReadyForToken(iframe);
+    await dispatchReadyForTokenThenContentReady(iframe);
 
     await initPromise;
     expect(tokenProvider).toHaveBeenCalledTimes(1);
@@ -283,7 +300,7 @@ describe("init()", () => {
     const initPromise = embed.init();
     const iframe = container.querySelector("iframe") as HTMLIFrameElement;
     const postMessageSpy = vi.spyOn(iframe.contentWindow as Window, "postMessage");
-    dispatchReadyForToken(iframe);
+    await dispatchReadyForTokenThenContentReady(iframe);
     await initPromise;
     expect(postMessageSpy).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -309,7 +326,7 @@ describe("init()", () => {
     const initPromise = embed.init();
     const iframe = container.querySelector("iframe") as HTMLIFrameElement;
     const postMessageSpy = vi.spyOn(iframe.contentWindow as Window, "postMessage");
-    dispatchReadyForToken(iframe);
+    await dispatchReadyForTokenThenContentReady(iframe);
     await initPromise;
     expect(postMessageSpy).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -348,7 +365,7 @@ describe("init()", () => {
     expect(iframe.getAttribute("title")).toBe("My embed");
     expect(iframe.getAttribute("data-testid")).toBe("embed-iframe");
     expect(iframe.getAttribute("allow")).toBe("fullscreen; clipboard-write"); // allow can be overridden by attrs
-    dispatchReadyForToken(iframe);
+    await dispatchReadyForTokenThenContentReady(iframe);
     await embed.init();
     embed.destroy();
   });
@@ -395,6 +412,7 @@ describe("init()", () => {
   });
 
   it("retries tokenProvider up to retryCount with exponential backoff on failure", async () => {
+    vi.useFakeTimers();
     const container = getContainer();
     const tokenProvider = vi
       .fn()
@@ -408,11 +426,16 @@ describe("init()", () => {
       tokenOptions: { retryCount: 2 },
     });
     const initPromise = embed.init();
-    dispatchReadyForToken(container.querySelector("iframe") as HTMLIFrameElement);
-
+    const iframe = container.querySelector("iframe") as HTMLIFrameElement;
+    dispatchReadyForToken(iframe);
+    await vi.advanceTimersByTimeAsync(1000);
+    await vi.advanceTimersByTimeAsync(2000);
+    await Promise.resolve();
+    dispatchContentReady(iframe);
     await initPromise;
     expect(tokenProvider).toHaveBeenCalledTimes(3);
     embed.destroy();
+    vi.useRealTimers();
   });
 
   it("returns a resolved promise when init is called after destroy", async () => {
@@ -426,7 +449,7 @@ describe("init()", () => {
     await expect(embed.init()).resolves.toBeUndefined();
   });
 
-  it("returns the same promise when init is called again while INITIALIZING", async () => {
+  it("returns the same promise when init is called again while LOADING", async () => {
     const container = getContainer();
     const tokenProvider = vi.fn().mockResolvedValue({ token: TEST_JWT });
     const embed = createEmbed({
@@ -437,9 +460,34 @@ describe("init()", () => {
     const p1 = embed.init();
     const p2 = embed.init();
     expect(p1).toBe(p2);
-    dispatchReadyForToken(container.querySelector("iframe") as HTMLIFrameElement);
+    const iframe = container.querySelector("iframe") as HTMLIFrameElement;
+    await dispatchReadyForTokenThenContentReady(iframe);
     await p1;
     embed.destroy();
+  });
+
+  it("rejects with LOADING_TIMEOUT when READY_FOR_TOKEN is received but CONTENT_READY is not sent within loadingTimeout", async () => {
+    vi.useFakeTimers();
+    const container = getContainer();
+    const tokenProvider = vi.fn().mockResolvedValue({ token: TEST_JWT });
+    const embed = createEmbed({
+      container,
+      embedUrl: VALID_EMBED_URL,
+      tokenProvider,
+      tokenOptions: { loadingTimeout: 3 },
+    });
+    const initPromise = embed.init();
+    const iframe = container.querySelector("iframe") as HTMLIFrameElement;
+    dispatchReadyForToken(iframe);
+    await Promise.resolve();
+    let rejected: unknown;
+    initPromise.catch((e) => {
+      rejected = e;
+    });
+    await vi.advanceTimersByTimeAsync(4 * 1000);
+    await Promise.resolve();
+    expect(rejected).toMatchObject({ code: EmbedErrorCodes.LOADING_TIMEOUT });
+    vi.useRealTimers();
   });
 });
 
@@ -463,7 +511,7 @@ describe("EmbedInstance (after init)", () => {
     const iframeEl = container.querySelector("iframe");
     if (!iframeEl) throw new Error("Test setup: iframe not found");
     iframe = iframeEl as HTMLIFrameElement;
-    dispatchReadyForToken(iframe);
+    await dispatchReadyForTokenThenContentReady(iframe);
     await initPromise;
     instance = embed;
   });
@@ -594,12 +642,16 @@ describe("EmbedInstance (after init)", () => {
     });
     const initPromise = embed.init();
     const iframeEl = c.querySelector("iframe") as HTMLIFrameElement;
-    dispatchReadyForToken(iframeEl);
+    await dispatchReadyForTokenThenContentReady(iframeEl);
     await initPromise;
     const postMessageSpy = vi.spyOn(iframeEl.contentWindow as Window, "postMessage");
     postMessageSpy.mockClear();
 
-    await embed.reload();
+    const reloadPromise = embed.reload();
+    await Promise.resolve(); // allow tokenProvider to resolve
+    await Promise.resolve(); // allow sendSetToken .then to run
+    dispatchContentReady(iframeEl);
+    await reloadPromise;
     expect(tokenProvider).toHaveBeenCalledTimes(2);
     const lastCall = tokenProvider.mock.calls[1][0];
     expect(lastCall.trigger).toBe("RELOAD");
@@ -629,13 +681,43 @@ describe("EmbedInstance (after init)", () => {
       tokenProvider,
     });
     const initPromise = embed.init();
-    dispatchReadyForToken(c.querySelector("iframe") as HTMLIFrameElement);
+    const iframeEl = c.querySelector("iframe") as HTMLIFrameElement;
+    await dispatchReadyForTokenThenContentReady(iframeEl);
     await initPromise;
     await expect(embed.reload()).rejects.toMatchObject({
       code: EmbedErrorCodes.TOKEN_PROVIDER_FAILED,
       message: "reload failed",
     });
     embed.destroy();
+  });
+
+  it("reload rejects with LOADING_TIMEOUT and restores READY when CONTENT_READY is not received within loadingTimeout", async () => {
+    vi.useFakeTimers();
+    instance.destroy();
+    document.body.innerHTML = '<div id="container"></div>';
+    const c = getContainer();
+    const tokenProvider = vi.fn().mockResolvedValue({ token: TEST_JWT });
+    const embed = createEmbed({
+      container: c,
+      embedUrl: VALID_EMBED_URL,
+      tokenProvider,
+      tokenOptions: { loadingTimeout: 3 },
+    });
+    const initPromise = embed.init();
+    const iframeEl = c.querySelector("iframe") as HTMLIFrameElement;
+    await dispatchReadyForTokenThenContentReady(iframeEl);
+    await initPromise;
+    const reloadPromise = embed.reload();
+    await Promise.resolve();
+    const assertion = expect(reloadPromise).rejects.toMatchObject({
+      code: EmbedErrorCodes.LOADING_TIMEOUT,
+    });
+    await vi.advanceTimersByTimeAsync(4 * 1000);
+    await Promise.resolve();
+    await assertion;
+    expect(embed.status).toBe(EmbedStatuses.READY);
+    embed.destroy();
+    vi.useRealTimers();
   });
 
   it("reload is a no-op and resolves when not READY (tokenProvider not called)", async () => {
@@ -718,7 +800,8 @@ describe("EmbedInstance (after init)", () => {
       tokenOptions: { refreshBuffer: 0, onRefreshError },
     });
     const initPromise = embed.init();
-    dispatchReadyForToken(c.querySelector("iframe") as HTMLIFrameElement);
+    const iframeEl = c.querySelector("iframe") as HTMLIFrameElement;
+    await dispatchReadyForTokenThenContentReady(iframeEl);
     await initPromise;
     await vi.advanceTimersByTimeAsync(5 * 1000);
     await Promise.resolve();
@@ -727,6 +810,36 @@ describe("EmbedInstance (after init)", () => {
         code: EmbedErrorCodes.TOKEN_PROVIDER_FAILED,
         message: "refresh failed",
       }),
+    );
+    embed.destroy();
+    vi.useRealTimers();
+  });
+
+  it("calls onRefreshError with LOADING_TIMEOUT and restores READY when CONTENT_READY is not received within loadingTimeout during auto-refresh", async () => {
+    vi.useFakeTimers();
+    const onRefreshError = vi.fn();
+    const nowSec = Math.floor(Date.now() / 1000);
+    const shortTtlToken = createTestJwt(nowSec, nowSec + 2);
+    const tokenProvider = vi.fn().mockResolvedValue({ token: shortTtlToken });
+    instance.destroy();
+    document.body.innerHTML = '<div id="container"></div>';
+    const c = getContainer();
+    const embed = createEmbed({
+      container: c,
+      embedUrl: VALID_EMBED_URL,
+      tokenProvider,
+      tokenOptions: { refreshBuffer: 0, loadingTimeout: 3, onRefreshError },
+    });
+    const initPromise = embed.init();
+    const iframeEl = c.querySelector("iframe") as HTMLIFrameElement;
+    await dispatchReadyForTokenThenContentReady(iframeEl);
+    await initPromise;
+    onRefreshError.mockClear();
+    await vi.advanceTimersByTimeAsync(5 * 1000);
+    await Promise.resolve();
+    expect(embed.status).toBe(EmbedStatuses.READY);
+    expect(onRefreshError).toHaveBeenCalledWith(
+      expect.objectContaining({ code: EmbedErrorCodes.LOADING_TIMEOUT }),
     );
     embed.destroy();
     vi.useRealTimers();
@@ -747,7 +860,8 @@ describe("EmbedInstance (after init)", () => {
       tokenOptions: { disableRefresh: true, refreshBuffer: 0 },
     });
     const initPromise = embed.init();
-    dispatchReadyForToken(c.querySelector("iframe") as HTMLIFrameElement);
+    const iframeEl = c.querySelector("iframe") as HTMLIFrameElement;
+    await dispatchReadyForTokenThenContentReady(iframeEl);
     await initPromise;
     expect(tokenProvider).toHaveBeenCalledTimes(1);
     expect(tokenProvider).toHaveBeenCalledWith(expect.objectContaining({ trigger: "INIT" }));

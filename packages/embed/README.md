@@ -92,15 +92,15 @@ Options applied to the iframe element and passed to the embed via URL/search par
 
 #### `TokenOptions`
 
-Controls token lifetime, refresh behavior, and init timeout.
+Controls token lifetime, refresh behavior, and loading timeout.
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `disableRefresh` | `boolean` | `false` | When `true`, disables automatic token refresh before the token expires |
 | `refreshBuffer` | `number` | `60` | Number of seconds before the token expires when auto-refresh is triggered |
 | `retryCount` | `number` | `2` | Number of retries on token fetch failure; `0` = no retry |
-| `initTimeout` | `number` | `30` | Max wait in seconds for embed "ready"; `0` = no timeout |
-| `onRefreshError` | `(error: EmbedError) => void` | `undefined` | Callback invoked when token auto-refresh fails (due to `tokenProvider` failure) and does not recover after all retries |
+| `loadingTimeout` | `number` | `30` | Max wait in seconds for CONTENT_READY after entering LOADING (init/reload/auto-refresh); `0` = no timeout |
+| `onRefreshError` | `(error: EmbedError) => void` | `undefined` | Callback invoked when token auto-refresh fails (due to `tokenProvider` failure or loading timeout) and does not recover after all retries |
 
 #### `DisplayOptions`
 
@@ -118,7 +118,7 @@ Development and testing only. Not intended for production.
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `debug` | `boolean` | `false` | When `true`, logs SDK lifecycle: postMessage (in/out), tokenProvider calls/refresh/retries, status transitions (CREATED → INITIALIZING → READY → DESTROYED). |
+| `debug` | `boolean` | `false` | When `true`, logs SDK lifecycle: postMessage (in/out), tokenProvider calls/refresh/retries, status transitions (CREATED → LOADING → READY → DESTROYED). |
 | `disableValidateUrl` | `boolean` | `false` | When `true`, skips `embedUrl` format validation (domain/path). Use for local or staging URLs that don't match the production pattern. |
 | `mock` | `boolean` \| `MockOptions` | - | Enables mock mode: no real embed load, no network. iframe uses `srcdoc` with a styled placeholder. |
 
@@ -139,8 +139,8 @@ Creates an embed instance. Throws `EmbedError` if options are invalid. Call `ini
 
 | Method | Description |
 |--------|-------------|
-| `async init()` | Creates the iframe, waits for it to be ready, calls `tokenProvider`, and sends token (and optional params) to the embed. Resolves when ready. Rejects with `EmbedError` on failure. |
-| `async reload()` | Calls `tokenProvider` again and sends the returned token and params via `SET_TOKEN`. May throw `EmbedError` when run. |
+| `async init()` | Creates the iframe, waits for it to be ready, calls `tokenProvider`, and sends token (and optional params) to the embed. Resolves when the embed sends `CONTENT_READY`. Rejects with `EmbedError` on failure. |
+| `async reload()` | Calls `tokenProvider`, sends the returned token and params via `SET_TOKEN`, and resolves when the embed sends `CONTENT_READY`. Rejects with `EmbedError` on failure. |
 | `destroy()` | Removes iframe, clears listeners and timers. No-op if already destroyed. |
 
 ### Instance properties
@@ -148,7 +148,7 @@ Creates an embed instance. Throws `EmbedError` if options are invalid. Call `ini
 | Property | Type | Description |
 |----------|------|-------------|
 | `iframe` | `HTMLIFrameElement \| null` | The embed iframe element. |
-| `status` | `'CREATED' \| 'INITIALIZING' \| 'READY' \| 'DESTROYED'` | Current instance state. |
+| `status` | `'CREATED' \| 'LOADING' \| 'READY' \| 'DESTROYED'` | Current instance state. |
 
 ### Events
 
@@ -290,7 +290,7 @@ All errors are thrown/rejected as `EmbedError` with a `code` property.
 |------|----------|-------------|
 | `INVALID_OPTIONS` | `createEmbed` | Options are invalid |
 | `CONTAINER_NOT_FOUND` | `init` | Container element not found |
-| `INIT_TIMEOUT` | `init` | Ready not received within `tokenOptions.initTimeout` |
+| `LOADING_TIMEOUT` | `init` / `reload` | `CONTENT_READY` not received within `tokenOptions.loadingTimeout`; auto-refresh reports via `onRefreshError` |
 | `TOKEN_PROVIDER_FAILED` | `init` / `reload` | `tokenProvider` threw |
 | `MISSING_REQUIRED_PARAM` | `encode` / `decode` | Required param missing |
 | `INVALID_PARAM_VALUE` | `encode` / `decode` | Value failed validation |

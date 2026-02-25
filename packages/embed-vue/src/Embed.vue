@@ -76,7 +76,7 @@ onMounted(async () => {
   });
 
   instance.value = embed;
-  status.value = EmbedStatuses.INITIALIZING;
+  status.value = EmbedStatuses.LOADING;
 
   embed.on("paramChanged", (payload) => emit("paramChanged", payload));
   embed.on("executeSqlsTriggered", (payload) =>

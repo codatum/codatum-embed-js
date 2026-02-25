@@ -66,7 +66,7 @@ vi.mock("@codatum/embed", () => ({
   },
   EmbedStatuses: {
     CREATED: "CREATED",
-    INITIALIZING: "INITIALIZING",
+    LOADING: "LOADING",
     READY: "READY",
     DESTROYED: "DESTROYED",
   },

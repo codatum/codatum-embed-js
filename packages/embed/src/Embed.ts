@@ -7,6 +7,7 @@ import type {
   MockOptions,
   TokenProviderContext,
   TokenProviderResult,
+  TokenProviderTrigger,
 } from "./types";
 import {
   EmbedError,
@@ -27,7 +28,7 @@ import {
 
 const DEFAULT_REFRESH_BUFFER = 60;
 const DEFAULT_RETRY_COUNT = 2;
-const DEFAULT_INIT_TIMEOUT = 30;
+const DEFAULT_LOADING_TIMEOUT = 30;
 
 const SHORT_TTL_THRESHOLD = 10 * 1000;
 const SHORT_TTL_MAX_CONSECUTIVE = 3;
@@ -47,9 +48,9 @@ export class EmbedInstance implements IEmbedInstance {
   private readonly mockOptions: MockOptions | undefined;
 
   private _status: EmbedStatus = EmbedStatuses.CREATED;
-  private initTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  private loadingTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  private loadingReason: TokenProviderTrigger | null = null;
   private refreshTimerId: ReturnType<typeof setTimeout> | null = null;
-  private reloadInProgress = false;
   private readyForTokenHandled = false;
   private readonly eventHandlers: {
     [K in keyof EmbedEventMap]: EmbedEventMap[K][];
@@ -61,6 +62,8 @@ export class EmbedInstance implements IEmbedInstance {
   private readonly initPromise: Promise<void>;
   private resolveInit!: () => void;
   private rejectInit!: (err: EmbedError) => void;
+  private resolveReload: (() => void) | null = null;
+  private rejectReload: ((err: EmbedError) => void) | null = null;
 
   private readonly boundHandleMessage = (event: MessageEvent) => this.handleMessage(event);
 
@@ -89,8 +92,6 @@ export class EmbedInstance implements IEmbedInstance {
       this.resolveInit = resolve;
       this.rejectInit = reject;
     });
-
-    window.addEventListener("message", this.boundHandleMessage);
   }
 
   /**
@@ -104,7 +105,7 @@ export class EmbedInstance implements IEmbedInstance {
     if (this._status !== EmbedStatuses.CREATED) {
       return this.initPromise;
     }
-    this.setStatus(EmbedStatuses.INITIALIZING);
+    this.setStatus(EmbedStatuses.LOADING);
 
     const container =
       typeof this.options.container === "string"
@@ -117,6 +118,7 @@ export class EmbedInstance implements IEmbedInstance {
       return this.initPromise;
     }
 
+    window.addEventListener("message", this.boundHandleMessage);
     const iframeOptions = this.options.iframeOptions;
     const iframe = document.createElement("iframe");
     if (this.isMock) {
@@ -147,7 +149,7 @@ export class EmbedInstance implements IEmbedInstance {
     if (this.isMock) {
       const callTokenProvider = this.mockOptions?.callTokenProvider === true;
       if (callTokenProvider) {
-        this.fetchSessionWithRetry(TokenProviderTriggers.INIT)
+        this.fetchTokenWithRetry(TokenProviderTriggers.INIT)
           .then(() => {
             if (this.isDestroyed) return;
             this.completeInit();
@@ -162,33 +164,21 @@ export class EmbedInstance implements IEmbedInstance {
       return this.initPromise;
     }
 
-    const initTimeoutMs = (this.options.tokenOptions?.initTimeout ?? DEFAULT_INIT_TIMEOUT) * 1000;
-    if (initTimeoutMs > 0) {
-      this.initTimeoutId = setTimeout(() => {
-        this.initTimeoutId = null;
-        if (this._status === EmbedStatuses.INITIALIZING) {
-          this.destroy();
-          this.rejectInit(
-            new EmbedError(
-              EmbedErrorCodes.INIT_TIMEOUT,
-              `Initialization did not complete within ${initTimeoutMs}ms`,
-            ),
-          );
-        }
-      }, initTimeoutMs);
-    }
+    this.startLoadingTimeout(TokenProviderTriggers.INIT);
 
     return this.initPromise;
   }
 
   private completeInit(): void {
+    this.loadingReason = null;
+    this.clearLoadingTimeout();
     this.setStatus(EmbedStatuses.READY);
-    this.clearInitTimeout();
     this.resolveInit();
   }
 
   private failInit(err: unknown): void {
-    this.clearInitTimeout();
+    this.loadingReason = null;
+    this.clearLoadingTimeout();
     this.rejectInit(
       new EmbedError(
         EmbedErrorCodes.TOKEN_PROVIDER_FAILED,
@@ -222,10 +212,51 @@ export class EmbedInstance implements IEmbedInstance {
     console.log("[Embed]", ...args);
   }
 
-  private clearInitTimeout(): void {
-    if (this.initTimeoutId !== null) {
-      clearTimeout(this.initTimeoutId);
-      this.initTimeoutId = null;
+  private getLoadingTimeoutMs(): number {
+    return (this.options.tokenOptions?.loadingTimeout ?? DEFAULT_LOADING_TIMEOUT) * 1000;
+  }
+
+  private startLoadingTimeout(reason: TokenProviderTrigger): void {
+    this.loadingReason = reason;
+    this.clearLoadingTimeout();
+    const ms = this.getLoadingTimeoutMs();
+    if (ms <= 0) return;
+    this.loadingTimeoutId = setTimeout(() => {
+      this.loadingTimeoutId = null;
+      this.onLoadingTimeout();
+    }, ms);
+  }
+
+  private clearLoadingTimeout(): void {
+    if (this.loadingTimeoutId !== null) {
+      clearTimeout(this.loadingTimeoutId);
+      this.loadingTimeoutId = null;
+    }
+  }
+
+  private onLoadingTimeout(): void {
+    const reason = this.loadingReason;
+    this.loadingReason = null;
+    if (reason === null) return;
+    if (this._status !== EmbedStatuses.LOADING) return;
+    const timeoutMs = this.getLoadingTimeoutMs();
+    const err = new EmbedError(
+      EmbedErrorCodes.LOADING_TIMEOUT,
+      `CONTENT_READY was not received within ${timeoutMs}ms`,
+    );
+    if (reason === TokenProviderTriggers.INIT) {
+      this.destroy();
+      this.rejectInit(err);
+    } else if (reason === TokenProviderTriggers.RELOAD) {
+      this.resolveReload = null;
+      const reject = this.rejectReload;
+      this.rejectReload = null;
+      this.setStatus(EmbedStatuses.READY);
+      reject?.(err);
+    } else {
+      // refresh
+      this.setStatus(EmbedStatuses.READY);
+      this.onRefreshError?.(err);
     }
   }
 
@@ -273,7 +304,7 @@ export class EmbedInstance implements IEmbedInstance {
    * Calls tokenProvider with context and retries with exponential backoff up to retryCount on failure,
    * unless context.markNonRetryable() was called. On success, schedules the next token refresh.
    */
-  private fetchSessionWithRetry(
+  private fetchTokenWithRetry(
     trigger: TokenProviderContext["trigger"],
     attempt = 0,
     delayMs = 1000,
@@ -316,7 +347,7 @@ export class EmbedInstance implements IEmbedInstance {
         });
         return new Promise<TokenProviderResult>((resolve, reject) => {
           setTimeout(() => {
-            this.fetchSessionWithRetry(trigger, attempt + 1, delayMs * 2).then(resolve, reject);
+            this.fetchTokenWithRetry(trigger, attempt + 1, delayMs * 2).then(resolve, reject);
           }, delayMs);
         });
       });
@@ -340,20 +371,26 @@ export class EmbedInstance implements IEmbedInstance {
     }
     this.refreshTimerId = setTimeout(() => {
       this.refreshTimerId = null;
-      this.runRefreshWithRetry();
+      this.refresh();
     }, delayMs);
   }
 
-  private runRefreshWithRetry(): void {
+  private refresh(): void {
     if (this.isDestroyed || this.disableRefresh) return;
+    if (this._status !== EmbedStatuses.READY) return;
     this.debugLog("auto-refresh triggered");
-    this.fetchSessionWithRetry(TokenProviderTriggers.REFRESH)
+    this.setStatus(EmbedStatuses.LOADING);
+    this.startLoadingTimeout(TokenProviderTriggers.REFRESH);
+    this.fetchTokenWithRetry(TokenProviderTriggers.REFRESH)
       .then((result) => {
         if (this.isDestroyed) return;
         this.sendSetToken(result);
       })
       .catch((err) => {
         if (this.isDestroyed) return;
+        this.loadingReason = null;
+        this.clearLoadingTimeout();
+        this.setStatus(EmbedStatuses.READY);
         this.debugLog("onRefreshError called", { err });
         this.onRefreshError?.(
           new EmbedError(
@@ -380,6 +417,8 @@ export class EmbedInstance implements IEmbedInstance {
     }
     if (data.type === "READY_FOR_TOKEN") {
       this.onReadyForToken();
+    } else if (data.type === "CONTENT_READY") {
+      this.onContentReady();
     } else if (data.type === "PARAM_CHANGED") {
       for (const h of this.eventHandlers.paramChanged) {
         h(deepClone(data));
@@ -392,14 +431,13 @@ export class EmbedInstance implements IEmbedInstance {
   }
 
   private onReadyForToken(): void {
-    if (this.readyForTokenHandled || this._status !== EmbedStatuses.INITIALIZING) return;
+    if (this.readyForTokenHandled || this._status !== EmbedStatuses.LOADING) return;
     this.readyForTokenHandled = true;
     this.debugLog("READY_FOR_TOKEN received");
-    this.fetchSessionWithRetry(TokenProviderTriggers.INIT)
+    this.fetchTokenWithRetry(TokenProviderTriggers.INIT)
       .then((result) => {
         if (this.isDestroyed) return;
         this.sendSetToken(result);
-        this.completeInit();
       })
       .catch((err) => {
         if (this.isDestroyed) return;
@@ -407,31 +445,57 @@ export class EmbedInstance implements IEmbedInstance {
       });
   }
 
+  private onContentReady(): void {
+    if (this.isDestroyed || this._status !== EmbedStatuses.LOADING) return;
+    const reason = this.loadingReason;
+    if (reason === null) return;
+    this.debugLog("CONTENT_READY received");
+    this.loadingReason = null;
+    this.clearLoadingTimeout();
+    if (reason === TokenProviderTriggers.INIT) {
+      this.completeInit();
+    } else {
+      this.setStatus(EmbedStatuses.READY);
+      const resolve = this.resolveReload;
+      this.resolveReload = null;
+      this.rejectReload = null;
+      resolve?.();
+    }
+  }
+
   reload(): Promise<void> {
     if (this.isDestroyed) return Promise.resolve();
     if (this._status !== EmbedStatuses.READY) return Promise.resolve();
-    if (this.reloadInProgress) return Promise.resolve();
+    if (this.loadingReason === TokenProviderTriggers.RELOAD) return Promise.resolve();
     if (this.isMock && this.mockOptions?.callTokenProvider !== true) {
       return Promise.resolve();
     }
     this.debugLog("reload triggered");
-    this.reloadInProgress = true;
-    return this.fetchSessionWithRetry(TokenProviderTriggers.RELOAD).then(
-      (result) => {
-        this.reloadInProgress = false;
-        if (this.isDestroyed) return;
-        this.sendSetToken(result);
-      },
-      (err) => {
-        this.reloadInProgress = false;
-        if (this.isDestroyed) return;
-        throw new EmbedError(
-          EmbedErrorCodes.TOKEN_PROVIDER_FAILED,
-          err instanceof Error ? err.message : String(err),
-          { cause: err },
-        );
-      },
-    );
+    this.setStatus(EmbedStatuses.LOADING);
+    this.startLoadingTimeout(TokenProviderTriggers.RELOAD);
+    return new Promise<void>((resolve, reject) => {
+      this.resolveReload = resolve;
+      this.rejectReload = reject;
+      this.fetchTokenWithRetry(TokenProviderTriggers.RELOAD)
+        .then((result) => {
+          if (this.isDestroyed) return;
+          this.sendSetToken(result);
+        })
+        .catch((err) => {
+          this.loadingReason = null;
+          this.clearLoadingTimeout();
+          this.resolveReload = null;
+          this.rejectReload = null;
+          this.setStatus(EmbedStatuses.READY);
+          reject(
+            new EmbedError(
+              EmbedErrorCodes.TOKEN_PROVIDER_FAILED,
+              err instanceof Error ? err.message : String(err),
+              { cause: err },
+            ),
+          );
+        });
+    });
   }
 
   on<K extends keyof EmbedEventMap>(event: K, handler: EmbedEventMap[K]): void {
@@ -449,7 +513,7 @@ export class EmbedInstance implements IEmbedInstance {
     if (this.isDestroyed) return;
     this.debugLog("destroy triggered");
     this.setStatus(EmbedStatuses.DESTROYED);
-    this.clearInitTimeout();
+    this.clearLoadingTimeout();
     this.clearRefreshTimer();
     window.removeEventListener("message", this.boundHandleMessage);
     this.iframeEl?.remove();
