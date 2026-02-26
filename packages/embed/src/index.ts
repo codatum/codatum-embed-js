@@ -16,6 +16,7 @@ export type {
   ParamChangedMessage,
   ParamMapper,
   ReadyForTokenMessage,
+  StatusChangedPayload,
   TokenOptions,
   TokenProvider,
   TokenProviderContext,

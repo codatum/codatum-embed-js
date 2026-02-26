@@ -156,6 +156,7 @@ Subscribe with `on(event, handler)` and `off(event, handler)`.
 
 | Event | Description | Payload |
 |-------|-------------|---------|
+| `statusChanged` | Instance status changed. | `{ type: 'STATUS_CHANGED', status: EmbedStatus, previousStatus: EmbedStatus }` |
 | `paramChanged` | User changed parameters in the embed. | `{ type: 'PARAM_CHANGED', params: EncodedParam[] }` |
 | `executeSqlsTriggered` | SQL execution was triggered in the embed. | `{ type: 'EXECUTE_SQLS_TRIGGERED', params: EncodedParam[] }` |
 

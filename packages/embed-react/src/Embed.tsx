@@ -6,6 +6,7 @@ import type {
   ExecuteSqlsTriggeredMessage,
   IframeOptions,
   ParamChangedMessage,
+  StatusChangedPayload,
   TokenOptions,
   TokenProviderContext,
   TokenProviderResult,
@@ -30,7 +31,7 @@ export type EmbedReactProps = Omit<ComponentPropsWithoutRef<"div">, "children" |
   tokenOptions?: TokenOptions;
   displayOptions?: DisplayOptions;
   devOptions?: DevOptions;
-  onReady?: () => void;
+  onStatusChanged?: (payload: StatusChangedPayload) => void;
   onParamChanged?: (payload: ParamChangedMessage) => void;
   onExecuteSqlsTriggered?: (payload: ExecuteSqlsTriggeredMessage) => void;
   onError?: (err: EmbedError) => void;
@@ -51,7 +52,7 @@ export const Embed = forwardRef<EmbedReactRef, EmbedReactProps>(function Embed(
     tokenOptions,
     displayOptions,
     devOptions,
-    onReady,
+    onStatusChanged,
     onParamChanged,
     onExecuteSqlsTriggered,
     onError,
@@ -68,13 +69,13 @@ export const Embed = forwardRef<EmbedReactRef, EmbedReactProps>(function Embed(
   const callbacksRef = useRef({
     onParamChanged,
     onExecuteSqlsTriggered,
-    onReady,
+    onStatusChanged,
     onError,
   });
   callbacksRef.current = {
     onParamChanged,
     onExecuteSqlsTriggered,
-    onReady,
+    onStatusChanged,
     onError,
   };
 
@@ -107,6 +108,10 @@ export const Embed = forwardRef<EmbedReactRef, EmbedReactProps>(function Embed(
     instanceRef.current = embed;
     setStatus(EmbedStatuses.LOADING);
 
+    embed.on("statusChanged", (payload) => {
+      callbacksRef.current.onStatusChanged?.(payload);
+      setStatus(payload.status);
+    });
     embed.on("paramChanged", (payload) => callbacksRef.current.onParamChanged?.(payload));
     embed.on("executeSqlsTriggered", (payload) =>
       callbacksRef.current.onExecuteSqlsTriggered?.(payload),
@@ -118,7 +123,6 @@ export const Embed = forwardRef<EmbedReactRef, EmbedReactProps>(function Embed(
       .then(() => {
         if (!cancelled && instanceRef.current === embed) {
           setStatus(embed.status);
-          callbacksRef.current.onReady?.();
         }
       })
       .catch((err: unknown) => {

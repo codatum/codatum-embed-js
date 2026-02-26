@@ -32,7 +32,7 @@ const tokenProvider = async () => {
     :embedUrl="embedUrl"
     :tokenProvider="tokenProvider"
     :iframeOptions="{ theme: 'LIGHT', locale: 'ja' }"
-    @ready="console.log('Embed ready')"
+    @statusChanged="(e) => console.log('Status', e.status)"
     @paramChanged="(e) => console.log('Params', e.params)"
     @executeSqlsTriggered="(e) => console.log('Execute', e.params)"
     @error="(e) => console.error(e)"
@@ -88,7 +88,7 @@ Option types and behavior (e.g. `iframeOptions`, `tokenOptions`, `displayOptions
 
 | Event | Payload | When |
 |-------|---------|------|
-| `ready` | — | Embed is ready and token/params have been applied |
+| `statusChanged` | `{ type: 'STATUS_CHANGED', status: EmbedStatus, previousStatus: EmbedStatus }` | See core SDK |
 | `paramChanged` | `{ type: 'PARAM_CHANGED', params: EncodedParam[] }` | See core SDK |
 | `executeSqlsTriggered` | `{ type: 'EXECUTE_SQLS_TRIGGERED', params: EncodedParam[] }` | See core SDK |
 | `error` | `EmbedError` | Init, reload, or token auto-refresh failed |

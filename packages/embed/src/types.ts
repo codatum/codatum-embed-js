@@ -114,7 +114,17 @@ export type EmbedMessage =
   | ExecutionSucceededMessage
   | ExecutionFailedMessage;
 
+export type StatusChangedPayload = {
+  type: "STATUS_CHANGED";
+  status: EmbedStatus;
+  previousStatus: EmbedStatus;
+};
+
 export type EmbedEventMap = {
+  // not from iframe
+  statusChanged: (payload: StatusChangedPayload) => void;
+
+  // from iframe
   paramChanged: (payload: ParamChangedMessage) => void;
   executeSqlsTriggered: (payload: ExecuteSqlsTriggeredMessage) => void;
 };

@@ -55,6 +55,7 @@ export class EmbedInstance implements IEmbedInstance {
   private readonly eventHandlers: {
     [K in keyof EmbedEventMap]: EmbedEventMap[K][];
   } = {
+    statusChanged: [],
     paramChanged: [],
     executeSqlsTriggered: [],
   };
@@ -205,6 +206,10 @@ export class EmbedInstance implements IEmbedInstance {
     if (oldStatus === status) return;
     this._status = status;
     this.debugLog("status", oldStatus, "→", status);
+    const payload = { type: "STATUS_CHANGED" as const, status: this._status, previousStatus: oldStatus };
+    for (const h of this.eventHandlers.statusChanged) {
+      h(payload);
+    }
   }
 
   private debugLog(...args: unknown[]): void {

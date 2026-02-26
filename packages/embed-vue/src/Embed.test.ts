@@ -13,9 +13,10 @@ function createMockInstance(): EmbedInstance & {
   destroy: ReturnType<typeof vi.fn>;
   on: ReturnType<typeof vi.fn>;
   off: ReturnType<typeof vi.fn>;
-  _handlers: { paramChanged: unknown[]; executeSqlsTriggered: unknown[] };
+  _handlers: { statusChanged: unknown[]; paramChanged: unknown[]; executeSqlsTriggered: unknown[] };
 } {
   const _handlers = {
+    statusChanged: [] as unknown[],
     paramChanged: [] as unknown[],
     executeSqlsTriggered: [] as unknown[],
   };
@@ -59,7 +60,7 @@ vi.mock("@codatum/embed", () => ({
     TOKEN_PROVIDER_FAILED: "TOKEN_PROVIDER_FAILED",
     INVALID_OPTIONS: "INVALID_OPTIONS",
     CONTAINER_NOT_FOUND: "CONTAINER_NOT_FOUND",
-    INIT_TIMEOUT: "INIT_TIMEOUT",
+    LOADING_TIMEOUT: "LOADING_TIMEOUT",
     MISSING_REQUIRED_PARAM: "MISSING_REQUIRED_PARAM",
     INVALID_PARAM_VALUE: "INVALID_PARAM_VALUE",
     UNEXPECTED_ERROR: "UNEXPECTED_ERROR",
@@ -134,7 +135,7 @@ describe("Embed.vue", () => {
     });
   });
 
-  it("emits ready when instance is set and handlers are registered", async () => {
+  it("emits statusChanged when instance fires statusChanged", async () => {
     const mockInst = createMockInstance();
     createEmbedMock.mockReturnValue(mockInst);
 
@@ -143,11 +144,20 @@ describe("Embed.vue", () => {
     });
 
     await vi.waitFor(() => {
-      expect(mockInst.on).toHaveBeenCalledWith("paramChanged", expect.any(Function));
-      expect(mockInst.on).toHaveBeenCalledWith("executeSqlsTriggered", expect.any(Function));
+      expect(mockInst.on).toHaveBeenCalledWith("statusChanged", expect.any(Function));
     });
 
-    expect(wrapper.emitted("ready")).toHaveLength(1);
+    const payload = {
+      type: "STATUS_CHANGED" as const,
+      status: EmbedStatuses.READY,
+      previousStatus: EmbedStatuses.LOADING,
+    };
+    const handler = mockInst.on.mock.calls.find((c: unknown[]) => c[0] === "statusChanged")?.[1] as (
+      p: typeof payload,
+    ) => void;
+    handler(payload);
+
+    expect(wrapper.emitted("statusChanged")).toEqual([[payload]]);
   });
 
   it("emits paramChanged when instance fires paramChanged", async () => {

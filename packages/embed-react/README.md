@@ -32,7 +32,7 @@ function App() {
       embedUrl={embedUrl}
       tokenProvider={tokenProvider}
       iframeOptions={{ theme: "LIGHT", locale: "ja" }}
-      onReady={() => console.log("Embed ready")}
+      onStatusChanged={(e) => console.log("Status", e.status)}
       onParamChanged={(e) => console.log("Params", e.params)}
       onExecuteSqlsTriggered={(e) => console.log("Execute", e.params)}
       onError={(e) => console.error(e)}
@@ -100,7 +100,7 @@ Option types and behavior (e.g. `iframeOptions`, `tokenOptions`, `displayOptions
 
 | Callback | Payload | When |
 |----------|---------|------|
-| `onReady` | — | Embed is ready and token/params have been applied |
+| `onStatusChanged` | `(payload: { type: 'STATUS_CHANGED', status: EmbedStatus, previousStatus: EmbedStatus }) => void` | See core SDK |
 | `onParamChanged` | `(payload: { type: 'PARAM_CHANGED', params: EncodedParam[] }) => void` | See core SDK |
 | `onExecuteSqlsTriggered` | `(payload: { type: 'EXECUTE_SQLS_TRIGGERED', params: EncodedParam[] }) => void` | See core SDK |
 | `onError` | `(err: EmbedError) => void` | Init, reload, or token auto-refresh failed |

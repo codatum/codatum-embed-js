@@ -13,6 +13,7 @@ import type {
   ExecuteSqlsTriggeredMessage,
   IframeOptions,
   ParamChangedMessage,
+  StatusChangedPayload,
   TokenOptions,
   TokenProviderContext,
   TokenProviderResult,
@@ -31,9 +32,9 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
+  statusChanged: [payload: StatusChangedPayload];
   paramChanged: [payload: ParamChangedMessage];
   executeSqlsTriggered: [payload: ExecuteSqlsTriggeredMessage];
-  ready: [];
   error: [err: EmbedError];
 }>();
 
@@ -78,6 +79,10 @@ onMounted(async () => {
   instance.value = embed;
   status.value = EmbedStatuses.LOADING;
 
+  embed.on("statusChanged", (payload) => {
+    emit("statusChanged", payload);
+    status.value = payload.status;
+  });
   embed.on("paramChanged", (payload) => emit("paramChanged", payload));
   embed.on("executeSqlsTriggered", (payload) =>
     emit("executeSqlsTriggered", payload)
@@ -86,7 +91,6 @@ onMounted(async () => {
   try {
     await embed.init();
     status.value = embed.status;
-    emit("ready");
   } catch (err: unknown) {
     setError(err);
     status.value = EmbedStatuses.DESTROYED;

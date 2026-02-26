@@ -15,9 +15,10 @@ function createMockInstance(): EmbedInstance & {
   destroy: ReturnType<typeof vi.fn>;
   on: ReturnType<typeof vi.fn>;
   off: ReturnType<typeof vi.fn>;
-  _handlers: { paramChanged: unknown[]; executeSqlsTriggered: unknown[] };
+  _handlers: { statusChanged: unknown[]; paramChanged: unknown[]; executeSqlsTriggered: unknown[] };
 } {
   const _handlers = {
+    statusChanged: [] as unknown[],
     paramChanged: [] as unknown[],
     executeSqlsTriggered: [] as unknown[],
   };
@@ -61,7 +62,7 @@ vi.mock("@codatum/embed", () => ({
     TOKEN_PROVIDER_FAILED: "TOKEN_PROVIDER_FAILED",
     INVALID_OPTIONS: "INVALID_OPTIONS",
     CONTAINER_NOT_FOUND: "CONTAINER_NOT_FOUND",
-    INIT_TIMEOUT: "INIT_TIMEOUT",
+    LOADING_TIMEOUT: "LOADING_TIMEOUT",
     MISSING_REQUIRED_PARAM: "MISSING_REQUIRED_PARAM",
     INVALID_PARAM_VALUE: "INVALID_PARAM_VALUE",
   },
@@ -191,27 +192,34 @@ describe("EmbedReact", () => {
     });
   });
 
-  it("calls onReady when init succeeds", async () => {
+  it("calls onStatusChanged when instance fires statusChanged", async () => {
     const mockInst = createMockInstance();
     createEmbedMock.mockReturnValue(mockInst);
-    const onReady = vi.fn();
+    const onStatusChanged = vi.fn();
 
     render(
       createElement(EmbedReact, {
         embedUrl: EMBED_URL,
         tokenProvider,
-        onReady,
+        onStatusChanged,
       }),
     );
 
     await waitFor(() => {
-      expect(mockInst.on).toHaveBeenCalledWith("paramChanged", expect.any(Function));
-      expect(mockInst.on).toHaveBeenCalledWith("executeSqlsTriggered", expect.any(Function));
+      expect(mockInst.on).toHaveBeenCalledWith("statusChanged", expect.any(Function));
     });
 
-    await waitFor(() => {
-      expect(onReady).toHaveBeenCalledTimes(1);
-    });
+    const payload = {
+      type: "STATUS_CHANGED" as const,
+      status: EmbedStatuses.READY,
+      previousStatus: EmbedStatuses.LOADING,
+    };
+    const handler = mockInst.on.mock.calls.find((c: unknown[]) => c[0] === "statusChanged")?.[1] as (
+      p: typeof payload,
+    ) => void;
+    handler(payload);
+
+    expect(onStatusChanged).toHaveBeenCalledWith(payload);
   });
 
   it("calls onParamChanged when instance fires paramChanged", async () => {

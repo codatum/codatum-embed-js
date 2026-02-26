@@ -491,6 +491,125 @@ describe("init()", () => {
   });
 });
 
+// --- statusChanged -----------------------------------------------------------
+
+describe("statusChanged", () => {
+  beforeEach(() => {
+    document.body.innerHTML = '<div id="container"></div>';
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("invokes handler with CREATED→LOADING and LOADING→READY when init() completes successfully", async () => {
+    const container = getContainer();
+    const tokenProvider = vi.fn().mockResolvedValue({ token: TEST_JWT });
+    const embed = createEmbed({
+      container,
+      embedUrl: VALID_EMBED_URL,
+      tokenProvider,
+    });
+    const handler = vi.fn();
+    embed.on("statusChanged", handler);
+
+    const initPromise = embed.init();
+    const iframe = container.querySelector("iframe") as HTMLIFrameElement;
+    await dispatchReadyForTokenThenContentReady(iframe);
+    await initPromise;
+
+    expect(handler).toHaveBeenCalledTimes(2);
+    expect(handler).toHaveBeenNthCalledWith(1, {
+      type: "STATUS_CHANGED",
+      status: EmbedStatuses.LOADING,
+      previousStatus: EmbedStatuses.CREATED,
+    });
+    expect(handler).toHaveBeenNthCalledWith(2, {
+      type: "STATUS_CHANGED",
+      status: EmbedStatuses.READY,
+      previousStatus: EmbedStatuses.LOADING,
+    });
+    embed.destroy();
+  });
+
+  it("invokes handler with READY→DESTROYED when destroy() is called", async () => {
+    const container = getContainer();
+    const tokenProvider = vi.fn().mockResolvedValue({ token: TEST_JWT });
+    const embed = createEmbed({
+      container,
+      embedUrl: VALID_EMBED_URL,
+      tokenProvider,
+    });
+    const initPromise = embed.init();
+    const iframe = container.querySelector("iframe") as HTMLIFrameElement;
+    await dispatchReadyForTokenThenContentReady(iframe);
+    await initPromise;
+
+    const handler = vi.fn();
+    embed.on("statusChanged", handler);
+    embed.destroy();
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler).toHaveBeenCalledWith({
+      type: "STATUS_CHANGED",
+      status: EmbedStatuses.DESTROYED,
+      previousStatus: EmbedStatuses.READY,
+    });
+  });
+
+  it("stops invoking handler after off('statusChanged', handler)", async () => {
+    const container = getContainer();
+    const tokenProvider = vi.fn().mockResolvedValue({ token: TEST_JWT });
+    const embed = createEmbed({
+      container,
+      embedUrl: VALID_EMBED_URL,
+      tokenProvider,
+    });
+    const handler = vi.fn();
+    embed.on("statusChanged", handler);
+
+    const initPromise = embed.init();
+    const iframe = container.querySelector("iframe") as HTMLIFrameElement;
+    await dispatchReadyForTokenThenContentReady(iframe);
+    await initPromise;
+
+    expect(handler).toHaveBeenCalledTimes(2);
+    embed.off("statusChanged", handler);
+    handler.mockClear();
+
+    embed.destroy();
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it("invokes all subscribed handlers on status transition", async () => {
+    const container = getContainer();
+    const tokenProvider = vi.fn().mockResolvedValue({ token: TEST_JWT });
+    const embed = createEmbed({
+      container,
+      embedUrl: VALID_EMBED_URL,
+      tokenProvider,
+    });
+    const handler1 = vi.fn();
+    const handler2 = vi.fn();
+    embed.on("statusChanged", handler1);
+    embed.on("statusChanged", handler2);
+
+    const initPromise = embed.init();
+    const iframe = container.querySelector("iframe") as HTMLIFrameElement;
+    await dispatchReadyForTokenThenContentReady(iframe);
+    await initPromise;
+
+    const payload = {
+      type: "STATUS_CHANGED" as const,
+      status: EmbedStatuses.READY,
+      previousStatus: EmbedStatuses.LOADING,
+    };
+    expect(handler1).toHaveBeenCalledWith(payload);
+    expect(handler2).toHaveBeenCalledWith(payload);
+    embed.destroy();
+  });
+});
+
 // --- EmbedInstance (after init) ----------------------------------------------
 
 describe("EmbedInstance (after init)", () => {
