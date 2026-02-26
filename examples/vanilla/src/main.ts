@@ -52,17 +52,20 @@ async function run() {
         return { token: data.token };
       },
       iframeOptions: { theme: "LIGHT", locale: "en" },
+      devOptions: { debug: true, disableValidateUrl: true },
     });
-    await embed.init();
 
-    setStatus("Ready");
-
+    embed.on("statusChanged", (payload) => {
+      setStatus(payload.status, false);
+    });
     embed.on("paramChanged", (payload) => {
       console.log("[paramChanged]", payload);
     });
     embed.on("executeSqlsTriggered", (payload) => {
       console.log("[executeSqlsTriggered]", payload);
     });
+
+    await embed.init();
   } catch (err) {
     setStatus(err instanceof Error ? err.message : "Embed initialization failed", true);
     console.error(err);
