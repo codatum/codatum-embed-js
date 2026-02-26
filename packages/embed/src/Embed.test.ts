@@ -449,7 +449,7 @@ describe("init()", () => {
     await expect(embed.init()).resolves.toBeUndefined();
   });
 
-  it("returns the same promise when init is called again while LOADING", async () => {
+  it("returns the same promise when init is called again while INITIALIZING", async () => {
     const container = getContainer();
     const tokenProvider = vi.fn().mockResolvedValue({ token: TEST_JWT });
     const embed = createEmbed({
@@ -502,7 +502,7 @@ describe("statusChanged", () => {
     document.body.innerHTML = "";
   });
 
-  it("invokes handler with CREATED→LOADING and LOADING→READY when init() completes successfully", async () => {
+  it("invokes handler with CREATED→INITIALIZING and INITIALIZING→READY when init() completes successfully", async () => {
     const container = getContainer();
     const tokenProvider = vi.fn().mockResolvedValue({ token: TEST_JWT });
     const embed = createEmbed({
@@ -521,13 +521,13 @@ describe("statusChanged", () => {
     expect(handler).toHaveBeenCalledTimes(2);
     expect(handler).toHaveBeenNthCalledWith(1, {
       type: "STATUS_CHANGED",
-      status: EmbedStatuses.LOADING,
+      status: EmbedStatuses.INITIALIZING,
       previousStatus: EmbedStatuses.CREATED,
     });
     expect(handler).toHaveBeenNthCalledWith(2, {
       type: "STATUS_CHANGED",
       status: EmbedStatuses.READY,
-      previousStatus: EmbedStatuses.LOADING,
+      previousStatus: EmbedStatuses.INITIALIZING,
     });
     embed.destroy();
   });
@@ -602,7 +602,7 @@ describe("statusChanged", () => {
     const payload = {
       type: "STATUS_CHANGED" as const,
       status: EmbedStatuses.READY,
-      previousStatus: EmbedStatuses.LOADING,
+      previousStatus: EmbedStatuses.INITIALIZING,
     };
     expect(handler1).toHaveBeenCalledWith(payload);
     expect(handler2).toHaveBeenCalledWith(payload);

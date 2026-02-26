@@ -77,7 +77,7 @@ onMounted(async () => {
   });
 
   instance.value = embed;
-  status.value = EmbedStatuses.LOADING;
+  status.value = EmbedStatuses.INITIALIZING;
 
   embed.on("statusChanged", (payload) => {
     emit("statusChanged", payload);

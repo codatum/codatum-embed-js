@@ -45,11 +45,8 @@ export const TokenProviderTriggers = {
   REFRESH: "REFRESH",
 } as const;
 
-export type TokenProviderTrigger =
-  (typeof TokenProviderTriggers)[keyof typeof TokenProviderTriggers];
-
 export type TokenProviderContext = {
-  trigger: TokenProviderTrigger;
+  trigger: (typeof TokenProviderTriggers)[keyof typeof TokenProviderTriggers];
   markNonRetryable: () => void;
 };
 
@@ -257,7 +254,9 @@ export type DefineParamMapper<M extends Record<string, ParamMeta>> = ParamMapper
 
 export const EmbedStatuses = {
   CREATED: "CREATED",
-  LOADING: "LOADING",
+  INITIALIZING: "INITIALIZING",
+  RELOADING: "RELOADING",
+  REFRESHING: "REFRESHING",
   READY: "READY",
   DESTROYED: "DESTROYED",
 } as const;

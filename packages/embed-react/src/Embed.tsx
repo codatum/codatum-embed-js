@@ -106,7 +106,7 @@ export const Embed = forwardRef<EmbedReactRef, EmbedReactProps>(function Embed(
     });
 
     instanceRef.current = embed;
-    setStatus(EmbedStatuses.LOADING);
+    setStatus(EmbedStatuses.INITIALIZING);
 
     embed.on("statusChanged", (payload) => {
       callbacksRef.current.onStatusChanged?.(payload);

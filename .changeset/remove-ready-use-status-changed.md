@@ -4,9 +4,14 @@
 "@codatum/embed-vue": minor
 ---
 
-**Breaking**
+### Breaking
 
-- **Embed status value:** `EmbedStatus` and `statusChanged` payload now use `'LOADING'` instead of `'INITIALIZING'`. Update any checks on `instance.status`, `payload.status`, or `payload.previousStatus` (e.g. `status === 'INITIALIZING'` → `status === 'LOADING'`).
-- **@codatum/embed-react:** Removed `onReady` prop. Use `onStatusChanged` and check `payload.status === 'READY'` for "embed ready".
-- **@codatum/embed-vue:** Removed `ready` emit. Use `@statusChanged` and check `payload.status === 'READY'` for "embed ready".
-- **@codatum/embed:** Added tests for `statusChanged` (init CREATED→LOADING→READY, destroy READY→DESTROYED, on/off, multiple handlers).
+**Status behavior changes**
+
+- INITIALIZING semantics: the embed now waits for the iframe's `CONTENT_READY` before transitioning to READY (previously it became READY right after sending the token).
+- RELOADING / REFRESHING added: status is `RELOADING` during `reload()` and `REFRESHING` during token auto-refresh. In both cases the embed becomes READY only after receiving `CONTENT_READY`.
+- In `tokenOptions`, `initTimeout` has been renamed to `loadingTimeout`. It is used as the timeout (seconds) while waiting for `CONTENT_READY` on init, reload, and refresh. On timeout, `LOADING_TIMEOUT` is raised (on init, the embed is destroyed).
+
+**statusChanged added**
+
+- Vue and React: removed `ready` (`onReady` prop / `ready` emit) and unified on `statusChanged`; use `payload.status === 'READY'` for "embed ready".

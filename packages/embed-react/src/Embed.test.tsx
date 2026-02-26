@@ -68,7 +68,9 @@ vi.mock("@codatum/embed", () => ({
   },
   EmbedStatuses: {
     CREATED: "CREATED",
-    LOADING: "LOADING",
+    INITIALIZING: "INITIALIZING",
+    RELOADING: "RELOADING",
+    REFRESHING: "REFRESHING",
     READY: "READY",
     DESTROYED: "DESTROYED",
   },
@@ -212,7 +214,7 @@ describe("EmbedReact", () => {
     const payload = {
       type: "STATUS_CHANGED" as const,
       status: EmbedStatuses.READY,
-      previousStatus: EmbedStatuses.LOADING,
+      previousStatus: EmbedStatuses.INITIALIZING,
     };
     const handler = mockInst.on.mock.calls.find((c: unknown[]) => c[0] === "statusChanged")?.[1] as (
       p: typeof payload,

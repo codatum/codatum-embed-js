@@ -99,7 +99,7 @@ Controls token lifetime, refresh behavior, and loading timeout.
 | `disableRefresh` | `boolean` | `false` | When `true`, disables automatic token refresh before the token expires |
 | `refreshBuffer` | `number` | `60` | Number of seconds before the token expires when auto-refresh is triggered |
 | `retryCount` | `number` | `2` | Number of retries on token fetch failure; `0` = no retry |
-| `loadingTimeout` | `number` | `30` | Max wait in seconds for CONTENT_READY after entering LOADING (init/reload/auto-refresh); `0` = no timeout |
+| `loadingTimeout` | `number` | `30` | Max wait in seconds for CONTENT_READY after entering INITIALIZING, RELOADING, or REFRESHING; `0` = no timeout |
 | `onRefreshError` | `(error: EmbedError) => void` | `undefined` | Callback invoked when token auto-refresh fails (due to `tokenProvider` failure or loading timeout) and does not recover after all retries |
 
 #### `DisplayOptions`
@@ -118,7 +118,7 @@ Development and testing only. Not intended for production.
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `debug` | `boolean` | `false` | When `true`, logs SDK lifecycle: postMessage (in/out), tokenProvider calls/refresh/retries, status transitions (CREATED → LOADING → READY → DESTROYED). |
+| `debug` | `boolean` | `false` | When `true`, logs SDK lifecycle: postMessage (in/out), tokenProvider calls/refresh/retries, status transitions. |
 | `disableValidateUrl` | `boolean` | `false` | When `true`, skips `embedUrl` format validation (domain/path). Use for local or staging URLs that don't match the production pattern. |
 | `mock` | `boolean` \| `MockOptions` | - | Enables mock mode: no real embed load, no network. iframe uses `srcdoc` with a styled placeholder. |
 
@@ -148,7 +148,7 @@ Creates an embed instance. Throws `EmbedError` if options are invalid. Call `ini
 | Property | Type | Description |
 |----------|------|-------------|
 | `iframe` | `HTMLIFrameElement \| null` | The embed iframe element. |
-| `status` | `'CREATED' \| 'LOADING' \| 'READY' \| 'DESTROYED'` | Current instance state. |
+| `status` | `'CREATED' \| 'INITIALIZING' \| 'RELOADING' \| 'REFRESHING' \| 'READY' \| 'DESTROYED'` | Current instance state. |
 
 ### Events
 
