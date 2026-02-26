@@ -5,6 +5,7 @@ import {
   type EmbedError,
   EmbedReact,
   type EmbedReactRef,
+  type EmbedStatus,
   type EncodedParam,
   RESET_TO_DEFAULT,
   type TokenProviderContext,
@@ -32,7 +33,8 @@ export default function Scenario2() {
   const [embedUrl, setEmbedUrl] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [storeIds, setStoreIds] = useState<string[]>([]);
-  const [statusMessage, setStatusMessage] = useState("Loading config…");
+  const [embedStatus, setEmbedStatus] = useState<EmbedStatus | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [statusError, setStatusError] = useState(false);
   const [paramMapper, setParamMapper] = useState<ParamMapper | null>(null);
   const [paramValues, setParamValues] = useState<ParamValues>({
@@ -61,10 +63,9 @@ export default function Scenario2() {
         setUserId(config.userId);
         setStoreIds(config.storeIds);
         setParamMapper(createParamMapper(config.paramMapping, paramDefs) as ParamMapper);
-        setStatusMessage("Initializing…");
       } catch (err) {
         if (!cancelled) {
-          setStatusMessage(
+          setErrorMessage(
             "Failed to fetch config. Ensure the server is running at localhost:3100.",
           );
           setStatusError(true);
@@ -77,9 +78,12 @@ export default function Scenario2() {
     };
   }, []);
 
-  const onReady = useCallback(() => {
-    setStatusMessage("Ready");
-    setStatusError(false);
+  const onStatusChanged = useCallback((payload: { status: EmbedStatus }) => {
+    setEmbedStatus(payload.status);
+    if (payload.status === "READY") {
+      setStatusError(false);
+      setErrorMessage(null);
+    }
   }, []);
 
   const tokenProvider = useCallback(async (ctx: TokenProviderContext) => {
@@ -125,17 +129,18 @@ export default function Scenario2() {
   );
 
   const onEmbedError = useCallback((err: EmbedError) => {
-    setStatusMessage(err.message);
+    setErrorMessage(err.message);
     setStatusError(true);
   }, []);
 
   const reloadEmbed = useCallback(async () => {
-    const success = await embedRef.current?.reload();
-    if (success) {
-      setStatusMessage("Reloaded");
-      setStatusError(false);
-    }
+    await embedRef.current?.reload();
   }, []);
+
+  const statusDisplay =
+    statusError && errorMessage
+      ? errorMessage
+      : (embedStatus ?? (embedUrl ? "—" : "Loading config…"));
 
   const dateRangeStart =
     paramValues.date_range === RESET_TO_DEFAULT ? "" : (paramValues.date_range?.[0] ?? "");
@@ -270,7 +275,7 @@ export default function Scenario2() {
         </div>
       </div>
       <div className={`alert py-2 mb-3 ${statusError ? "alert-danger" : "alert-success"}`}>
-        {statusMessage}
+        {statusDisplay}
       </div>
       {embedUrl && (
         <div className="border bg-white">
@@ -286,7 +291,7 @@ export default function Scenario2() {
             }}
             displayOptions={{ hideParamsForm: true }}
             devOptions={{ debug: true, disableValidateUrl: true }}
-            onReady={onReady}
+            onStatusChanged={onStatusChanged}
             onParamChanged={onParamChanged}
             onExecuteSqlsTriggered={onParamChanged}
             onError={onEmbedError}
