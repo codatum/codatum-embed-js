@@ -110,9 +110,9 @@ export const validateEmbedOptions = (options: EmbedOptions): void => {
     if (retryCount != null && (typeof retryCount !== "number" || retryCount < 0)) {
       throwError("tokenOptions.retryCount must be a non-negative number");
     }
-    const initTimeout = options.tokenOptions.initTimeout;
-    if (initTimeout != null && (typeof initTimeout !== "number" || initTimeout < 0)) {
-      throwError("tokenOptions.initTimeout must be a non-negative number");
+    const loadingTimeout = options.tokenOptions.loadingTimeout;
+    if (loadingTimeout != null && (typeof loadingTimeout !== "number" || loadingTimeout < 0)) {
+      throwError("tokenOptions.loadingTimeout must be a non-negative number");
     }
     const onRefreshError = options.tokenOptions.onRefreshError;
     if (onRefreshError != null && typeof onRefreshError !== "function") {
