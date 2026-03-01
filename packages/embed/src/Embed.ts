@@ -9,6 +9,7 @@ import type {
   TokenProviderResult,
 } from "./types";
 import {
+  EMBED_STATUS_ATTR,
   EmbedError,
   EmbedErrorCodes,
   EmbedStatuses,
@@ -34,6 +35,7 @@ const SHORT_TTL_MAX_CONSECUTIVE = 3;
 
 export class EmbedInstance implements IEmbedInstance {
   private iframeEl: HTMLIFrameElement | null = null;
+  private containerEl: HTMLElement | null = null;
   private readonly options: EmbedOptions;
   private readonly expectedOrigin: string;
   private readonly disableRefresh: boolean;
@@ -104,7 +106,6 @@ export class EmbedInstance implements IEmbedInstance {
     if (this._status !== EmbedStatuses.CREATED) {
       return this.initPromise;
     }
-    this.setStatus(EmbedStatuses.INITIALIZING);
 
     const container =
       typeof this.options.container === "string"
@@ -116,6 +117,8 @@ export class EmbedInstance implements IEmbedInstance {
       );
       return this.initPromise;
     }
+    this.containerEl = container as HTMLElement;
+    this.setStatus(EmbedStatuses.INITIALIZING);
 
     window.addEventListener("message", this.boundHandleMessage);
     const iframeOptions = this.options.iframeOptions;
@@ -209,6 +212,7 @@ export class EmbedInstance implements IEmbedInstance {
     const oldStatus = this._status;
     if (oldStatus === status) return;
     this._status = status;
+    this.syncContainerStatus();
     this.debugLog("status", oldStatus, "→", status);
     const payload = {
       type: "STATUS_CHANGED" as const,
@@ -217,6 +221,16 @@ export class EmbedInstance implements IEmbedInstance {
     };
     for (const h of this.eventHandlers.statusChanged) {
       h(payload);
+    }
+  }
+
+  private syncContainerStatus(): void {
+    if (!this.containerEl) return;
+    if (this._status === EmbedStatuses.DESTROYED) {
+      this.containerEl.removeAttribute(EMBED_STATUS_ATTR);
+      this.containerEl = null;
+    } else {
+      this.containerEl.setAttribute(EMBED_STATUS_ATTR, this._status);
     }
   }
 

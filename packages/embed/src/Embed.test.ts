@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createEmbed, type EmbedInstance } from "./Embed";
-import { EmbedError, EmbedErrorCodes, EmbedStatuses } from "./types";
+import { EMBED_STATUS_ATTR, EmbedError, EmbedErrorCodes, EmbedStatuses } from "./types";
 
 // --- Constants & helpers ----------------------------------------------------
 
@@ -607,6 +607,99 @@ describe("statusChanged", () => {
     expect(handler1).toHaveBeenCalledWith(payload);
     expect(handler2).toHaveBeenCalledWith(payload);
     embed.destroy();
+  });
+});
+
+// --- data-codatum-embed-status (container data attribute) -------------------
+
+describe("data-codatum-embed-status", () => {
+  beforeEach(() => {
+    document.body.innerHTML = '<div id="container"></div>';
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("sets data-codatum-embed-status on container to INITIALIZING when init() is called", () => {
+    const container = getContainer();
+    const embed = createEmbed({
+      container,
+      embedUrl: VALID_EMBED_URL,
+      tokenProvider: () => Promise.resolve({ token: TEST_JWT }),
+    });
+    embed.init();
+    expect(container.getAttribute(EMBED_STATUS_ATTR)).toBe(EmbedStatuses.INITIALIZING);
+    embed.destroy();
+  });
+
+  it("updates data-codatum-embed-status to READY when init() completes", async () => {
+    const container = getContainer();
+    const tokenProvider = vi.fn().mockResolvedValue({ token: TEST_JWT });
+    const embed = createEmbed({
+      container,
+      embedUrl: VALID_EMBED_URL,
+      tokenProvider,
+    });
+    const initPromise = embed.init();
+    const iframe = container.querySelector("iframe") as HTMLIFrameElement;
+    await dispatchReadyForTokenThenContentReady(iframe);
+    await initPromise;
+    expect(container.getAttribute(EMBED_STATUS_ATTR)).toBe(EmbedStatuses.READY);
+    embed.destroy();
+  });
+
+  it("updates data-codatum-embed-status to RELOADING during reload() then back to READY", async () => {
+    const container = getContainer();
+    const tokenProvider = vi.fn().mockResolvedValue({ token: TEST_JWT });
+    const embed = createEmbed({
+      container,
+      embedUrl: VALID_EMBED_URL,
+      tokenProvider,
+    });
+    const initPromise = embed.init();
+    const iframe = container.querySelector("iframe") as HTMLIFrameElement;
+    await dispatchReadyForTokenThenContentReady(iframe);
+    await initPromise;
+    expect(container.getAttribute(EMBED_STATUS_ATTR)).toBe(EmbedStatuses.READY);
+
+    const reloadPromise = embed.reload();
+    expect(container.getAttribute(EMBED_STATUS_ATTR)).toBe(EmbedStatuses.RELOADING);
+    dispatchContentReady(iframe);
+    await reloadPromise;
+    expect(container.getAttribute(EMBED_STATUS_ATTR)).toBe(EmbedStatuses.READY);
+    embed.destroy();
+  });
+
+  it("removes data-codatum-embed-status from container when destroy() is called", async () => {
+    const container = getContainer();
+    const tokenProvider = vi.fn().mockResolvedValue({ token: TEST_JWT });
+    const embed = createEmbed({
+      container,
+      embedUrl: VALID_EMBED_URL,
+      tokenProvider,
+    });
+    const initPromise = embed.init();
+    const iframe = container.querySelector("iframe") as HTMLIFrameElement;
+    await dispatchReadyForTokenThenContentReady(iframe);
+    await initPromise;
+    expect(container.getAttribute(EMBED_STATUS_ATTR)).toBe(EmbedStatuses.READY);
+
+    embed.destroy();
+    expect(container.hasAttribute(EMBED_STATUS_ATTR)).toBe(false);
+  });
+
+  it("does not set data-codatum-embed-status when container is not found (init rejects)", async () => {
+    const container = getContainer();
+    const embed = createEmbed({
+      container: "#nonexistent",
+      embedUrl: VALID_EMBED_URL,
+      tokenProvider: () => Promise.resolve({ token: TEST_JWT }),
+    });
+    await expect(embed.init()).rejects.toMatchObject({
+      code: EmbedErrorCodes.CONTAINER_NOT_FOUND,
+    });
+    expect(container.hasAttribute(EMBED_STATUS_ATTR)).toBe(false);
   });
 });
 

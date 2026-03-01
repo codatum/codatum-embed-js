@@ -1,5 +1,7 @@
 export const SDK_VERSION = __CODATUM_EMBED_JS_VERSION__;
 
+export const EMBED_STATUS_ATTR = "data-codatum-embed-status" as const;
+
 /** Parameter shape used in postMessage */
 export type EncodedParam = {
   param_id: string;
