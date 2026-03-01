@@ -69,6 +69,38 @@ Props are read once at mount. To apply new values (e.g. a different `embedUrl` o
 <EmbedVue :key="embedUrl" :embedUrl="embedUrl" :tokenProvider="tokenProvider" />
 ```
 
+### Custom loading UI (`#loading` slot)
+
+When you pass the `#loading` slot, the component hides the iframe during loading (init, reload, token refresh, etc.) and shows your custom UI as an overlay. Use `showLoadingOn` to control which statuses show the overlay (default: `['INITIALIZING', 'RELOADING', 'REFRESHING']`). Without the slot, the built-in iframe loading behavior is unchanged.
+
+```vue
+<!-- Spinner for all loading states -->
+<EmbedVue :embedUrl="embedUrl" :tokenProvider="tokenProvider">
+  <template #loading>
+    <MySpinner />
+  </template>
+</EmbedVue>
+
+<!-- Only on first load -->
+<EmbedVue
+  :embedUrl="embedUrl"
+  :tokenProvider="tokenProvider"
+  :showLoadingOn="['INITIALIZING']"
+>
+  <template #loading>
+    <MySpinner />
+  </template>
+</EmbedVue>
+
+<!-- Branch by status -->
+<EmbedVue :embedUrl="embedUrl" :tokenProvider="tokenProvider">
+  <template #loading="{ status }">
+    <FullPageLoader v-if="status === 'INITIALIZING'" />
+    <SubtleBar v-else />
+  </template>
+</EmbedVue>
+```
+
 ## API
 
 Option types and behavior (e.g. `iframeOptions`, `tokenOptions`, `displayOptions`, `devOptions`) are the same as in [@codatum/embed](https://github.com/codatum/codatum-embed-js/tree/main/packages/embed#readme). The component uses its root element as the iframe container (no `container` prop).
@@ -83,6 +115,13 @@ Option types and behavior (e.g. `iframeOptions`, `tokenOptions`, `displayOptions
 | `tokenOptions` | No | `TokenOptions` |
 | `displayOptions` | No | `DisplayOptions` |
 | `devOptions` | No | `DevOptions` |
+| `showLoadingOn` | No | `EmbedStatus[]` |
+
+### Slots
+
+| Slot | Scoped Props | Description |
+|------|--------------|-------------|
+| `#loading` | `{ status: EmbedStatus }` | Custom UI shown while loading. Overlay is shown (and iframe hidden) only when this slot is provided and the current status is in `showLoadingOn`. Without the slot, built-in iframe loading behavior is used. |
 
 ### Events
 

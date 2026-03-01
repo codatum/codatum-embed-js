@@ -279,7 +279,7 @@ const removeProductCategory = (index: number): void => {
   >
     {{ statusDisplay }}
   </div>
-  <div v-if="embedUrl" class="border bg-white">
+  <div v-if="embedUrl" class="border bg-white embed-container">
     <EmbedVue
       ref="embedRef"
       :embedUrl="embedUrl"
@@ -288,7 +288,6 @@ const removeProductCategory = (index: number): void => {
         theme: 'LIGHT',
         locale: 'en',
         className: 'vue-example-iframe',
-        style: { height: '600px' },
       }"
       :displayOptions="{ hideParamsForm: true }"
       :devOptions="{ debug: true, disableValidateUrl: true }"
@@ -299,3 +298,9 @@ const removeProductCategory = (index: number): void => {
     />
   </div>
 </template>
+
+<style scoped>
+.embed-container {
+  height: 600px;
+}
+</style>

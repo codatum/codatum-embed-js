@@ -154,7 +154,10 @@ const statusDisplay = computed(() =>
   >
     {{ statusDisplay }}
   </div>
-  <div v-if="embedUrl" class="border bg-white">
+  <div
+    v-if="embedUrl"
+    class="border bg-white position-relative embed-container"
+  >
     <EmbedVue
       ref="embedRef"
       :embedUrl="embedUrl"
@@ -163,14 +166,49 @@ const statusDisplay = computed(() =>
         theme: 'LIGHT',
         locale: 'en',
         className: 'vue-example-iframe',
-        style: { height: '600px' },
       }"
       :displayOptions="{ expandParamsFormByDefault: true }"
       :devOptions="{ debug: true, disableValidateUrl: true }"
+      :showLoadingOn="['INITIALIZING', 'RELOADING', 'REFRESHING']"
       @statusChanged="onStatusChanged"
       @paramChanged="onParamChanged"
       @executeSqlsTriggered="onParamChanged"
       @error="onEmbedError"
-    />
+    >
+      <template #loading="{ status }">
+        <div class="scenario3-loading">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="scenario3-loading-text mt-2 mb-0">
+            {{
+              status === "INITIALIZING"
+                ? "Initializing…"
+                : status === "RELOADING"
+                ? "Reloading…"
+                : "Refreshing…"
+            }}
+          </p>
+        </div>
+      </template>
+    </EmbedVue>
   </div>
 </template>
+
+<style scoped>
+.embed-container {
+  height: 600px;
+}
+
+.scenario3-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+.scenario3-loading-text {
+  font-size: 0.9rem;
+  color: var(--bs-secondary, #6c757d);
+}
+</style>

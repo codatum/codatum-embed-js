@@ -133,7 +133,7 @@ const statusDisplay = computed(() =>
   >
     {{ statusDisplay }}
   </div>
-  <div v-if="embedUrl" class="border bg-white">
+  <div v-if="embedUrl" class="border bg-white embed-container">
     <EmbedVue
       ref="embedRef"
       :embedUrl="embedUrl"
@@ -142,7 +142,6 @@ const statusDisplay = computed(() =>
         theme: 'LIGHT',
         locale: 'en',
         className: 'vue-example-iframe',
-        style: { height: '600px' },
       }"
       :displayOptions="{ expandParamsFormByDefault: true }"
       :devOptions="{ debug: true, disableValidateUrl: true }"
@@ -153,3 +152,9 @@ const statusDisplay = computed(() =>
     />
   </div>
 </template>
+
+<style scoped>
+.embed-container {
+  height: 600px;
+}
+</style>
