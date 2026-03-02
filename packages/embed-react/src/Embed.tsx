@@ -12,8 +12,22 @@ import type {
   TokenProviderResult,
 } from "@codatum/embed";
 import { createEmbed, EmbedError, EmbedErrorCodes, EmbedStatuses } from "@codatum/embed";
-import type { ComponentPropsWithoutRef } from "react";
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
+import type { ComponentPropsWithoutRef, ReactNode } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+
+const DEFAULT_SHOW_LOADING_ON: EmbedStatus[] = [
+  EmbedStatuses.INITIALIZING,
+  EmbedStatuses.RELOADING,
+  EmbedStatuses.REFRESHING,
+];
 
 const toEmbedError = (err: unknown): EmbedError =>
   err instanceof EmbedError
@@ -31,6 +45,8 @@ export type EmbedReactProps = Omit<ComponentPropsWithoutRef<"div">, "children" |
   tokenOptions?: TokenOptions;
   displayOptions?: DisplayOptions;
   devOptions?: DevOptions;
+  showLoadingOn?: EmbedStatus[];
+  renderLoading?: (props: { status: EmbedStatus }) => ReactNode;
   onStatusChanged?: (payload: StatusChangedPayload) => void;
   onParamChanged?: (payload: ParamChangedMessage) => void;
   onExecuteSqlsTriggered?: (payload: ExecuteSqlsTriggeredMessage) => void;
@@ -52,6 +68,8 @@ export const Embed = forwardRef<EmbedReactRef, EmbedReactProps>(function Embed(
     tokenOptions,
     displayOptions,
     devOptions,
+    showLoadingOn = DEFAULT_SHOW_LOADING_ON,
+    renderLoading,
     onStatusChanged,
     onParamChanged,
     onExecuteSqlsTriggered,
@@ -65,6 +83,19 @@ export const Embed = forwardRef<EmbedReactRef, EmbedReactProps>(function Embed(
   const containerRef = useRef<HTMLDivElement>(null);
   const instanceRef = useRef<EmbedInstance | null>(null);
   const [status, setStatus] = useState<EmbedStatus>(EmbedStatuses.CREATED);
+
+  const showOverlay = useMemo(
+    () => !!renderLoading && showLoadingOn.includes(status),
+    [renderLoading, showLoadingOn, status],
+  );
+
+  // Control iframe visibility: hide when showOverlay so renderLoading is visible
+  useEffect(() => {
+    const iframe = instanceRef.current?.iframe;
+    if (iframe) {
+      iframe.style.visibility = showOverlay ? "hidden" : "";
+    }
+  }, [showOverlay]);
 
   const callbacksRef = useRef({
     onParamChanged,
@@ -173,8 +204,12 @@ export const Embed = forwardRef<EmbedReactRef, EmbedReactProps>(function Embed(
     <div
       ref={containerRef}
       className={mergedClassName}
-      style={{ display: "contents", ...style }}
+      style={{ position: "relative", width: "100%", height: "100%", ...style }}
       {...rest}
-    />
+    >
+      {showOverlay && renderLoading && (
+        <div style={{ position: "absolute", inset: 0, zIndex: 1 }}>{renderLoading({ status })}</div>
+      )}
+    </div>
   );
 });

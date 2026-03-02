@@ -115,7 +115,7 @@ Option types and behavior (e.g. `iframeOptions`, `tokenOptions`, `displayOptions
 | `tokenOptions` | No | `TokenOptions` |
 | `displayOptions` | No | `DisplayOptions` |
 | `devOptions` | No | `DevOptions` |
-| `showLoadingOn` | No | `EmbedStatus[]` |
+| `showLoadingOn` | No | `EmbedStatus[]` — Which statuses show the loading overlay. Default: `['INITIALIZING', 'RELOADING', 'REFRESHING']`. Ignored when `#loading` slot is not set. |
 
 ### Slots
 

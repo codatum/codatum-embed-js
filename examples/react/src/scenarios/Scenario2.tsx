@@ -278,7 +278,7 @@ export default function Scenario2() {
         {statusDisplay}
       </div>
       {embedUrl && (
-        <div className="border bg-white">
+        <div className="border bg-white" style={{ height: "600px" }}>
           <EmbedReact
             ref={embedRef}
             embedUrl={embedUrl}
@@ -287,7 +287,6 @@ export default function Scenario2() {
               theme: "LIGHT",
               locale: "en",
               className: "react-example-iframe",
-              style: { height: "600px" },
             }}
             displayOptions={{ hideParamsForm: true }}
             devOptions={{ debug: true, disableValidateUrl: true }}

@@ -176,7 +176,7 @@ export default function Scenario3() {
         {statusDisplay}
       </div>
       {embedUrl && (
-        <div className="border bg-white">
+        <div className="border bg-white position-relative" style={{ height: "600px" }}>
           <EmbedReact
             ref={embedRef}
             embedUrl={embedUrl}
@@ -185,10 +185,39 @@ export default function Scenario3() {
               theme: "LIGHT",
               locale: "en",
               className: "react-example-iframe",
-              style: { height: "600px" },
             }}
             displayOptions={{ expandParamsFormByDefault: true }}
             devOptions={{ debug: true, disableValidateUrl: true }}
+            showLoadingOn={["INITIALIZING", "RELOADING", "REFRESHING"]}
+            renderLoading={({ status }) => (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  height: "100%",
+                }}
+              >
+                {/* biome-ignore lint/a11y/useSemanticElements: Bootstrap spinner uses div+role="status" for live region */}
+                <div className="spinner-border text-primary" role="status">
+                  <span className="visually-hidden">Loading...</span>
+                </div>
+                <p
+                  className="mt-2 mb-0"
+                  style={{
+                    fontSize: "0.9rem",
+                    color: "var(--bs-secondary, #6c757d)",
+                  }}
+                >
+                  {status === "INITIALIZING"
+                    ? "Initializing…"
+                    : status === "RELOADING"
+                      ? "Reloading…"
+                      : "Refreshing…"}
+                </p>
+              </div>
+            )}
             onStatusChanged={onStatusChanged}
             onParamChanged={onParamChanged}
             onExecuteSqlsTriggered={onParamChanged}

@@ -73,6 +73,41 @@ function App() {
 }
 ```
 
+### Custom loading UI
+
+Use `renderLoading` to show custom UI while loading. `showLoadingOn` controls which statuses show it (default: `INITIALIZING` / `RELOADING` / `REFRESHING`).
+
+```tsx
+<EmbedReact
+  embedUrl={embedUrl}
+  tokenProvider={tokenProvider}
+  renderLoading={() => <MySpinner />}
+/>
+```
+
+Show only on first load:
+
+```tsx
+<EmbedReact
+  embedUrl={embedUrl}
+  tokenProvider={tokenProvider}
+  showLoadingOn={["INITIALIZING"]}
+  renderLoading={() => <FullPageLoader />}
+/>
+```
+
+Branch by status:
+
+```tsx
+<EmbedReact
+  embedUrl={embedUrl}
+  tokenProvider={tokenProvider}
+  renderLoading={({ status }) =>
+    status === "INITIALIZING" ? <FullPageLoader /> : <SubtleBar />
+  }
+/>
+```
+
 ### Changing props at runtime
 
 Props are read once at mount. To apply new values (e.g. a different `embedUrl` or `iframeOptions`), use `key` to force a remount:
@@ -95,6 +130,8 @@ Option types and behavior (e.g. `iframeOptions`, `tokenOptions`, `displayOptions
 | `tokenOptions` | No | `TokenOptions` |
 | `displayOptions` | No | `DisplayOptions` |
 | `devOptions` | No | `DevOptions` |
+| `showLoadingOn` | No | `EmbedStatus[]` — Which statuses show the loading overlay. Default: `['INITIALIZING', 'RELOADING', 'REFRESHING']`. Ignored when `renderLoading` is not set. |
+| `renderLoading` | No | `(props: { status: EmbedStatus }) => ReactNode` — Custom UI shown while loading. When not set, the iframe's built-in loading is used. |
 
 ### Callbacks
 
