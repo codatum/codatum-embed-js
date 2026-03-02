@@ -128,6 +128,7 @@ Development and testing only. Not intended for production.
 |----------|------|---------|-------------|
 | `label` | `string` | `embedUrl` | Text shown in the mock iframe placeholder. Useful when multiple embeds are on the page. |
 | `callTokenProvider` | `boolean` | `false` | When `true`, calls `tokenProvider` on `init()`, `reload()`, and auto-refresh. |
+| `loadingDelay` | `number` | `0` | Delay in seconds before the embed is loaded. Useful for testing loading UI. |
 
 ### Creating an embed instance
 

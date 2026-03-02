@@ -161,6 +161,10 @@ export const validateEmbedOptions = (options: EmbedOptions): void => {
       if (callTokenProvider != null && typeof callTokenProvider !== "boolean") {
         throwError("devOptions.mock.callTokenProvider must be a boolean");
       }
+      const loadingDelay = mock.loadingDelay;
+      if (loadingDelay != null && typeof loadingDelay !== "number") {
+        throwError("devOptions.mock.loadingDelay must be a number");
+      }
     }
   }
 };

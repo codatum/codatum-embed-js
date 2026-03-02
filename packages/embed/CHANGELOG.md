@@ -1,5 +1,11 @@
 # @codatum/embed
 
+## 0.5.1
+
+### Patch Changes
+
+- **devOptions.mock**: Add `loadingDelay` option (seconds) to simulate loading time before init/reload completes. Useful for testing custom loading UI. Improve mock behavior so that `reload()` resolves after the same delay when `callTokenProvider` is not set.
+
 ## 0.5.0
 
 ### Minor Changes

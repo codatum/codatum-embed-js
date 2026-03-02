@@ -80,11 +80,7 @@ export class EmbedInstance implements IEmbedInstance {
     this.debug = devOptions?.debug === true;
     const rawMock = devOptions?.mock;
     this.isMock = rawMock === true || (typeof rawMock === "object" && rawMock !== null);
-    this.mockOptions = this.isMock
-      ? typeof rawMock === "object"
-        ? { label: rawMock.label, callTokenProvider: rawMock.callTokenProvider }
-        : {}
-      : undefined;
+    this.mockOptions = this.isMock ? (typeof rawMock === "object" ? rawMock : {}) : undefined;
 
     const tokenOptions = this.options.tokenOptions ?? {};
     this.disableRefresh = tokenOptions.disableRefresh === true;
@@ -158,14 +154,14 @@ export class EmbedInstance implements IEmbedInstance {
         this.fetchTokenWithRetry(TokenProviderTriggers.INIT)
           .then(() => {
             if (this.isDestroyed) return;
-            this.completeInit();
+            this.mockLoadingDelay(this.completeInit);
           })
           .catch((err) => {
             if (this.isDestroyed) return;
             this.failInit(err);
           });
       } else {
-        this.completeInit();
+        this.mockLoadingDelay(this.completeInit);
       }
       return this.initPromise;
     }
@@ -189,6 +185,16 @@ export class EmbedInstance implements IEmbedInstance {
         err instanceof Error ? err.message : String(err),
         { cause: err },
       ),
+    );
+  }
+
+  private mockLoadingDelay(callback: () => void): void {
+    setTimeout(
+      () => {
+        if (this.isDestroyed) return;
+        callback.call(this);
+      },
+      (this.mockOptions?.loadingDelay ?? 0) * 1000,
     );
   }
 
@@ -407,12 +413,19 @@ export class EmbedInstance implements IEmbedInstance {
   private refresh(): void {
     if (this.isDestroyed || this.disableRefresh) return;
     if (this._status !== EmbedStatuses.READY) return;
+    if (this.isMock && this.mockOptions?.callTokenProvider !== true) {
+      return;
+    }
     this.debugLog("auto-refresh triggered");
     this.setStatus(EmbedStatuses.REFRESHING);
     this.startLoadingTimeout();
     this.fetchTokenWithRetry(TokenProviderTriggers.REFRESH)
       .then((result) => {
         if (this.isDestroyed) return;
+        if (this.isMock) {
+          this.mockLoadingDelay(this.onContentReady);
+          return;
+        }
         this.sendSetToken(result);
       })
       .catch((err) => {
@@ -503,21 +516,30 @@ export class EmbedInstance implements IEmbedInstance {
   reload(): Promise<void> {
     if (this.isDestroyed) return Promise.resolve();
     if (this._status !== EmbedStatuses.READY) return Promise.resolve();
-    if (this.isMock && this.mockOptions?.callTokenProvider !== true) {
-      return Promise.resolve();
-    }
     this.debugLog("reload triggered");
     this.setStatus(EmbedStatuses.RELOADING);
     this.startLoadingTimeout();
+    if (this.isMock && this.mockOptions?.callTokenProvider !== true) {
+      return new Promise<void>((resolve, reject) => {
+        this.resolveReload = resolve;
+        this.rejectReload = reject;
+        this.mockLoadingDelay(this.onContentReady);
+      });
+    }
     return new Promise<void>((resolve, reject) => {
       this.resolveReload = resolve;
       this.rejectReload = reject;
       this.fetchTokenWithRetry(TokenProviderTriggers.RELOAD)
         .then((result) => {
           if (this.isDestroyed) return;
+          if (this.isMock) {
+            this.mockLoadingDelay(this.onContentReady);
+            return;
+          }
           this.sendSetToken(result);
         })
         .catch((err) => {
+          if (this.isDestroyed) return;
           this.clearLoadingTimeout();
           this.resolveReload = null;
           this.rejectReload = null;
