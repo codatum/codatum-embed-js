@@ -128,6 +128,7 @@ Development and testing only. Not intended for production.
 |----------|------|---------|-------------|
 | `label` | `string` | `embedUrl` | Text shown in the mock iframe placeholder. Useful when multiple embeds are on the page. |
 | `callTokenProvider` | `boolean` | `false` | When `true`, calls `tokenProvider` on `init()`, `reload()`, and auto-refresh. |
+| `loadingDelay` | `number` | `0` | Delay in seconds before the embed is loaded. Useful for testing loading UI. |
 
 ### Creating an embed instance
 
@@ -415,6 +416,8 @@ embed.on('paramChanged', (ev) => { paramValues = paramMapper.decode(ev.params); 
 embed.on('executeSqlsTriggered', (ev) => { paramValues = paramMapper.decode(ev.params); });
 ```
 
+Runnable: [React](https://github.com/codatum/codatum-embed-js/blob/main/examples/react/src/scenarios/Scenario1.tsx), [Vue](https://github.com/codatum/codatum-embed-js/blob/main/examples/vue/src/scenarios/Scenario1.vue)
+
 **Server** — Validate `store_id` against the tenant and encode it in the token:
 
 ```ts
@@ -432,6 +435,8 @@ if (!storeIdsForTenant.includes(storeId)) throw new Error('Invalid storeId');
 const encoded = paramMapper.encode({ tenant_id: tenantId, store_id: storeId });
 // issue token with encoded params
 ```
+
+Runnable: [Node.js](https://github.com/codatum/codatum-embed-js/blob/main/examples/server/src/scenarios/scenario1/handlers.ts)
 
 ### Example B: Client-side params only (SaaS owns filters, hide params form)
 
@@ -472,6 +477,8 @@ async function onDashboardFilterChange(newValues: ParamValues) {
 }
 ```
 
+Runnable: [React](https://github.com/codatum/codatum-embed-js/blob/main/examples/react/src/scenarios/Scenario2.tsx), [Vue](https://github.com/codatum/codatum-embed-js/blob/main/examples/vue/src/scenarios/Scenario2.vue)
+
 **Server** — Token needs only tenant scope (no param in body):
 
 ```ts
@@ -485,6 +492,8 @@ const tenantId = await getTenantIdByUserId(tokenUserId);
 const encoded = paramMapper.encode({ tenant_id: tenantId });
 // issue token with encoded params
 ```
+
+Runnable: [Node.js](https://github.com/codatum/codatum-embed-js/blob/main/examples/server/src/scenarios/scenario2/handlers.ts)
 
 ### Example C: Server-side store (token re-issue on store change)
 
@@ -527,7 +536,11 @@ async function onStoreSwitch(storeId: string) {
 }
 ```
 
+Runnable: [React](https://github.com/codatum/codatum-embed-js/blob/main/examples/react/src/scenarios/Scenario3.tsx), [Vue](https://github.com/codatum/codatum-embed-js/blob/main/examples/vue/src/scenarios/Scenario3.vue)
+
 **Server** — Same as Example A: accept `params.store_id`, validate, encode `tenant_id` + `store_id` in the token.
+
+Runnable: [Node.js](https://github.com/codatum/codatum-embed-js/blob/main/examples/server/src/scenarios/scenario3/handlers.ts)
 
 ## CDN
 

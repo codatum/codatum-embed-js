@@ -61,6 +61,7 @@ export type DevOptions = {
 export type MockOptions = {
   label?: string;
   callTokenProvider?: boolean;
+  loadingDelay?: number;
 };
 
 export type TokenProvider = (context: TokenProviderContext) => Promise<TokenProviderResult>;

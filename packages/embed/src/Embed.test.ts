@@ -104,6 +104,7 @@ describe("createEmbed", () => {
 
 describe("devOptions", () => {
   beforeEach(() => {
+    vi.useRealTimers();
     document.body.innerHTML = '<div id="container"></div>';
   });
 
@@ -189,6 +190,80 @@ describe("devOptions", () => {
     expect(embed.status).toBe(EmbedStatuses.READY);
     expect(tokenProvider).not.toHaveBeenCalled();
     embed.destroy();
+  });
+
+  it("with mock: { loadingDelay: 0.1 } init resolves after loadingDelay (seconds)", async () => {
+    vi.useFakeTimers();
+    const embed = createEmbed({
+      container: "#container",
+      embedUrl: VALID_EMBED_URL,
+      tokenProvider: () => Promise.resolve({ token: TEST_JWT }),
+      devOptions: { mock: { loadingDelay: 0.1 } },
+    });
+    const initPromise = embed.init();
+    await vi.advanceTimersByTimeAsync(50);
+    await Promise.resolve();
+    expect(embed.status).toBe(EmbedStatuses.INITIALIZING);
+    await vi.advanceTimersByTimeAsync(60);
+    await initPromise;
+    expect(embed.status).toBe(EmbedStatuses.READY);
+    embed.destroy();
+    vi.useRealTimers();
+  });
+
+  it("with mock: { callTokenProvider: true, loadingDelay: 0.1 } calls tokenProvider then resolves after loadingDelay", async () => {
+    vi.useFakeTimers();
+    const tokenProvider = vi.fn().mockResolvedValue({ token: TEST_JWT });
+    const embed = createEmbed({
+      container: "#container",
+      embedUrl: VALID_EMBED_URL,
+      tokenProvider,
+      devOptions: { mock: { callTokenProvider: true, loadingDelay: 0.1 } },
+    });
+    const initPromise = embed.init();
+    await Promise.resolve();
+    expect(tokenProvider).toHaveBeenCalledTimes(1);
+    expect(embed.status).toBe(EmbedStatuses.INITIALIZING);
+    await vi.advanceTimersByTimeAsync(100);
+    await initPromise;
+    expect(embed.status).toBe(EmbedStatuses.READY);
+    embed.destroy();
+    vi.useRealTimers();
+  });
+
+  it("with mock: true, reload() resolves after mockLoadingDelay and status returns to READY", async () => {
+    const embed = createEmbed({
+      container: "#container",
+      embedUrl: VALID_EMBED_URL,
+      tokenProvider: () => Promise.resolve({ token: TEST_JWT }),
+      devOptions: { mock: true },
+    });
+    await embed.init();
+    expect(embed.status).toBe(EmbedStatuses.READY);
+    const reloadPromise = embed.reload();
+    expect(embed.status).toBe(EmbedStatuses.RELOADING);
+    await reloadPromise;
+    expect(embed.status).toBe(EmbedStatuses.READY);
+    embed.destroy();
+  });
+
+  it("with mock: { loadingDelay: 0.05 }, reload() resolves after loadingDelay", async () => {
+    vi.useFakeTimers();
+    const embed = createEmbed({
+      container: "#container",
+      embedUrl: VALID_EMBED_URL,
+      tokenProvider: () => Promise.resolve({ token: TEST_JWT }),
+      devOptions: { mock: { loadingDelay: 0.05 } },
+    });
+    const initPromise = embed.init();
+    await vi.advanceTimersByTimeAsync(50);
+    await initPromise;
+    const reloadPromise = embed.reload();
+    await vi.advanceTimersByTimeAsync(55);
+    await reloadPromise;
+    expect(embed.status).toBe(EmbedStatuses.READY);
+    embed.destroy();
+    vi.useRealTimers();
   });
 });
 
