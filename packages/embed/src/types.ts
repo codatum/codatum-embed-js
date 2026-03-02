@@ -103,6 +103,7 @@ export type ExecutionSucceededMessage = {
 };
 export type ExecutionFailedMessage = {
   type: typeof EmbedMessageTypes.EXECUTION_FAILED;
+  errorMessage: string;
 };
 
 export type EmbedMessage =
@@ -126,6 +127,8 @@ export type EmbedEventMap = {
   // from iframe
   paramChanged: (payload: ParamChangedMessage) => void;
   executeSqlsTriggered: (payload: ExecuteSqlsTriggeredMessage) => void;
+  executionSucceeded: (payload: ExecutionSucceededMessage) => void;
+  executionFailed: (payload: ExecutionFailedMessage) => void;
 };
 
 export const EmbedErrorCodes = {

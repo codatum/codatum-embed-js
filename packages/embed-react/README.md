@@ -140,6 +140,8 @@ Option types and behavior (e.g. `iframeOptions`, `tokenOptions`, `displayOptions
 | `onStatusChanged` | `(payload: { type: 'STATUS_CHANGED', status: EmbedStatus, previousStatus: EmbedStatus }) => void` | See core SDK |
 | `onParamChanged` | `(payload: { type: 'PARAM_CHANGED', params: EncodedParam[] }) => void` | See core SDK |
 | `onExecuteSqlsTriggered` | `(payload: { type: 'EXECUTE_SQLS_TRIGGERED', params: EncodedParam[] }) => void` | See core SDK |
+| `onExecutionSucceeded` | `(payload: { type: 'EXECUTION_SUCCEEDED' }) => void` | See core SDK |
+| `onExecutionFailed` | `(payload: { type: 'EXECUTION_FAILED', errorMessage: string }) => void` | See core SDK |
 | `onError` | `(err: EmbedError) => void` | Init, reload, or token auto-refresh failed |
 
 ### Ref (`EmbedReactRef`)
