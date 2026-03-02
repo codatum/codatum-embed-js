@@ -12,6 +12,8 @@ export type {
   EmbedStatus,
   EncodedParam,
   ExecuteSqlsTriggeredMessage,
+  ExecutionFailedMessage,
+  ExecutionSucceededMessage,
   IframeOptions,
   ParamChangedMessage,
   ParamMapper,

@@ -4,6 +4,8 @@ import type {
   EmbedInstance,
   EmbedStatus,
   ExecuteSqlsTriggeredMessage,
+  ExecutionFailedMessage,
+  ExecutionSucceededMessage,
   IframeOptions,
   ParamChangedMessage,
   StatusChangedPayload,
@@ -50,6 +52,8 @@ export type EmbedReactProps = Omit<ComponentPropsWithoutRef<"div">, "children" |
   onStatusChanged?: (payload: StatusChangedPayload) => void;
   onParamChanged?: (payload: ParamChangedMessage) => void;
   onExecuteSqlsTriggered?: (payload: ExecuteSqlsTriggeredMessage) => void;
+  onExecutionSucceeded?: (payload: ExecutionSucceededMessage) => void;
+  onExecutionFailed?: (payload: ExecutionFailedMessage) => void;
   onError?: (err: EmbedError) => void;
 };
 
@@ -73,6 +77,8 @@ export const Embed = forwardRef<EmbedReactRef, EmbedReactProps>(function Embed(
     onStatusChanged,
     onParamChanged,
     onExecuteSqlsTriggered,
+    onExecutionSucceeded,
+    onExecutionFailed,
     onError,
     className,
     style,
@@ -98,15 +104,19 @@ export const Embed = forwardRef<EmbedReactRef, EmbedReactProps>(function Embed(
   }, [showOverlay]);
 
   const callbacksRef = useRef({
+    onStatusChanged,
     onParamChanged,
     onExecuteSqlsTriggered,
-    onStatusChanged,
+    onExecutionSucceeded,
+    onExecutionFailed,
     onError,
   });
   callbacksRef.current = {
+    onStatusChanged,
     onParamChanged,
     onExecuteSqlsTriggered,
-    onStatusChanged,
+    onExecutionSucceeded,
+    onExecutionFailed,
     onError,
   };
 
@@ -147,6 +157,10 @@ export const Embed = forwardRef<EmbedReactRef, EmbedReactProps>(function Embed(
     embed.on("executeSqlsTriggered", (payload) =>
       callbacksRef.current.onExecuteSqlsTriggered?.(payload),
     );
+    embed.on("executionSucceeded", (payload) =>
+      callbacksRef.current.onExecutionSucceeded?.(payload),
+    );
+    embed.on("executionFailed", (payload) => callbacksRef.current.onExecutionFailed?.(payload));
 
     let cancelled = false;
     embed

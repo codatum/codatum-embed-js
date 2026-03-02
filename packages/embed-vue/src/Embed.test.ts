@@ -17,12 +17,20 @@ function createMockInstance(overrides?: {
   destroy: ReturnType<typeof vi.fn>;
   on: ReturnType<typeof vi.fn>;
   off: ReturnType<typeof vi.fn>;
-  _handlers: { statusChanged: unknown[]; paramChanged: unknown[]; executeSqlsTriggered: unknown[] };
+  _handlers: {
+    statusChanged: unknown[];
+    paramChanged: unknown[];
+    executeSqlsTriggered: unknown[];
+    executionSucceeded: unknown[];
+    executionFailed: unknown[];
+  };
 } {
   const _handlers = {
     statusChanged: [] as unknown[],
     paramChanged: [] as unknown[],
     executeSqlsTriggered: [] as unknown[],
+    executionSucceeded: [] as unknown[],
+    executionFailed: [] as unknown[],
   };
   const mock = {
     init: overrides?.init ?? vi.fn().mockResolvedValue(undefined),

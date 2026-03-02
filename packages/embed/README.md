@@ -204,6 +204,8 @@ Subscribe with `on(event, handler)` and `off(event, handler)`.
 | `statusChanged` | Instance status changed. | `{ type: 'STATUS_CHANGED', status: EmbedStatus, previousStatus: EmbedStatus }` |
 | `paramChanged` | User changed parameters in the embed. | `{ type: 'PARAM_CHANGED', params: EncodedParam[] }` |
 | `executeSqlsTriggered` | SQL execution was triggered in the embed. | `{ type: 'EXECUTE_SQLS_TRIGGERED', params: EncodedParam[] }` |
+| `executionSucceeded` | SQL execution was completed successfully. | `{ type: 'EXECUTION_SUCCEEDED' }` |
+| `executionFailed` | SQL execution was failed. | `{ type: 'EXECUTION_FAILED', errorMessage: string }` |
 
 Decode with `ParamMapper.decode(payload.params)`. `EncodedParam`: see [ParamMapper](#parammapper).
 

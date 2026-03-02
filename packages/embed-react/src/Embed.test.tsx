@@ -18,12 +18,20 @@ function createMockInstance(options?: {
   destroy: ReturnType<typeof vi.fn>;
   on: ReturnType<typeof vi.fn>;
   off: ReturnType<typeof vi.fn>;
-  _handlers: { statusChanged: unknown[]; paramChanged: unknown[]; executeSqlsTriggered: unknown[] };
+  _handlers: {
+    statusChanged: unknown[];
+    paramChanged: unknown[];
+    executeSqlsTriggered: unknown[];
+    executionSucceeded: unknown[];
+    executionFailed: unknown[];
+  };
 } {
   const _handlers = {
     statusChanged: [] as unknown[],
     paramChanged: [] as unknown[],
     executeSqlsTriggered: [] as unknown[],
+    executionSucceeded: [] as unknown[],
+    executionFailed: [] as unknown[],
   };
   const initResolves = options?.initResolves !== false;
   const mock = {

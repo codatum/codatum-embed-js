@@ -1,5 +1,16 @@
 # @codatum/embed-vue
 
+## 0.5.0
+
+### Minor Changes
+
+- Expose 2 new events to external consumers: `executionSucceeded` and `executionFailed`. These are now emitted from the embed instance (core: `embed.on(event, handler)`; React: `onExecutionSucceeded` / `onExecutionFailed`;
+
+### Patch Changes
+
+- Updated dependencies
+  - @codatum/embed@0.5.0
+
 ## 0.4.0
 
 ### Minor Changes
