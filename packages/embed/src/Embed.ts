@@ -139,6 +139,7 @@ export class EmbedInstance implements IEmbedInstance {
     // className and style take precedence over attrs
     iframe.className = getIframeClassName(iframeOptions);
     Object.assign(iframe.style, {
+      display: "block",
       width: "100%",
       height: "100%",
       border: "none",
