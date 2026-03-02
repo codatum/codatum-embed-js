@@ -37,7 +37,8 @@ function createMockInstance(overrides?: {
       if (i !== -1) list.splice(i, 1);
     }),
     get status() {
-      return (overrides?.status ?? EmbedStatuses.READY) as (typeof EmbedStatuses)[keyof typeof EmbedStatuses];
+      return (overrides?.status ??
+        EmbedStatuses.READY) as (typeof EmbedStatuses)[keyof typeof EmbedStatuses];
     },
     get iframe() {
       return overrides?.iframe ?? null;
@@ -158,9 +159,9 @@ describe("Embed.vue", () => {
       status: EmbedStatuses.READY,
       previousStatus: EmbedStatuses.INITIALIZING,
     };
-    const handler = mockInst.on.mock.calls.find((c: unknown[]) => c[0] === "statusChanged")?.[1] as (
-      p: typeof payload,
-    ) => void;
+    const handler = mockInst.on.mock.calls.find(
+      (c: unknown[]) => c[0] === "statusChanged",
+    )?.[1] as (p: typeof payload) => void;
     handler(payload);
 
     expect(wrapper.emitted("statusChanged")).toEqual([[payload]]);
@@ -496,9 +497,9 @@ describe("Embed.vue", () => {
         status: EmbedStatuses.RELOADING,
         previousStatus: EmbedStatuses.READY,
       };
-      const handler = mockInst.on.mock.calls.find((c: unknown[]) => c[0] === "statusChanged")?.[1] as (
-        p: typeof payload,
-      ) => void;
+      const handler = mockInst.on.mock.calls.find(
+        (c: unknown[]) => c[0] === "statusChanged",
+      )?.[1] as (p: typeof payload) => void;
       handler(payload);
       await wrapper.vm.$nextTick();
       expect(wrapper.find(".codatum-embed-vue-loading-overlay").exists()).toBe(false);
@@ -508,9 +509,9 @@ describe("Embed.vue", () => {
         status: EmbedStatuses.INITIALIZING,
         previousStatus: EmbedStatuses.CREATED,
       };
-      const handlerInit = mockInst.on.mock.calls.find((c: unknown[]) => c[0] === "statusChanged")?.[1] as (
-        p: typeof payloadInit,
-      ) => void;
+      const handlerInit = mockInst.on.mock.calls.find(
+        (c: unknown[]) => c[0] === "statusChanged",
+      )?.[1] as (p: typeof payloadInit) => void;
       handlerInit(payloadInit);
       await wrapper.vm.$nextTick();
       expect(wrapper.find(".codatum-embed-vue-loading-overlay").exists()).toBe(true);

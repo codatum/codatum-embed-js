@@ -27,9 +27,11 @@ function createMockInstance(options?: {
   };
   const initResolves = options?.initResolves !== false;
   const mock = {
-    init: vi.fn().mockImplementation(() =>
-      initResolves ? Promise.resolve(undefined) : new Promise<never>(() => {}),
-    ),
+    init: vi
+      .fn()
+      .mockImplementation(() =>
+        initResolves ? Promise.resolve(undefined) : new Promise<never>(() => {}),
+      ),
     reload: vi.fn().mockResolvedValue(undefined),
     destroy: vi.fn(),
     on: vi.fn((event: keyof typeof _handlers, handler: unknown) => {
@@ -168,7 +170,8 @@ describe("EmbedReact", () => {
         createElement(EmbedReact, {
           embedUrl: EMBED_URL,
           tokenProvider,
-          renderLoading: () => createElement("div", { "data-testid": "loading-overlay" }, "Loading"),
+          renderLoading: () =>
+            createElement("div", { "data-testid": "loading-overlay" }, "Loading"),
         }),
       );
 
@@ -264,9 +267,9 @@ describe("EmbedReact", () => {
         status: EmbedStatuses.READY,
         previousStatus: EmbedStatuses.INITIALIZING,
       };
-      const handler = mockInst.on.mock.calls.find((c: unknown[]) => c[0] === "statusChanged")?.[1] as (
-        p: typeof payload,
-      ) => void;
+      const handler = mockInst.on.mock.calls.find(
+        (c: unknown[]) => c[0] === "statusChanged",
+      )?.[1] as (p: typeof payload) => void;
       handler(payload);
 
       await waitFor(() => {
@@ -339,9 +342,9 @@ describe("EmbedReact", () => {
       status: EmbedStatuses.READY,
       previousStatus: EmbedStatuses.INITIALIZING,
     };
-    const handler = mockInst.on.mock.calls.find((c: unknown[]) => c[0] === "statusChanged")?.[1] as (
-      p: typeof payload,
-    ) => void;
+    const handler = mockInst.on.mock.calls.find(
+      (c: unknown[]) => c[0] === "statusChanged",
+    )?.[1] as (p: typeof payload) => void;
     handler(payload);
 
     expect(onStatusChanged).toHaveBeenCalledWith(payload);
