@@ -57,6 +57,8 @@
             });
             embed.on("paramChanged", function (payload) { console.log("[paramChanged]", payload); });
             embed.on("executeSqlsTriggered", function (payload) { console.log("[executeSqlsTriggered]", payload); });
+            embed.on("executionSucceeded", function (payload) { console.log("[executionSucceeded]", payload); });
+            embed.on("executionFailed", function (payload) { console.log("[executionFailed]", payload); });
             return embed.init();
           })
           .then(function () { })

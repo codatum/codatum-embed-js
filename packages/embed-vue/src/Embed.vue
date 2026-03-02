@@ -11,6 +11,8 @@ import type {
   DevOptions,
   DisplayOptions,
   ExecuteSqlsTriggeredMessage,
+  ExecutionSucceededMessage,
+  ExecutionFailedMessage,
   IframeOptions,
   ParamChangedMessage,
   StatusChangedPayload,
@@ -47,6 +49,8 @@ const emit = defineEmits<{
   statusChanged: [payload: StatusChangedPayload];
   paramChanged: [payload: ParamChangedMessage];
   executeSqlsTriggered: [payload: ExecuteSqlsTriggeredMessage];
+  executionSucceeded: [payload: ExecutionSucceededMessage];
+  executionFailed: [payload: ExecutionFailedMessage];
   error: [err: EmbedError];
 }>();
 
@@ -116,6 +120,10 @@ onMounted(async () => {
   embed.on("executeSqlsTriggered", (payload) =>
     emit("executeSqlsTriggered", payload)
   );
+  embed.on("executionSucceeded", (payload) =>
+    emit("executionSucceeded", payload)
+  );
+  embed.on("executionFailed", (payload) => emit("executionFailed", payload));
 
   try {
     await embed.init();

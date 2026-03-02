@@ -130,6 +130,8 @@ Option types and behavior (e.g. `iframeOptions`, `tokenOptions`, `displayOptions
 | `statusChanged` | `{ type: 'STATUS_CHANGED', status: EmbedStatus, previousStatus: EmbedStatus }` | See core SDK |
 | `paramChanged` | `{ type: 'PARAM_CHANGED', params: EncodedParam[] }` | See core SDK |
 | `executeSqlsTriggered` | `{ type: 'EXECUTE_SQLS_TRIGGERED', params: EncodedParam[] }` | See core SDK |
+| `executionSucceeded` | `{ type: 'EXECUTION_SUCCEEDED' }` | See core SDK |
+| `executionFailed` | `{ type: 'EXECUTION_FAILED', errorMessage: string }` | See core SDK |
 | `error` | `EmbedError` | Init, reload, or token auto-refresh failed |
 
 ### Expose (ref)

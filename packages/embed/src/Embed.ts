@@ -12,6 +12,7 @@ import {
   EMBED_STATUS_ATTR,
   EmbedError,
   EmbedErrorCodes,
+  EmbedMessageTypes,
   EmbedStatuses,
   SDK_VERSION,
   type TokenOptions,
@@ -58,6 +59,8 @@ export class EmbedInstance implements IEmbedInstance {
     statusChanged: [],
     paramChanged: [],
     executeSqlsTriggered: [],
+    executionSucceeded: [],
+    executionFailed: [],
   };
 
   private readonly initPromise: Promise<void>;
@@ -440,16 +443,24 @@ export class EmbedInstance implements IEmbedInstance {
     if (!data || typeof data !== "object" || typeof data.type !== "string") {
       return;
     }
-    if (data.type === "READY_FOR_TOKEN") {
+    if (data.type === EmbedMessageTypes.READY_FOR_TOKEN) {
       this.onReadyForToken();
-    } else if (data.type === "CONTENT_READY") {
+    } else if (data.type === EmbedMessageTypes.CONTENT_READY) {
       this.onContentReady();
-    } else if (data.type === "PARAM_CHANGED") {
+    } else if (data.type === EmbedMessageTypes.PARAM_CHANGED) {
       for (const h of this.eventHandlers.paramChanged) {
         h(deepClone(data));
       }
-    } else if (data.type === "EXECUTE_SQLS_TRIGGERED") {
+    } else if (data.type === EmbedMessageTypes.EXECUTE_SQLS_TRIGGERED) {
       for (const h of this.eventHandlers.executeSqlsTriggered) {
+        h(deepClone(data));
+      }
+    } else if (data.type === EmbedMessageTypes.EXECUTION_SUCCEEDED) {
+      for (const h of this.eventHandlers.executionSucceeded) {
+        h(deepClone(data));
+      }
+    } else if (data.type === EmbedMessageTypes.EXECUTION_FAILED) {
+      for (const h of this.eventHandlers.executionFailed) {
         h(deepClone(data));
       }
     }

@@ -67,6 +67,12 @@ async function run() {
     embed.on("executeSqlsTriggered", (payload) => {
       console.log("[executeSqlsTriggered]", payload);
     });
+    embed.on("executionSucceeded", (payload) => {
+      console.log("[executionSucceeded]", payload);
+    });
+    embed.on("executionFailed", (payload) => {
+      console.log("[executionFailed]", payload);
+    });
 
     await embed.init();
     embedInstance = embed;
