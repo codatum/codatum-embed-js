@@ -32,7 +32,7 @@ const tokenProvider = async () => {
     :embedUrl="embedUrl"
     :tokenProvider="tokenProvider"
     :iframeOptions="{ theme: 'LIGHT', locale: 'ja' }"
-    @ready="console.log('Embed ready')"
+    @statusChanged="(e) => console.log('Status', e.status)"
     @paramChanged="(e) => console.log('Params', e.params)"
     @executeSqlsTriggered="(e) => console.log('Execute', e.params)"
     @error="(e) => console.error(e)"
@@ -69,6 +69,38 @@ Props are read once at mount. To apply new values (e.g. a different `embedUrl` o
 <EmbedVue :key="embedUrl" :embedUrl="embedUrl" :tokenProvider="tokenProvider" />
 ```
 
+### Custom loading UI (`#loading` slot)
+
+When you pass the `#loading` slot, the component hides the iframe during loading (init, reload, token refresh, etc.) and shows your custom UI as an overlay. Use `showLoadingOn` to control which statuses show the overlay (default: `['INITIALIZING', 'RELOADING', 'REFRESHING']`). Without the slot, the built-in iframe loading behavior is unchanged.
+
+```vue
+<!-- Spinner for all loading states -->
+<EmbedVue :embedUrl="embedUrl" :tokenProvider="tokenProvider">
+  <template #loading>
+    <MySpinner />
+  </template>
+</EmbedVue>
+
+<!-- Only on first load -->
+<EmbedVue
+  :embedUrl="embedUrl"
+  :tokenProvider="tokenProvider"
+  :showLoadingOn="['INITIALIZING']"
+>
+  <template #loading>
+    <MySpinner />
+  </template>
+</EmbedVue>
+
+<!-- Branch by status -->
+<EmbedVue :embedUrl="embedUrl" :tokenProvider="tokenProvider">
+  <template #loading="{ status }">
+    <FullPageLoader v-if="status === 'INITIALIZING'" />
+    <SubtleBar v-else />
+  </template>
+</EmbedVue>
+```
+
 ## API
 
 Option types and behavior (e.g. `iframeOptions`, `tokenOptions`, `displayOptions`, `devOptions`) are the same as in [@codatum/embed](https://github.com/codatum/codatum-embed-js/tree/main/packages/embed#readme). The component uses its root element as the iframe container (no `container` prop).
@@ -83,12 +115,19 @@ Option types and behavior (e.g. `iframeOptions`, `tokenOptions`, `displayOptions
 | `tokenOptions` | No | `TokenOptions` |
 | `displayOptions` | No | `DisplayOptions` |
 | `devOptions` | No | `DevOptions` |
+| `showLoadingOn` | No | `EmbedStatus[]` — Which statuses show the loading overlay. Default: `['INITIALIZING', 'RELOADING', 'REFRESHING']`. Ignored when `#loading` slot is not set. |
+
+### Slots
+
+| Slot | Scoped Props | Description |
+|------|--------------|-------------|
+| `#loading` | `{ status: EmbedStatus }` | Custom UI shown while loading. Overlay is shown (and iframe hidden) only when this slot is provided and the current status is in `showLoadingOn`. Without the slot, built-in iframe loading behavior is used. |
 
 ### Events
 
 | Event | Payload | When |
 |-------|---------|------|
-| `ready` | — | Embed is ready and token/params have been applied |
+| `statusChanged` | `{ type: 'STATUS_CHANGED', status: EmbedStatus, previousStatus: EmbedStatus }` | See core SDK |
 | `paramChanged` | `{ type: 'PARAM_CHANGED', params: EncodedParam[] }` | See core SDK |
 | `executeSqlsTriggered` | `{ type: 'EXECUTE_SQLS_TRIGGERED', params: EncodedParam[] }` | See core SDK |
 | `error` | `EmbedError` | Init, reload, or token auto-refresh failed |
@@ -98,7 +137,7 @@ Option types and behavior (e.g. `iframeOptions`, `tokenOptions`, `displayOptions
 | Property | Type | Description |
 |----------|------|-------------|
 | `reload()` | `() => Promise<boolean>` | Re-fetches token and params; returns `false` on failure (error emitted via `@error`) |
-| `status` | `'CREATED' \| 'INITIALIZING' \| 'READY' \| 'DESTROYED'` | Current embed state |
+| `status` | `'CREATED' \| 'INITIALIZING' \| 'RELOADING' \| 'REFRESHING' \| 'READY' \| 'DESTROYED'` | Current embed state |
 
 Need a custom container or full control? Use `createEmbed()` from this package (or [@codatum/embed](https://github.com/codatum/codatum-embed-js/tree/main/packages/embed#readme)) in `onMounted` and `instance.destroy()` in `onUnmounted`.
 

@@ -4,11 +4,12 @@ import {
   createParamMapper,
   RESET_TO_DEFAULT,
   type EmbedError,
+  type EmbedStatus,
   type EncodedParam,
   type DefineDecodedParams,
   type DefineParamMapper,
 } from "@codatum/embed-vue";
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 
 const API_URL = "http://localhost:3100/scenario1";
 type Config = {
@@ -19,7 +20,8 @@ type Config = {
 
 const embedUrl = ref<string | null>(null);
 const userId = ref<string | null>(null);
-const statusMessage = ref("Loading config…");
+const embedStatus = ref<EmbedStatus | null>(null);
+const errorMessage = ref<string | null>(null);
 const statusError = ref(false);
 
 const paramDefs = {
@@ -49,18 +51,20 @@ onMounted(async () => {
       config.paramMapping,
       paramDefs
     ) as ParamMapper;
-    statusMessage.value = "Initializing…";
   } catch (err) {
-    statusMessage.value =
+    errorMessage.value =
       "Failed to fetch config. Ensure the server is running at localhost:3100.";
     statusError.value = true;
     console.error(err);
   }
 });
 
-const onReady = () => {
-  statusMessage.value = "Ready";
-  statusError.value = false;
+const onStatusChanged = (payload: { status: EmbedStatus }) => {
+  embedStatus.value = payload.status;
+  if (payload.status === "READY") {
+    statusError.value = false;
+    errorMessage.value = null;
+  }
 };
 
 const tokenProvider = async () => {
@@ -97,18 +101,20 @@ const onParamChanged = (ev: { params: EncodedParam[] }) => {
 };
 
 const onEmbedError = (err: EmbedError) => {
-  statusMessage.value = err.message;
+  errorMessage.value = err.message;
   statusError.value = true;
 };
 
 const embedRef = ref<InstanceType<typeof EmbedVue> | null>(null);
 const reloadEmbed = async () => {
-  const success = await embedRef.value?.reload();
-  if (success) {
-    statusMessage.value = "Reloaded";
-    statusError.value = false;
-  }
+  await embedRef.value?.reload();
 };
+
+const statusDisplay = computed(() =>
+  statusError.value && errorMessage.value
+    ? errorMessage.value
+    : embedStatus.value ?? (embedUrl.value ? "—" : "Loading config…")
+);
 </script>
 
 <template>
@@ -125,9 +131,9 @@ const reloadEmbed = async () => {
     class="alert py-2 mb-3"
     :class="statusError ? 'alert-danger' : 'alert-success'"
   >
-    {{ statusMessage }}
+    {{ statusDisplay }}
   </div>
-  <div v-if="embedUrl" class="border bg-white">
+  <div v-if="embedUrl" class="border bg-white embed-container">
     <EmbedVue
       ref="embedRef"
       :embedUrl="embedUrl"
@@ -136,14 +142,19 @@ const reloadEmbed = async () => {
         theme: 'LIGHT',
         locale: 'en',
         className: 'vue-example-iframe',
-        style: { height: '600px' },
       }"
       :displayOptions="{ expandParamsFormByDefault: true }"
-      :devOptions="{ debug: true }"
-      @ready="onReady"
+      :devOptions="{ debug: true, disableValidateUrl: true }"
+      @statusChanged="onStatusChanged"
       @paramChanged="onParamChanged"
       @executeSqlsTriggered="onParamChanged"
       @error="onEmbedError"
     />
   </div>
 </template>
+
+<style scoped>
+.embed-container {
+  height: 600px;
+}
+</style>

@@ -7,20 +7,25 @@ import Embed from "./Embed.vue";
 const EMBED_URL = "https://app.codatum.com/protected/workspace/ws1/notebook/nb1";
 const tokenProvider = vi.fn(() => Promise.resolve({ token: "test-token" }));
 
-function createMockInstance(): EmbedInstance & {
+function createMockInstance(overrides?: {
+  init?: ReturnType<typeof vi.fn>;
+  status?: string;
+  iframe?: HTMLIFrameElement | null;
+}): EmbedInstance & {
   init: ReturnType<typeof vi.fn>;
   reload: ReturnType<typeof vi.fn>;
   destroy: ReturnType<typeof vi.fn>;
   on: ReturnType<typeof vi.fn>;
   off: ReturnType<typeof vi.fn>;
-  _handlers: { paramChanged: unknown[]; executeSqlsTriggered: unknown[] };
+  _handlers: { statusChanged: unknown[]; paramChanged: unknown[]; executeSqlsTriggered: unknown[] };
 } {
   const _handlers = {
+    statusChanged: [] as unknown[],
     paramChanged: [] as unknown[],
     executeSqlsTriggered: [] as unknown[],
   };
   const mock = {
-    init: vi.fn().mockResolvedValue(undefined),
+    init: overrides?.init ?? vi.fn().mockResolvedValue(undefined),
     reload: vi.fn().mockResolvedValue(undefined),
     destroy: vi.fn(),
     on: vi.fn((event: keyof typeof _handlers, handler: unknown) => {
@@ -32,10 +37,11 @@ function createMockInstance(): EmbedInstance & {
       if (i !== -1) list.splice(i, 1);
     }),
     get status() {
-      return EmbedStatuses.READY;
+      return (overrides?.status ??
+        EmbedStatuses.READY) as (typeof EmbedStatuses)[keyof typeof EmbedStatuses];
     },
     get iframe() {
-      return null;
+      return overrides?.iframe ?? null;
     },
     _handlers,
   };
@@ -59,7 +65,7 @@ vi.mock("@codatum/embed", () => ({
     TOKEN_PROVIDER_FAILED: "TOKEN_PROVIDER_FAILED",
     INVALID_OPTIONS: "INVALID_OPTIONS",
     CONTAINER_NOT_FOUND: "CONTAINER_NOT_FOUND",
-    INIT_TIMEOUT: "INIT_TIMEOUT",
+    LOADING_TIMEOUT: "LOADING_TIMEOUT",
     MISSING_REQUIRED_PARAM: "MISSING_REQUIRED_PARAM",
     INVALID_PARAM_VALUE: "INVALID_PARAM_VALUE",
     UNEXPECTED_ERROR: "UNEXPECTED_ERROR",
@@ -67,6 +73,8 @@ vi.mock("@codatum/embed", () => ({
   EmbedStatuses: {
     CREATED: "CREATED",
     INITIALIZING: "INITIALIZING",
+    RELOADING: "RELOADING",
+    REFRESHING: "REFRESHING",
     READY: "READY",
     DESTROYED: "DESTROYED",
   },
@@ -134,7 +142,7 @@ describe("Embed.vue", () => {
     });
   });
 
-  it("emits ready when instance is set and handlers are registered", async () => {
+  it("emits statusChanged when instance fires statusChanged", async () => {
     const mockInst = createMockInstance();
     createEmbedMock.mockReturnValue(mockInst);
 
@@ -143,11 +151,20 @@ describe("Embed.vue", () => {
     });
 
     await vi.waitFor(() => {
-      expect(mockInst.on).toHaveBeenCalledWith("paramChanged", expect.any(Function));
-      expect(mockInst.on).toHaveBeenCalledWith("executeSqlsTriggered", expect.any(Function));
+      expect(mockInst.on).toHaveBeenCalledWith("statusChanged", expect.any(Function));
     });
 
-    expect(wrapper.emitted("ready")).toHaveLength(1);
+    const payload = {
+      type: "STATUS_CHANGED" as const,
+      status: EmbedStatuses.READY,
+      previousStatus: EmbedStatuses.INITIALIZING,
+    };
+    const handler = mockInst.on.mock.calls.find(
+      (c: unknown[]) => c[0] === "statusChanged",
+    )?.[1] as (p: typeof payload) => void;
+    handler(payload);
+
+    expect(wrapper.emitted("statusChanged")).toEqual([[payload]]);
   });
 
   it("emits paramChanged when instance fires paramChanged", async () => {
@@ -376,5 +393,192 @@ describe("Embed.vue", () => {
     if (onRefreshError) onRefreshError(refreshErr);
 
     expect(wrapper.emitted("error")).toEqual([[refreshErr]]);
+  });
+
+  describe("loading slot and showLoadingOn", () => {
+    it("does not render loading overlay when #loading slot is not provided", async () => {
+      const mockInst = createMockInstance();
+      createEmbedMock.mockReturnValue(mockInst);
+
+      const wrapper = mount(Embed, {
+        props: { embedUrl: EMBED_URL, tokenProvider },
+      });
+
+      await vi.waitFor(() => {
+        expect(mockInst.init).toHaveBeenCalled();
+      });
+
+      const overlay = wrapper.find(".codatum-embed-vue-loading-overlay");
+      expect(overlay.exists()).toBe(false);
+    });
+
+    it("renders loading overlay with slot content while status is in showLoadingOn", async () => {
+      let resolveInit: (() => void) | undefined;
+      const mockInst = createMockInstance({
+        init: vi.fn().mockImplementation(
+          () =>
+            new Promise<void>((resolve) => {
+              resolveInit = resolve;
+            }),
+        ),
+      });
+      createEmbedMock.mockReturnValue(mockInst);
+
+      const wrapper = mount(Embed, {
+        props: { embedUrl: EMBED_URL, tokenProvider },
+        slots: {
+          loading: "Loading...",
+        },
+      });
+
+      await vi.waitFor(() => {
+        expect(mockInst.init).toHaveBeenCalled();
+      });
+
+      const overlay = wrapper.find(".codatum-embed-vue-loading-overlay");
+      expect(overlay.exists()).toBe(true);
+      expect(overlay.text()).toBe("Loading...");
+
+      if (resolveInit) resolveInit();
+      await vi.waitFor(() => {
+        expect(wrapper.find(".codatum-embed-vue-loading-overlay").exists()).toBe(false);
+      });
+    });
+
+    it("does not render loading overlay when showLoadingOn is empty array", async () => {
+      let resolveInit: (() => void) | undefined;
+      const mockInst = createMockInstance({
+        init: vi.fn().mockImplementation(
+          () =>
+            new Promise<void>((resolve) => {
+              resolveInit = resolve;
+            }),
+        ),
+      });
+      createEmbedMock.mockReturnValue(mockInst);
+
+      const wrapper = mount(Embed, {
+        props: { embedUrl: EMBED_URL, tokenProvider, showLoadingOn: [] },
+        slots: { loading: "Loading..." },
+      });
+
+      await vi.waitFor(() => {
+        expect(mockInst.init).toHaveBeenCalled();
+      });
+
+      const overlay = wrapper.find(".codatum-embed-vue-loading-overlay");
+      expect(overlay.exists()).toBe(false);
+
+      if (resolveInit) resolveInit();
+    });
+
+    it("shows overlay only for statuses in showLoadingOn", async () => {
+      const mockInst = createMockInstance();
+      createEmbedMock.mockReturnValue(mockInst);
+
+      const wrapper = mount(Embed, {
+        props: {
+          embedUrl: EMBED_URL,
+          tokenProvider,
+          showLoadingOn: [EmbedStatuses.INITIALIZING],
+        },
+        slots: { loading: "Loading..." },
+      });
+
+      await vi.waitFor(() => {
+        expect(mockInst.init).toHaveBeenCalled();
+      });
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.find(".codatum-embed-vue-loading-overlay").exists()).toBe(false);
+
+      const payload = {
+        type: "STATUS_CHANGED" as const,
+        status: EmbedStatuses.RELOADING,
+        previousStatus: EmbedStatuses.READY,
+      };
+      const handler = mockInst.on.mock.calls.find(
+        (c: unknown[]) => c[0] === "statusChanged",
+      )?.[1] as (p: typeof payload) => void;
+      handler(payload);
+      await wrapper.vm.$nextTick();
+      expect(wrapper.find(".codatum-embed-vue-loading-overlay").exists()).toBe(false);
+
+      const payloadInit = {
+        type: "STATUS_CHANGED" as const,
+        status: EmbedStatuses.INITIALIZING,
+        previousStatus: EmbedStatuses.CREATED,
+      };
+      const handlerInit = mockInst.on.mock.calls.find(
+        (c: unknown[]) => c[0] === "statusChanged",
+      )?.[1] as (p: typeof payloadInit) => void;
+      handlerInit(payloadInit);
+      await wrapper.vm.$nextTick();
+      expect(wrapper.find(".codatum-embed-vue-loading-overlay").exists()).toBe(true);
+      expect(wrapper.find(".codatum-embed-vue-loading-overlay").text()).toBe("Loading...");
+    });
+
+    it("passes status to #loading slot", async () => {
+      let resolveInit: (() => void) | undefined;
+      const mockInst = createMockInstance({
+        init: vi.fn().mockImplementation(
+          () =>
+            new Promise<void>((resolve) => {
+              resolveInit = resolve;
+            }),
+        ),
+      });
+      createEmbedMock.mockReturnValue(mockInst);
+
+      const wrapper = mount(Embed, {
+        props: { embedUrl: EMBED_URL, tokenProvider },
+        slots: {
+          loading: (slotProps: { status: string }) => `Status: ${slotProps.status}`,
+        },
+      });
+
+      await vi.waitFor(() => {
+        expect(mockInst.init).toHaveBeenCalled();
+      });
+
+      expect(wrapper.find(".codatum-embed-vue-loading-overlay").text()).toBe(
+        `Status: ${EmbedStatuses.INITIALIZING}`,
+      );
+
+      if (resolveInit) resolveInit();
+    });
+
+    it("sets iframe visibility hidden when overlay is shown, and clears when hidden", async () => {
+      const iframe = document.createElement("iframe");
+      let resolveInit: (() => void) | undefined;
+      const mockInst = createMockInstance({
+        init: vi.fn().mockImplementation(
+          () =>
+            new Promise<void>((resolve) => {
+              resolveInit = resolve;
+            }),
+        ),
+        iframe,
+      });
+      createEmbedMock.mockReturnValue(mockInst);
+
+      const wrapper = mount(Embed, {
+        props: { embedUrl: EMBED_URL, tokenProvider },
+        slots: { loading: "Loading..." },
+      });
+
+      await vi.waitFor(() => {
+        expect(mockInst.init).toHaveBeenCalled();
+      });
+
+      expect(iframe.style.visibility).toBe("hidden");
+
+      if (resolveInit) resolveInit();
+      await vi.waitFor(() => {
+        expect(wrapper.find(".codatum-embed-vue-loading-overlay").exists()).toBe(false);
+      });
+
+      expect(iframe.style.visibility).toBe("");
+    });
   });
 });

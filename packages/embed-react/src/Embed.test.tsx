@@ -9,20 +9,29 @@ import { EmbedReact, type EmbedReactRef } from "./index";
 const EMBED_URL = "https://app.codatum.com/protected/workspace/ws1/notebook/nb1";
 const tokenProvider = vi.fn(() => Promise.resolve({ token: "test-token" }));
 
-function createMockInstance(): EmbedInstance & {
+function createMockInstance(options?: {
+  iframe?: HTMLIFrameElement | null;
+  initResolves?: boolean;
+}): EmbedInstance & {
   init: ReturnType<typeof vi.fn>;
   reload: ReturnType<typeof vi.fn>;
   destroy: ReturnType<typeof vi.fn>;
   on: ReturnType<typeof vi.fn>;
   off: ReturnType<typeof vi.fn>;
-  _handlers: { paramChanged: unknown[]; executeSqlsTriggered: unknown[] };
+  _handlers: { statusChanged: unknown[]; paramChanged: unknown[]; executeSqlsTriggered: unknown[] };
 } {
   const _handlers = {
+    statusChanged: [] as unknown[],
     paramChanged: [] as unknown[],
     executeSqlsTriggered: [] as unknown[],
   };
+  const initResolves = options?.initResolves !== false;
   const mock = {
-    init: vi.fn().mockResolvedValue(undefined),
+    init: vi
+      .fn()
+      .mockImplementation(() =>
+        initResolves ? Promise.resolve(undefined) : new Promise<never>(() => {}),
+      ),
     reload: vi.fn().mockResolvedValue(undefined),
     destroy: vi.fn(),
     on: vi.fn((event: keyof typeof _handlers, handler: unknown) => {
@@ -37,7 +46,7 @@ function createMockInstance(): EmbedInstance & {
       return EmbedStatuses.READY;
     },
     get iframe() {
-      return null;
+      return options?.iframe ?? null;
     },
     _handlers,
   };
@@ -61,13 +70,15 @@ vi.mock("@codatum/embed", () => ({
     TOKEN_PROVIDER_FAILED: "TOKEN_PROVIDER_FAILED",
     INVALID_OPTIONS: "INVALID_OPTIONS",
     CONTAINER_NOT_FOUND: "CONTAINER_NOT_FOUND",
-    INIT_TIMEOUT: "INIT_TIMEOUT",
+    LOADING_TIMEOUT: "LOADING_TIMEOUT",
     MISSING_REQUIRED_PARAM: "MISSING_REQUIRED_PARAM",
     INVALID_PARAM_VALUE: "INVALID_PARAM_VALUE",
   },
   EmbedStatuses: {
     CREATED: "CREATED",
     INITIALIZING: "INITIALIZING",
+    RELOADING: "RELOADING",
+    REFRESHING: "REFRESHING",
     READY: "READY",
     DESTROYED: "DESTROYED",
   },
@@ -105,7 +116,7 @@ describe("EmbedReact", () => {
     expect(container?.className).toBe("codatum-embed-react-container my-wrapper");
   });
 
-  it("passes through custom style and keeps display:contents", () => {
+  it("passes through custom style with position relative and full size", () => {
     const mockInst = createMockInstance();
     createEmbedMock.mockReturnValue(mockInst);
 
@@ -120,8 +131,9 @@ describe("EmbedReact", () => {
 
     const container = wrapper.querySelector(".codatum-embed-react-container");
     expect(container).toBeInstanceOf(HTMLDivElement);
-    expect((container as HTMLElement).style.display).toBe("contents");
+    expect((container as HTMLElement).style.position).toBe("relative");
     expect((container as HTMLElement).style.width).toBe("100%");
+    expect((container as HTMLElement).style.height).toBe("100%");
     expect((container as HTMLElement).style.minHeight).toBe("400px");
   });
 
@@ -147,6 +159,123 @@ describe("EmbedReact", () => {
     expect((container as HTMLElement).getAttribute("data-embed-id")).toBe("nb1");
     expect((container as HTMLElement).getAttribute("role")).toBe("region");
     expect((container as HTMLElement).getAttribute("aria-label")).toBe("Embedded notebook");
+  });
+
+  describe("renderLoading and showLoadingOn", () => {
+    it("shows loading overlay when renderLoading is provided and status is in showLoadingOn", async () => {
+      const mockInst = createMockInstance({ initResolves: false });
+      createEmbedMock.mockReturnValue(mockInst);
+
+      render(
+        createElement(EmbedReact, {
+          embedUrl: EMBED_URL,
+          tokenProvider,
+          renderLoading: () =>
+            createElement("div", { "data-testid": "loading-overlay" }, "Loading"),
+        }),
+      );
+
+      await waitFor(() => {
+        const overlay = document.querySelector("[data-testid=loading-overlay]");
+        expect(overlay).toBeInstanceOf(HTMLElement);
+        expect(overlay?.textContent).toBe("Loading");
+      });
+    });
+
+    it("does not show overlay when renderLoading is not provided", async () => {
+      const mockInst = createMockInstance({ initResolves: false });
+      createEmbedMock.mockReturnValue(mockInst);
+
+      const { container: wrapper } = render(
+        createElement(EmbedReact, {
+          embedUrl: EMBED_URL,
+          tokenProvider,
+        }),
+      );
+
+      await waitFor(() => {
+        expect(mockInst.init).toHaveBeenCalled();
+      });
+
+      const overlay = wrapper.querySelector("[style*='position: absolute']");
+      expect(overlay).toBeNull();
+    });
+
+    it("does not show overlay when showLoadingOn is empty array", async () => {
+      const mockInst = createMockInstance({ initResolves: false });
+      createEmbedMock.mockReturnValue(mockInst);
+
+      const { container } = render(
+        createElement(EmbedReact, {
+          embedUrl: EMBED_URL,
+          tokenProvider,
+          showLoadingOn: [],
+          renderLoading: () =>
+            createElement("div", { "data-testid": "loading-overlay-empty" }, "Loading"),
+        }),
+      );
+
+      await waitFor(() => {
+        expect(mockInst.init).toHaveBeenCalled();
+      });
+
+      const overlay = container.querySelector("[data-testid=loading-overlay-empty]");
+      expect(overlay).toBeNull();
+    });
+
+    it("passes status to renderLoading", async () => {
+      const mockInst = createMockInstance({ initResolves: false });
+      createEmbedMock.mockReturnValue(mockInst);
+
+      render(
+        createElement(EmbedReact, {
+          embedUrl: EMBED_URL,
+          tokenProvider,
+          renderLoading: ({ status }) =>
+            createElement("span", { "data-testid": "status-text" }, status),
+        }),
+      );
+
+      await waitFor(() => {
+        const statusEl = document.querySelector("[data-testid=status-text]");
+        expect(statusEl).toBeInstanceOf(HTMLElement);
+        expect(statusEl?.textContent).toBe(EmbedStatuses.INITIALIZING);
+      });
+    });
+
+    it("hides iframe when showOverlay is true and restores visibility when overlay is hidden", async () => {
+      const iframe = document.createElement("iframe");
+      const mockInst = createMockInstance({ iframe, initResolves: false });
+      createEmbedMock.mockReturnValue(mockInst);
+
+      render(
+        createElement(EmbedReact, {
+          embedUrl: EMBED_URL,
+          tokenProvider,
+          renderLoading: () => createElement("div", { "data-testid": "loading" }, "Loading"),
+        }),
+      );
+
+      await waitFor(() => {
+        expect(document.querySelector("[data-testid=loading]")).toBeInstanceOf(HTMLElement);
+      });
+
+      expect(iframe.style.visibility).toBe("hidden");
+
+      const payload = {
+        type: "STATUS_CHANGED" as const,
+        status: EmbedStatuses.READY,
+        previousStatus: EmbedStatuses.INITIALIZING,
+      };
+      const handler = mockInst.on.mock.calls.find(
+        (c: unknown[]) => c[0] === "statusChanged",
+      )?.[1] as (p: typeof payload) => void;
+      handler(payload);
+
+      await waitFor(() => {
+        expect(iframe.style.visibility).toBe("");
+      });
+    });
   });
 
   it("calls createEmbed with container, embedUrl, tokenProvider and optional options", async () => {
@@ -191,27 +320,34 @@ describe("EmbedReact", () => {
     });
   });
 
-  it("calls onReady when init succeeds", async () => {
+  it("calls onStatusChanged when instance fires statusChanged", async () => {
     const mockInst = createMockInstance();
     createEmbedMock.mockReturnValue(mockInst);
-    const onReady = vi.fn();
+    const onStatusChanged = vi.fn();
 
     render(
       createElement(EmbedReact, {
         embedUrl: EMBED_URL,
         tokenProvider,
-        onReady,
+        onStatusChanged,
       }),
     );
 
     await waitFor(() => {
-      expect(mockInst.on).toHaveBeenCalledWith("paramChanged", expect.any(Function));
-      expect(mockInst.on).toHaveBeenCalledWith("executeSqlsTriggered", expect.any(Function));
+      expect(mockInst.on).toHaveBeenCalledWith("statusChanged", expect.any(Function));
     });
 
-    await waitFor(() => {
-      expect(onReady).toHaveBeenCalledTimes(1);
-    });
+    const payload = {
+      type: "STATUS_CHANGED" as const,
+      status: EmbedStatuses.READY,
+      previousStatus: EmbedStatuses.INITIALIZING,
+    };
+    const handler = mockInst.on.mock.calls.find(
+      (c: unknown[]) => c[0] === "statusChanged",
+    )?.[1] as (p: typeof payload) => void;
+    handler(payload);
+
+    expect(onStatusChanged).toHaveBeenCalledWith(payload);
   });
 
   it("calls onParamChanged when instance fires paramChanged", async () => {

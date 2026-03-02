@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts"
+    "dev": "NODE_OPTIONS='--use-system-ca' tsx watch src/index.ts"
   },
   "dependencies": {
     "@codatum/embed": "workspace:*",

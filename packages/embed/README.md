@@ -87,20 +87,20 @@ Options applied to the iframe element and passed to the embed via URL/search par
 | `theme` | `'LIGHT'` \| `'DARK'`\| `'SYSTEM'` | `'SYSTEM'` | UI theme of the embedded notebook |
 | `locale` | `string` | Browser's locale | Locale code (e.g. `'en'`, `'ja'`) for the embed UI |
 | `className` | `string` | - | CSS class name(s) applied to the iframe element |
-| `style` | `object` | `{width: '100%', height: '100%', border: 'none'}` | Inline styles for the iframe; overrides the default styles |
+| `style` | `object` | `{display: 'block', width: '100%', height: '100%', border: 'none'}` | Inline styles for the iframe; overrides the default styles |
 | `attrs` | `Record<string, string>` | - | Additional HTML attributes for the iframe (e.g. `{ title: 'Dashboard', 'data-testid': 'embed-iframe' }`) |
 
 #### `TokenOptions`
 
-Controls token lifetime, refresh behavior, and init timeout.
+Controls token lifetime, refresh behavior, and loading timeout.
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `disableRefresh` | `boolean` | `false` | When `true`, disables automatic token refresh before the token expires |
 | `refreshBuffer` | `number` | `60` | Number of seconds before the token expires when auto-refresh is triggered |
 | `retryCount` | `number` | `2` | Number of retries on token fetch failure; `0` = no retry |
-| `initTimeout` | `number` | `30` | Max wait in seconds for embed "ready"; `0` = no timeout |
-| `onRefreshError` | `(error: EmbedError) => void` | `undefined` | Callback invoked when token auto-refresh fails (due to `tokenProvider` failure) and does not recover after all retries |
+| `loadingTimeout` | `number` | `30` | Max wait in seconds for `CONTENT_READY` after entering `INITIALIZING`, `RELOADING`, or `REFRESHING`; `0` = no timeout |
+| `onRefreshError` | `(error: EmbedError) => void` | `undefined` | Callback invoked when token auto-refresh fails (due to `tokenProvider` failure or loading timeout) and does not recover after all retries |
 
 #### `DisplayOptions`
 
@@ -118,7 +118,7 @@ Development and testing only. Not intended for production.
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `debug` | `boolean` | `false` | When `true`, logs SDK lifecycle: postMessage (in/out), tokenProvider calls/refresh/retries, status transitions (CREATED → INITIALIZING → READY → DESTROYED). |
+| `debug` | `boolean` | `false` | When `true`, logs SDK lifecycle: postMessage (in/out), tokenProvider calls/refresh/retries, status transitions. |
 | `disableValidateUrl` | `boolean` | `false` | When `true`, skips `embedUrl` format validation (domain/path). Use for local or staging URLs that don't match the production pattern. |
 | `mock` | `boolean` \| `MockOptions` | - | Enables mock mode: no real embed load, no network. iframe uses `srcdoc` with a styled placeholder. |
 
@@ -139,8 +139,8 @@ Creates an embed instance. Throws `EmbedError` if options are invalid. Call `ini
 
 | Method | Description |
 |--------|-------------|
-| `async init()` | Creates the iframe, waits for it to be ready, calls `tokenProvider`, and sends token (and optional params) to the embed. Resolves when ready. Rejects with `EmbedError` on failure. |
-| `async reload()` | Calls `tokenProvider` again and sends the returned token and params via `SET_TOKEN`. May throw `EmbedError` when run. |
+| `async init()` | Creates the iframe, waits for it to be ready, calls `tokenProvider`, and sends token (and optional params) to the embed. Resolves when the embed sends `CONTENT_READY`. Rejects with `EmbedError` on failure. |
+| `async reload()` | Calls `tokenProvider`, sends the returned token and params via `SET_TOKEN`, and resolves when the embed sends `CONTENT_READY`. Rejects with `EmbedError` on failure. |
 | `destroy()` | Removes iframe, clears listeners and timers. No-op if already destroyed. |
 
 ### Instance properties
@@ -148,7 +148,52 @@ Creates an embed instance. Throws `EmbedError` if options are invalid. Call `ini
 | Property | Type | Description |
 |----------|------|-------------|
 | `iframe` | `HTMLIFrameElement \| null` | The embed iframe element. |
-| `status` | `'CREATED' \| 'INITIALIZING' \| 'READY' \| 'DESTROYED'` | Current instance state. |
+| `status` | `'CREATED' \| 'INITIALIZING' \| 'RELOADING' \| 'REFRESHING' \| 'READY' \| 'DESTROYED'` | Current instance state. |
+
+### Container attribute
+
+The SDK sets a `data-codatum-embed-status` attribute on the container element, reflecting the current status. The attribute is added when `init()` is called and removed on `destroy()`. Use it for CSS-based styling or E2E test selectors.
+
+| Status | When |
+|--------|------|
+| `INITIALIZING` | `init()` called, waiting for content |
+| `READY` | Content loaded and visible |
+| `RELOADING` | `reload()` called, waiting for content |
+| `REFRESHING` | Auto-refresh in progress |
+| `DESTROYED` | (attribute removed) |
+
+#### Example: Custom loading UI
+
+Show your own loading indicator during initialization while keeping the iframe hidden:
+```html
+<div id="dashboard" style="position: relative;">
+  <div class="my-loading">Loading…</div>
+</div>
+```
+```css
+/* Hide iframe and show loading UI while loading */
+[data-codatum-embed-status="INITIALIZING"] iframe,
+[data-codatum-embed-status="RELOADING"] iframe,
+[data-codatum-embed-status="REFRESHING"] iframe {
+  visibility: hidden;
+}
+[data-codatum-embed-status="INITIALIZING"] .my-loading,
+[data-codatum-embed-status="RELOADING"] .my-loading,
+[data-codatum-embed-status="REFRESHING"] .my-loading {
+  display: flex;
+  position: absolute;
+  inset: 0;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Hide loading UI when ready */
+[data-codatum-embed-status="READY"] .my-loading {
+  display: none;
+}
+```
+
+Without any custom CSS, the embed's built-in loading screen is shown as-is inside the iframe.
 
 ### Events
 
@@ -156,6 +201,7 @@ Subscribe with `on(event, handler)` and `off(event, handler)`.
 
 | Event | Description | Payload |
 |-------|-------------|---------|
+| `statusChanged` | Instance status changed. | `{ type: 'STATUS_CHANGED', status: EmbedStatus, previousStatus: EmbedStatus }` |
 | `paramChanged` | User changed parameters in the embed. | `{ type: 'PARAM_CHANGED', params: EncodedParam[] }` |
 | `executeSqlsTriggered` | SQL execution was triggered in the embed. | `{ type: 'EXECUTE_SQLS_TRIGGERED', params: EncodedParam[] }` |
 
@@ -290,7 +336,7 @@ All errors are thrown/rejected as `EmbedError` with a `code` property.
 |------|----------|-------------|
 | `INVALID_OPTIONS` | `createEmbed` | Options are invalid |
 | `CONTAINER_NOT_FOUND` | `init` | Container element not found |
-| `INIT_TIMEOUT` | `init` | Ready not received within `tokenOptions.initTimeout` |
+| `LOADING_TIMEOUT` | `init` / `reload` | `CONTENT_READY` not received within `tokenOptions.loadingTimeout`; auto-refresh reports via `onRefreshError` |
 | `TOKEN_PROVIDER_FAILED` | `init` / `reload` | `tokenProvider` threw |
 | `MISSING_REQUIRED_PARAM` | `encode` / `decode` | Required param missing |
 | `INVALID_PARAM_VALUE` | `encode` / `decode` | Value failed validation |

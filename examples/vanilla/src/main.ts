@@ -3,12 +3,15 @@
  * Start examples/server and set config.json before running.
  */
 
-import { createEmbed } from "@codatum/embed";
+import { createEmbed, type EmbedInstance } from "@codatum/embed";
 
 const SERVER_URL = "http://localhost:3100";
 
 const statusEl = document.getElementById("status");
 const containerEl = document.getElementById("dashboard");
+const reloadBtnEl = document.getElementById("reload-embed");
+
+let embedInstance: EmbedInstance | null = null;
 
 function setStatus(text: string, isError = false) {
   if (!statusEl) return;
@@ -52,17 +55,27 @@ async function run() {
         return { token: data.token };
       },
       iframeOptions: { theme: "LIGHT", locale: "en" },
+      devOptions: { debug: true, disableValidateUrl: true },
     });
-    await embed.init();
 
-    setStatus("Ready");
-
+    embed.on("statusChanged", (payload) => {
+      setStatus(payload.status, false);
+    });
     embed.on("paramChanged", (payload) => {
       console.log("[paramChanged]", payload);
     });
     embed.on("executeSqlsTriggered", (payload) => {
       console.log("[executeSqlsTriggered]", payload);
     });
+
+    await embed.init();
+    embedInstance = embed;
+    if (reloadBtnEl && reloadBtnEl instanceof HTMLButtonElement) {
+      reloadBtnEl.disabled = false;
+      reloadBtnEl.addEventListener("click", async () => {
+        await embedInstance?.reload();
+      });
+    }
   } catch (err) {
     setStatus(err instanceof Error ? err.message : "Embed initialization failed", true);
     console.error(err);

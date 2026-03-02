@@ -50,14 +50,16 @@
                   .then(function (data) { return { token: data.token }; });
               },
               iframeOptions: { theme: "LIGHT", locale: "en" },
+              devOptions: { debug: true, disableValidateUrl: true },
             });
-            return embed.init().then(function () { return embed; });
-          })
-          .then(function (embed) {
-            setStatus("Ready");
+            embed.on("statusChanged", function (payload) {
+              setStatus(payload.status, false);
+            });
             embed.on("paramChanged", function (payload) { console.log("[paramChanged]", payload); });
             embed.on("executeSqlsTriggered", function (payload) { console.log("[executeSqlsTriggered]", payload); });
+            return embed.init();
           })
+          .then(function () { })
           .catch(function (err) {
             setStatus(err && err.message ? err.message : "Embed initialization failed", true);
             console.error(err);

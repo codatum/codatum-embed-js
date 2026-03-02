@@ -6,13 +6,28 @@ import type {
   ExecuteSqlsTriggeredMessage,
   IframeOptions,
   ParamChangedMessage,
+  StatusChangedPayload,
   TokenOptions,
   TokenProviderContext,
   TokenProviderResult,
 } from "@codatum/embed";
 import { createEmbed, EmbedError, EmbedErrorCodes, EmbedStatuses } from "@codatum/embed";
-import type { ComponentPropsWithoutRef } from "react";
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
+import type { ComponentPropsWithoutRef, ReactNode } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+
+const DEFAULT_SHOW_LOADING_ON: EmbedStatus[] = [
+  EmbedStatuses.INITIALIZING,
+  EmbedStatuses.RELOADING,
+  EmbedStatuses.REFRESHING,
+];
 
 const toEmbedError = (err: unknown): EmbedError =>
   err instanceof EmbedError
@@ -23,14 +38,16 @@ const toEmbedError = (err: unknown): EmbedError =>
         { cause: err },
       );
 
-export type EmbedReactProps = Omit<ComponentPropsWithoutRef<"div">, "children"> & {
+export type EmbedReactProps = Omit<ComponentPropsWithoutRef<"div">, "children" | "onError"> & {
   embedUrl: string;
   tokenProvider: (context: TokenProviderContext) => Promise<TokenProviderResult>;
   iframeOptions?: IframeOptions;
   tokenOptions?: TokenOptions;
   displayOptions?: DisplayOptions;
   devOptions?: DevOptions;
-  onReady?: () => void;
+  showLoadingOn?: EmbedStatus[];
+  renderLoading?: (props: { status: EmbedStatus }) => ReactNode;
+  onStatusChanged?: (payload: StatusChangedPayload) => void;
   onParamChanged?: (payload: ParamChangedMessage) => void;
   onExecuteSqlsTriggered?: (payload: ExecuteSqlsTriggeredMessage) => void;
   onError?: (err: EmbedError) => void;
@@ -51,7 +68,9 @@ export const Embed = forwardRef<EmbedReactRef, EmbedReactProps>(function Embed(
     tokenOptions,
     displayOptions,
     devOptions,
-    onReady,
+    showLoadingOn = DEFAULT_SHOW_LOADING_ON,
+    renderLoading,
+    onStatusChanged,
     onParamChanged,
     onExecuteSqlsTriggered,
     onError,
@@ -65,16 +84,29 @@ export const Embed = forwardRef<EmbedReactRef, EmbedReactProps>(function Embed(
   const instanceRef = useRef<EmbedInstance | null>(null);
   const [status, setStatus] = useState<EmbedStatus>(EmbedStatuses.CREATED);
 
+  const showOverlay = useMemo(
+    () => !!renderLoading && showLoadingOn.includes(status),
+    [renderLoading, showLoadingOn, status],
+  );
+
+  // Control iframe visibility: hide when showOverlay so renderLoading is visible
+  useEffect(() => {
+    const iframe = instanceRef.current?.iframe;
+    if (iframe) {
+      iframe.style.visibility = showOverlay ? "hidden" : "";
+    }
+  }, [showOverlay]);
+
   const callbacksRef = useRef({
     onParamChanged,
     onExecuteSqlsTriggered,
-    onReady,
+    onStatusChanged,
     onError,
   });
   callbacksRef.current = {
     onParamChanged,
     onExecuteSqlsTriggered,
-    onReady,
+    onStatusChanged,
     onError,
   };
 
@@ -107,6 +139,10 @@ export const Embed = forwardRef<EmbedReactRef, EmbedReactProps>(function Embed(
     instanceRef.current = embed;
     setStatus(EmbedStatuses.INITIALIZING);
 
+    embed.on("statusChanged", (payload) => {
+      callbacksRef.current.onStatusChanged?.(payload);
+      setStatus(payload.status);
+    });
     embed.on("paramChanged", (payload) => callbacksRef.current.onParamChanged?.(payload));
     embed.on("executeSqlsTriggered", (payload) =>
       callbacksRef.current.onExecuteSqlsTriggered?.(payload),
@@ -118,7 +154,6 @@ export const Embed = forwardRef<EmbedReactRef, EmbedReactProps>(function Embed(
       .then(() => {
         if (!cancelled && instanceRef.current === embed) {
           setStatus(embed.status);
-          callbacksRef.current.onReady?.();
         }
       })
       .catch((err: unknown) => {
@@ -169,8 +204,12 @@ export const Embed = forwardRef<EmbedReactRef, EmbedReactProps>(function Embed(
     <div
       ref={containerRef}
       className={mergedClassName}
-      style={{ display: "contents", ...style }}
+      style={{ position: "relative", width: "100%", height: "100%", ...style }}
       {...rest}
-    />
+    >
+      {showOverlay && renderLoading && (
+        <div style={{ position: "absolute", inset: 0, zIndex: 1 }}>{renderLoading({ status })}</div>
+      )}
+    </div>
   );
 });

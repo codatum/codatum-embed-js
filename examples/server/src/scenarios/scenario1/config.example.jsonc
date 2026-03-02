@@ -2,6 +2,7 @@
 {
   "apiKey": "your_api_key",
   "apiSecret": "your_api_secret",
+  "apiOrigin": "https://api.codatum.com",
   "embedUrl": "https://app.codatum.com/protected/workspace/xxx/notebook/yyy",
   "pageId": "your_page_id",
   "paramMapping": {

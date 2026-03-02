@@ -32,7 +32,7 @@ function App() {
       embedUrl={embedUrl}
       tokenProvider={tokenProvider}
       iframeOptions={{ theme: "LIGHT", locale: "ja" }}
-      onReady={() => console.log("Embed ready")}
+      onStatusChanged={(e) => console.log("Status", e.status)}
       onParamChanged={(e) => console.log("Params", e.params)}
       onExecuteSqlsTriggered={(e) => console.log("Execute", e.params)}
       onError={(e) => console.error(e)}
@@ -73,6 +73,41 @@ function App() {
 }
 ```
 
+### Custom loading UI
+
+Use `renderLoading` to show custom UI while loading. `showLoadingOn` controls which statuses show it (default: `INITIALIZING` / `RELOADING` / `REFRESHING`).
+
+```tsx
+<EmbedReact
+  embedUrl={embedUrl}
+  tokenProvider={tokenProvider}
+  renderLoading={() => <MySpinner />}
+/>
+```
+
+Show only on first load:
+
+```tsx
+<EmbedReact
+  embedUrl={embedUrl}
+  tokenProvider={tokenProvider}
+  showLoadingOn={["INITIALIZING"]}
+  renderLoading={() => <FullPageLoader />}
+/>
+```
+
+Branch by status:
+
+```tsx
+<EmbedReact
+  embedUrl={embedUrl}
+  tokenProvider={tokenProvider}
+  renderLoading={({ status }) =>
+    status === "INITIALIZING" ? <FullPageLoader /> : <SubtleBar />
+  }
+/>
+```
+
 ### Changing props at runtime
 
 Props are read once at mount. To apply new values (e.g. a different `embedUrl` or `iframeOptions`), use `key` to force a remount:
@@ -95,12 +130,14 @@ Option types and behavior (e.g. `iframeOptions`, `tokenOptions`, `displayOptions
 | `tokenOptions` | No | `TokenOptions` |
 | `displayOptions` | No | `DisplayOptions` |
 | `devOptions` | No | `DevOptions` |
+| `showLoadingOn` | No | `EmbedStatus[]` — Which statuses show the loading overlay. Default: `['INITIALIZING', 'RELOADING', 'REFRESHING']`. Ignored when `renderLoading` is not set. |
+| `renderLoading` | No | `(props: { status: EmbedStatus }) => ReactNode` — Custom UI shown while loading. When not set, the iframe's built-in loading is used. |
 
 ### Callbacks
 
 | Callback | Payload | When |
 |----------|---------|------|
-| `onReady` | — | Embed is ready and token/params have been applied |
+| `onStatusChanged` | `(payload: { type: 'STATUS_CHANGED', status: EmbedStatus, previousStatus: EmbedStatus }) => void` | See core SDK |
 | `onParamChanged` | `(payload: { type: 'PARAM_CHANGED', params: EncodedParam[] }) => void` | See core SDK |
 | `onExecuteSqlsTriggered` | `(payload: { type: 'EXECUTE_SQLS_TRIGGERED', params: EncodedParam[] }) => void` | See core SDK |
 | `onError` | `(err: EmbedError) => void` | Init, reload, or token auto-refresh failed |
@@ -110,7 +147,7 @@ Option types and behavior (e.g. `iframeOptions`, `tokenOptions`, `displayOptions
 | Property | Type | Description |
 |----------|------|-------------|
 | `reload()` | `() => Promise<boolean>` | Re-fetches token and params; returns `false` on failure (error reported via `onError`) |
-| `status` | `'CREATED' \| 'INITIALIZING' \| 'READY' \| 'DESTROYED'` | Current embed state |
+| `status` | `'CREATED' \| 'INITIALIZING' \| 'RELOADING' \| 'REFRESHING' \| 'READY' \| 'DESTROYED'` | Current embed state |
 
 Need a custom container or full control? Use `createEmbed()` from this package (or [@codatum/embed](https://github.com/codatum/codatum-embed-js/tree/main/packages/embed#readme)) inside a `useEffect` and call `instance.destroy()` in the cleanup.
 

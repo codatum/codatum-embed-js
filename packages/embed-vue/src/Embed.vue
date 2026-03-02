@@ -13,33 +13,63 @@ import type {
   ExecuteSqlsTriggeredMessage,
   IframeOptions,
   ParamChangedMessage,
+  StatusChangedPayload,
   TokenOptions,
   TokenProviderContext,
   TokenProviderResult,
 } from "@codatum/embed";
-import { onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref, useSlots, watch } from "vue";
 
-const props = defineProps<{
-  embedUrl: string;
-  tokenProvider: (
-    context: TokenProviderContext
-  ) => Promise<TokenProviderResult>;
-  iframeOptions?: IframeOptions;
-  tokenOptions?: TokenOptions;
-  displayOptions?: DisplayOptions;
-  devOptions?: DevOptions;
-}>();
+const props = withDefaults(
+  defineProps<{
+    embedUrl: string;
+    tokenProvider: (
+      context: TokenProviderContext
+    ) => Promise<TokenProviderResult>;
+    iframeOptions?: IframeOptions;
+    tokenOptions?: TokenOptions;
+    displayOptions?: DisplayOptions;
+    devOptions?: DevOptions;
+    showLoadingOn?: EmbedStatus[];
+  }>(),
+  {
+    showLoadingOn: () => [
+      EmbedStatuses.INITIALIZING,
+      EmbedStatuses.RELOADING,
+      EmbedStatuses.REFRESHING,
+    ],
+  }
+);
+
+const slots = useSlots();
 
 const emit = defineEmits<{
+  statusChanged: [payload: StatusChangedPayload];
   paramChanged: [payload: ParamChangedMessage];
   executeSqlsTriggered: [payload: ExecuteSqlsTriggeredMessage];
-  ready: [];
   error: [err: EmbedError];
 }>();
 
 const containerRef = ref<HTMLElement | null>(null);
 const instance = ref<EmbedInstance | null>(null);
 const status = ref<EmbedStatus>(EmbedStatuses.CREATED);
+
+const showOverlay = computed(
+  () =>
+    !!slots.loading &&
+    props.showLoadingOn.length > 0 &&
+    props.showLoadingOn.includes(status.value)
+);
+
+watch(
+  () => [showOverlay.value, instance.value?.iframe] as const,
+  ([show, iframe]) => {
+    if (iframe) {
+      iframe.style.visibility = show ? "hidden" : "";
+    }
+  },
+  { immediate: true }
+);
 
 const toEmbedError = (err: unknown): EmbedError =>
   err instanceof EmbedError
@@ -78,6 +108,10 @@ onMounted(async () => {
   instance.value = embed;
   status.value = EmbedStatuses.INITIALIZING;
 
+  embed.on("statusChanged", (payload) => {
+    emit("statusChanged", payload);
+    status.value = payload.status;
+  });
   embed.on("paramChanged", (payload) => emit("paramChanged", payload));
   embed.on("executeSqlsTriggered", (payload) =>
     emit("executeSqlsTriggered", payload)
@@ -86,7 +120,6 @@ onMounted(async () => {
   try {
     await embed.init();
     status.value = embed.status;
-    emit("ready");
   } catch (err: unknown) {
     setError(err);
     status.value = EmbedStatuses.DESTROYED;
@@ -120,11 +153,17 @@ defineExpose({
 </script>
 
 <template>
-  <div ref="containerRef" class="codatum-embed-vue-container" />
+  <div
+    ref="containerRef"
+    class="codatum-embed-vue-container"
+    :style="{ position: 'relative', width: '100%', height: '100%' }"
+  >
+    <div
+      v-if="showOverlay"
+      class="codatum-embed-vue-loading-overlay"
+      :style="{ position: 'absolute', inset: 0, zIndex: 1 }"
+    >
+      <slot name="loading" :status="status" />
+    </div>
+  </div>
 </template>
-
-<style scoped>
-.codatum-embed-vue-container {
-  display: contents;
-}
-</style>
