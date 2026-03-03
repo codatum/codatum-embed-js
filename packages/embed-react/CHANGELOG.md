@@ -1,5 +1,18 @@
 # @codatum/embed-react
 
+## 1.0.0
+
+### Major Changes
+
+- GA release: SDK 1.0.0
+
+  Stable API for production use. No breaking changes from 0.5.x; version bump to signal general availability.
+
+### Patch Changes
+
+- Updated dependencies
+  - @codatum/embed@1.0.0
+
 ## 0.5.2
 
 ### Patch Changes
