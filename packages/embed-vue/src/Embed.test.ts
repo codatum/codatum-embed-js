@@ -235,6 +235,16 @@ describe("Embed.vue", () => {
       expect(mockInst.init).toHaveBeenCalled();
     });
 
+    const statusChangedHandler = mockInst.on.mock.calls.find(
+      (c: unknown[]) => c[0] === "statusChanged",
+    )?.[1] as (p: { type: string; status: string; previousStatus: string }) => void;
+    statusChangedHandler({
+      type: "STATUS_CHANGED",
+      status: EmbedStatuses.READY,
+      previousStatus: EmbedStatuses.CREATED,
+    });
+    await wrapper.vm.$nextTick();
+
     const vm = wrapper.vm as { status: string; reload: () => Promise<boolean> };
     expect(vm.status).toBe(EmbedStatuses.READY);
 
@@ -443,11 +453,27 @@ describe("Embed.vue", () => {
         expect(mockInst.init).toHaveBeenCalled();
       });
 
+      const statusChangedHandler = mockInst.on.mock.calls.find(
+        (c: unknown[]) => c[0] === "statusChanged",
+      )?.[1] as (p: { type: string; status: string; previousStatus: string }) => void;
+      statusChangedHandler({
+        type: "STATUS_CHANGED",
+        status: EmbedStatuses.INITIALIZING,
+        previousStatus: EmbedStatuses.CREATED,
+      });
+      await wrapper.vm.$nextTick();
+
       const overlay = wrapper.find(".codatum-embed-vue-loading-overlay");
       expect(overlay.exists()).toBe(true);
       expect(overlay.text()).toBe("Loading...");
 
       if (resolveInit) resolveInit();
+      statusChangedHandler({
+        type: "STATUS_CHANGED",
+        status: EmbedStatuses.READY,
+        previousStatus: EmbedStatuses.INITIALIZING,
+      });
+      await wrapper.vm.$nextTick();
       await vi.waitFor(() => {
         expect(wrapper.find(".codatum-embed-vue-loading-overlay").exists()).toBe(false);
       });
@@ -549,6 +575,16 @@ describe("Embed.vue", () => {
         expect(mockInst.init).toHaveBeenCalled();
       });
 
+      const statusChangedHandler = mockInst.on.mock.calls.find(
+        (c: unknown[]) => c[0] === "statusChanged",
+      )?.[1] as (p: { type: string; status: string; previousStatus: string }) => void;
+      statusChangedHandler({
+        type: "STATUS_CHANGED",
+        status: EmbedStatuses.INITIALIZING,
+        previousStatus: EmbedStatuses.CREATED,
+      });
+      await wrapper.vm.$nextTick();
+
       expect(wrapper.find(".codatum-embed-vue-loading-overlay").text()).toBe(
         `Status: ${EmbedStatuses.INITIALIZING}`,
       );
@@ -579,9 +615,25 @@ describe("Embed.vue", () => {
         expect(mockInst.init).toHaveBeenCalled();
       });
 
+      const statusChangedHandler = mockInst.on.mock.calls.find(
+        (c: unknown[]) => c[0] === "statusChanged",
+      )?.[1] as (p: { type: string; status: string; previousStatus: string }) => void;
+      statusChangedHandler({
+        type: "STATUS_CHANGED",
+        status: EmbedStatuses.INITIALIZING,
+        previousStatus: EmbedStatuses.CREATED,
+      });
+      await wrapper.vm.$nextTick();
+
       expect(iframe.style.visibility).toBe("hidden");
 
       if (resolveInit) resolveInit();
+      statusChangedHandler({
+        type: "STATUS_CHANGED",
+        status: EmbedStatuses.READY,
+        previousStatus: EmbedStatuses.INITIALIZING,
+      });
+      await wrapper.vm.$nextTick();
       await vi.waitFor(() => {
         expect(wrapper.find(".codatum-embed-vue-loading-overlay").exists()).toBe(false);
       });

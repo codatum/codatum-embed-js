@@ -110,8 +110,6 @@ onMounted(async () => {
   });
 
   instance.value = embed;
-  status.value = EmbedStatuses.INITIALIZING;
-
   embed.on("statusChanged", (payload) => {
     emit("statusChanged", payload);
     status.value = payload.status;
@@ -127,7 +125,6 @@ onMounted(async () => {
 
   try {
     await embed.init();
-    status.value = embed.status;
   } catch (err: unknown) {
     setError(err);
     status.value = EmbedStatuses.DESTROYED;
@@ -146,7 +143,6 @@ const reload = async (): Promise<boolean> => {
   if (!instance.value) return false;
   try {
     await instance.value.reload();
-    status.value = instance.value.status;
     return true;
   } catch (err: unknown) {
     setError(err);
