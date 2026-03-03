@@ -184,6 +184,19 @@ describe("EmbedReact", () => {
       );
 
       await waitFor(() => {
+        expect(mockInst.on).toHaveBeenCalledWith("statusChanged", expect.any(Function));
+      });
+
+      const statusChangedHandler = mockInst.on.mock.calls.find(
+        (c: unknown[]) => c[0] === "statusChanged",
+      )?.[1] as (p: { type: string; status: string; previousStatus: string }) => void;
+      statusChangedHandler({
+        type: "STATUS_CHANGED",
+        status: EmbedStatuses.INITIALIZING,
+        previousStatus: EmbedStatuses.CREATED,
+      });
+
+      await waitFor(() => {
         const overlay = document.querySelector("[data-testid=loading-overlay]");
         expect(overlay).toBeInstanceOf(HTMLElement);
         expect(overlay?.textContent).toBe("Loading");
@@ -245,6 +258,19 @@ describe("EmbedReact", () => {
       );
 
       await waitFor(() => {
+        expect(mockInst.on).toHaveBeenCalledWith("statusChanged", expect.any(Function));
+      });
+
+      const statusChangedHandler = mockInst.on.mock.calls.find(
+        (c: unknown[]) => c[0] === "statusChanged",
+      )?.[1] as (p: { type: string; status: string; previousStatus: string }) => void;
+      statusChangedHandler({
+        type: "STATUS_CHANGED",
+        status: EmbedStatuses.INITIALIZING,
+        previousStatus: EmbedStatuses.CREATED,
+      });
+
+      await waitFor(() => {
         const statusEl = document.querySelector("[data-testid=status-text]");
         expect(statusEl).toBeInstanceOf(HTMLElement);
         expect(statusEl?.textContent).toBe(EmbedStatuses.INITIALIZING);
@@ -265,20 +291,29 @@ describe("EmbedReact", () => {
       );
 
       await waitFor(() => {
+        expect(mockInst.on).toHaveBeenCalledWith("statusChanged", expect.any(Function));
+      });
+
+      const statusChangedHandler = mockInst.on.mock.calls.find(
+        (c: unknown[]) => c[0] === "statusChanged",
+      )?.[1] as (p: { type: string; status: string; previousStatus: string }) => void;
+      statusChangedHandler({
+        type: "STATUS_CHANGED",
+        status: EmbedStatuses.INITIALIZING,
+        previousStatus: EmbedStatuses.CREATED,
+      });
+
+      await waitFor(() => {
         expect(document.querySelector("[data-testid=loading]")).toBeInstanceOf(HTMLElement);
       });
 
       expect(iframe.style.visibility).toBe("hidden");
 
-      const payload = {
-        type: "STATUS_CHANGED" as const,
+      statusChangedHandler({
+        type: "STATUS_CHANGED",
         status: EmbedStatuses.READY,
         previousStatus: EmbedStatuses.INITIALIZING,
-      };
-      const handler = mockInst.on.mock.calls.find(
-        (c: unknown[]) => c[0] === "statusChanged",
-      )?.[1] as (p: typeof payload) => void;
-      handler(payload);
+      });
 
       await waitFor(() => {
         expect(iframe.style.visibility).toBe("");
@@ -435,6 +470,15 @@ describe("EmbedReact", () => {
 
     await waitFor(() => {
       expect(mockInst.init).toHaveBeenCalled();
+    });
+
+    const statusChangedHandler = mockInst.on.mock.calls.find(
+      (c: unknown[]) => c[0] === "statusChanged",
+    )?.[1] as (p: { type: string; status: string; previousStatus: string }) => void;
+    statusChangedHandler({
+      type: "STATUS_CHANGED",
+      status: EmbedStatuses.READY,
+      previousStatus: EmbedStatuses.CREATED,
     });
 
     await waitFor(() => {

@@ -1,5 +1,15 @@
 # @codatum/embed-react
 
+## 0.5.2
+
+### Patch Changes
+
+- fix: unify status updates to statusChanged event only
+
+  Remove manual status updates on init/reload and rely solely on the statusChanged event for state updates. Fixes issues caused by duplicate updates and race conditions.
+
+  - @codatum/embed@0.5.2
+
 ## 0.5.1
 
 ### Patch Changes

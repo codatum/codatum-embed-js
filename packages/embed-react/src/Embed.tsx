@@ -147,7 +147,6 @@ export const Embed = forwardRef<EmbedReactRef, EmbedReactProps>(function Embed(
     });
 
     instanceRef.current = embed;
-    setStatus(EmbedStatuses.INITIALIZING);
 
     embed.on("statusChanged", (payload) => {
       callbacksRef.current.onStatusChanged?.(payload);
@@ -163,19 +162,12 @@ export const Embed = forwardRef<EmbedReactRef, EmbedReactProps>(function Embed(
     embed.on("executionFailed", (payload) => callbacksRef.current.onExecutionFailed?.(payload));
 
     let cancelled = false;
-    embed
-      .init()
-      .then(() => {
-        if (!cancelled && instanceRef.current === embed) {
-          setStatus(embed.status);
-        }
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          setError(err);
-          setStatus(EmbedStatuses.DESTROYED);
-        }
-      });
+    embed.init().catch((err: unknown) => {
+      if (!cancelled) {
+        setError(err);
+        setStatus(EmbedStatuses.DESTROYED);
+      }
+    });
 
     return () => {
       cancelled = true;
@@ -198,7 +190,6 @@ export const Embed = forwardRef<EmbedReactRef, EmbedReactProps>(function Embed(
         if (!inst) return false;
         try {
           await inst.reload();
-          setStatus(inst.status);
           return true;
         } catch (err: unknown) {
           setError(err);
