@@ -20,7 +20,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",
-    "@changesets/cli": "^2.29.8",
+    "@changesets/cli": "^2.30.0",
     "turbo": "catalog:"
   }
 }
