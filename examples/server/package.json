@@ -7,13 +7,13 @@
   },
   "dependencies": {
     "@codatum/embed": "workspace:*",
-    "@hono/node-server": "^1.13.0",
-    "hono": "^4.12.3",
+    "@hono/node-server": "^1.19.13",
+    "hono": "^4.12.12",
     "json5": "^2.2.3"
   },
   "devDependencies": {
     "@types/node": "^25.3.3",
     "tsx": "^4.19.0",
-    "typescript": "^5.0.0"
+    "typescript": "^6.0.2"
   }
 }
