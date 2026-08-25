@@ -1,6 +1,6 @@
 # Codatum Embed SDK
 
-Monorepo for the Codatum [signed embed](https://docs.codatum.com/sharing/signed-embed) client SDK. Use these packages to embed Codatum Notebook in your app with a token from your backend.
+Monorepo for the Codatum [signed embed](https://docs.codatum.com/features/notebook/sharing/signed-embed/overview) client SDK. Use these packages to embed Codatum Notebook in your app with a token from your backend.
 
 ## Packages
 
@@ -14,7 +14,7 @@ Install the one you need (e.g. `pnpm add @codatum/embed` or `@codatum/embed-reac
 
 ## Docs
 
-- [Signed embed](https://docs.codatum.com/sharing/signed-embed) · [Integration](https://docs.codatum.com/sharing/signed-embed/integration) · [Use cases](https://docs.codatum.com/sharing/signed-embed/use-case)
+- [Signed embed](https://docs.codatum.com/features/notebook/sharing/signed-embed/overview) · [Integration](https://docs.codatum.com/features/notebook/sharing/signed-embed/integration) · [Use cases](https://docs.codatum.com/features/notebook/sharing/signed-embed/use-case)
 
 ## Versioning
 
