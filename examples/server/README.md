@@ -16,7 +16,7 @@ The server exposes multiple **scenarios** (e.g. scenario1, scenario2, scenario3)
      - **product_category**: string
    - Publish the notebook as signed-embed.
    - Configure server-side parameters as appropriate for the scenario (e.g. fixed value for **tenant_id** where required).
-   - Get **embedUrl** and **pageId** from the signed-embed setup for the notebook (see [Codatum signed-embed docs](https://docs.codatum.com/sharing/signed-embed/integration)).
+   - Get **embedUrl** and **pageId** from the signed-embed setup for the notebook (see [Codatum signed-embed docs](https://docs.codatum.com/features/notebook/sharing/signed-embed/integration)).
 
 2. **Per scenario**, add a config file using the example as reference:
 
@@ -31,7 +31,7 @@ The server exposes multiple **scenarios** (e.g. scenario1, scenario2, scenario3)
 3. Edit each `config.jsonc` with values from your Codatum workspace:
 
    - **apiKey** / **apiSecret**: From **Workspace settings → API Keys** (create a key if needed).
-   - **pageId**: From the signed-embed setup for the notebook (see [Codatum signed-embed docs](https://docs.codatum.com/sharing/signed-embed/integration)).
+   - **pageId**: From the signed-embed setup for the notebook (see [Codatum signed-embed docs](https://docs.codatum.com/features/notebook/sharing/signed-embed/integration)).
    - **embedUrl**: The signed-embed URL for the notebook (e.g. `https://app.codatum.com/protected/workspace/xxx/notebook/yyy`).
    - **paramMapping**: Fill each parameter ID (e.g. `tenant_id`, `store_id`, `date_range`, `product_category`) with the corresponding param IDs from your notebook’s signed-embed setup. Comments in `config.example.jsonc` indicate server-side vs client-side parameters.
 

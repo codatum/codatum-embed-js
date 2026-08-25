@@ -1,8 +1,8 @@
 # @codatum/embed
 
-Core TypeScript SDK for embedding Codatum Notebook with [signed embed](https://docs.codatum.com/sharing/signed-embed): create the iframe in the browser, pass a token from your backend, handle parameters and events. Server-side token issuance is out of scope.
+Core TypeScript SDK for embedding Codatum Notebook with [signed embed](https://docs.codatum.com/features/notebook/sharing/signed-embed/overview): create the iframe in the browser, pass a token from your backend, handle parameters and events. Server-side token issuance is out of scope.
 
-**Docs**: [Signed embed](https://docs.codatum.com/sharing/signed-embed) · [Integration](https://docs.codatum.com/sharing/signed-embed/integration) · [Use cases](https://docs.codatum.com/sharing/signed-embed/use-case). **Wrappers**: [@codatum/embed-react](https://github.com/codatum/codatum-embed-js/tree/main/packages/embed-react#readme), [@codatum/embed-vue](https://github.com/codatum/codatum-embed-js/tree/main/packages/embed-vue#readme).
+**Docs**: [Signed embed](https://docs.codatum.com/features/notebook/sharing/signed-embed/overview) · [Integration](https://docs.codatum.com/features/notebook/sharing/signed-embed/integration) · [Use cases](https://docs.codatum.com/features/notebook/sharing/signed-embed/use-case). **Wrappers**: [@codatum/embed-react](https://github.com/codatum/codatum-embed-js/tree/main/packages/embed-react#readme), [@codatum/embed-vue](https://github.com/codatum/codatum-embed-js/tree/main/packages/embed-vue#readme).
 
 ## Installation
 
@@ -378,7 +378,7 @@ try {
 
 ## Usage examples
 
-The following patterns demonstrate common integration scenarios as outlined in the [Signed embed use cases](https://docs.codatum.com/sharing/signed-embed/use-case).
+The following patterns demonstrate common integration scenarios as outlined in the [Signed embed use cases](https://docs.codatum.com/features/notebook/sharing/signed-embed/use-case).
 
 ### Example A: Params form in embed (server validates store, client sends filters)
 
