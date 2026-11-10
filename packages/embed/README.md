@@ -40,12 +40,23 @@ embed.destroy();
 | Property | Required | Description |
 |--------|----------|-------------|
 | `container` | Yes | `HTMLElement` or CSS selector where the iframe is inserted |
-| `embedUrl` | Yes | Signed embed URL from Codatum |
+| `embedUrl` | Yes | Notebook or AI Agent embed URL from Codatum |
 | `tokenProvider` | Yes | See [tokenProvider](#tokenprovider) below |
 | `iframeOptions` | No | See [IframeOptions](#iframeoptions) below |
 | `tokenOptions` | No | See [TokenOptions](#tokenoptions) below |
 | `displayOptions` | No | See [DisplayOptions](#displayoptions) below |
 | `devOptions` | No | See [DevOptions](#devoptions) below |
+
+#### Embed URLs
+
+Use the embed URL provided by Codatum. The SDK accepts both URL formats:
+
+| View | URL format |
+|------|------------|
+| Notebook | `https://app.codatum.com/protected/workspace/{workspaceId}/notebook/{integrationId}` |
+| AI Agent | `https://app.codatum.com/protected/workspace/{workspaceId}/agent/{integrationId}` |
+
+Workspace and integration IDs must be 24-character hexadecimal strings. Query parameters such as `theme` and `locale` are supported for both views. Token delivery and automatic refresh use the same `createEmbed` API for either URL.
 
 #### `tokenProvider`
 

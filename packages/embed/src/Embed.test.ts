@@ -328,20 +328,24 @@ describe("init()", () => {
     vi.useRealTimers();
   });
 
-  it("resolves init and sends SET_TOKEN when READY_FOR_TOKEN is received and tokenProvider succeeds", async () => {
+  it.each([
+    "notebook",
+    "agent",
+  ])("initializes a %s iframe and completes the token handshake", async (kind) => {
+    const embedUrl = VALID_EMBED_URL.replace("/notebook/", `/${kind}/`);
     const container = getContainer();
     const myToken = TEST_JWT;
     const tokenProvider = vi.fn().mockResolvedValue({ token: myToken });
     const embed = createEmbed({
       container,
-      embedUrl: VALID_EMBED_URL,
+      embedUrl,
       tokenProvider,
     });
     const initPromise = embed.init();
 
     const iframe = container.querySelector("iframe") as HTMLIFrameElement;
     expect(iframe).toBeTruthy();
-    expect(iframe.src).toContain(VALID_EMBED_URL);
+    expect(iframe.src).toContain(embedUrl);
 
     const postMessageSpy = vi.spyOn(iframe.contentWindow as Window, "postMessage");
 

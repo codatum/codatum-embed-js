@@ -43,9 +43,10 @@ describe("deepClone", () => {
 });
 
 describe("isValidEmbedUrl", () => {
-  it("returns true for valid URL", () => {
-    expect(isValidEmbedUrl(VALID_EMBED_URL)).toBe(true);
-    expect(isValidEmbedUrl(`${VALID_EMBED_URL}?foo=1`)).toBe(true);
+  it.each(["notebook", "agent"])("accepts %s URLs with optional query parameters", (kind) => {
+    const url = VALID_EMBED_URL.replace("/notebook/", `/${kind}/`);
+    expect(isValidEmbedUrl(url)).toBe(true);
+    expect(isValidEmbedUrl(`${url}?theme=DARK&locale=ja`)).toBe(true);
   });
 
   it("returns false for invalid URL", () => {
@@ -53,6 +54,20 @@ describe("isValidEmbedUrl", () => {
     expect(isValidEmbedUrl("https://app.codatum.com/protected/workspace/short/notebook/also")).toBe(
       false,
     );
+  });
+
+  it.each(["notebook", "agent"])("rejects invalid origins, IDs and extra paths for %s", (kind) => {
+    const url = VALID_EMBED_URL.replace("/notebook/", `/${kind}/`);
+    for (const invalidUrl of [
+      url.replace("https:", "http:"),
+      url.replace("app.codatum.com", "app.codatum.com.example.com"),
+      url.replace("app.codatum.com", "app.codatum.com@example.com"),
+      url.replace("a".repeat(24), "a".repeat(23)),
+      url.replace("b".repeat(24), "g".repeat(24)),
+      `${url}/extra`,
+    ]) {
+      expect(isValidEmbedUrl(invalidUrl)).toBe(false);
+    }
   });
 });
 

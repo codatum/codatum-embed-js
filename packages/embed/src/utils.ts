@@ -14,7 +14,7 @@ export const deepClone = <T>(source: T): T => {
 };
 
 const EMBED_URL_REGEX =
-  /^https:\/\/app\.codatum\.com\/protected\/workspace\/[a-fA-F0-9]{24}\/notebook\/[a-fA-F0-9]{24}(\?.*)?$/;
+  /^https:\/\/app\.codatum\.com\/protected\/workspace\/[a-fA-F0-9]{24}\/(?:notebook|agent)\/[a-fA-F0-9]{24}(\?.*)?$/;
 
 export const isValidEmbedUrl = (url: string): boolean => {
   return EMBED_URL_REGEX.test(url);
@@ -67,7 +67,7 @@ export const validateEmbedOptions = (options: EmbedOptions): void => {
   }
   if (!skipUrlValidation && !isValidEmbedUrl(options.embedUrl)) {
     throwError(
-      "embedUrl must match https://app.codatum.com/protected/workspace/{workspaceId}/notebook/{notebookId}. Use devOptions.disableValidateUrl to skip (e.g. for local/staging).",
+      "embedUrl must match https://app.codatum.com/protected/workspace/{workspaceId}/notebook/{integrationId} or https://app.codatum.com/protected/workspace/{workspaceId}/agent/{integrationId}. Use devOptions.disableValidateUrl to skip (e.g. for local/staging).",
     );
   }
   if (!options.tokenProvider || typeof options.tokenProvider !== "function") {
