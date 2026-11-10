@@ -1,5 +1,16 @@
 # @codatum/embed-vue
 
+## 1.1.0
+
+### Minor Changes
+
+- 9a775e6: Support dedicated AI Agent embed URLs at `/protected/workspace/{workspaceId}/agent/{integrationId}` in the core SDK and React/Vue integrations. Existing notebook embed URLs remain supported, with the same HTTPS, production host, and identifier validation.
+
+### Patch Changes
+
+- Updated dependencies [9a775e6]
+  - @codatum/embed@1.1.0
+
 ## 1.0.0
 
 ### Major Changes
